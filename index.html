@@ -1,87 +1,9 @@
 <!DOCTYPE html>
 <!--
     ANSIR Research Projects - GitHub Pages Version (git_projects_v020)
-    Based on: git_projects_v019.html
-    v020: Sort projects by date newest-first on initial load
-
-    Changes in v017:
-      - Zoom now fits polygon bounds (when present) with 2x extra padding,
-        instead of fitting tightly to sites + polygon
-      - Chain icon link preview: shown on hover (like browser link targets),
-        hidden on mouse leave — no click needed to preview
-      - Blue banner card expand no longer changes parent URL bar
-        (removed notifyParentProjectChange calls from toggleCard)
-
-    Changes in v016:
-      - Fixed zoom flash: showProjectOnMap now fits bounds BEFORE opening popup,
-        and uses {animate:false} to prevent any visible pan/zoom transition.
-        The popup is opened with {autoPan:false} to prevent Leaflet re-panning.
-      - Increased site marker size (base side 6px → scales up to ~10px at high zoom)
-      - Copy link: replaced overlay with browser-style bottom-left link bar showing
-        the permalink URL, auto-dismisses after 5 seconds or on click
-      - Copy link always uses SQUARESPACE_PARENT_URL when set (already worked,
-        but ansir-repo/index.html needs it set to match)
-
-    Changes in v015:
-      - Rewrote "View project details →" flow: searchForProject no longer closes
-        and re-opens the popup. Instead it directly adds site markers + polygon
-        and fits bounds, avoiding the jarring zoom-in/zoom-out flash.
-      - autoOpenMapPopup rewritten: fits bounds FIRST (without animation), then
-        opens popup, eliminating the half-second flash at wrong zoom level.
-      - Copy link in iframe: rewrote copyPermalink to handle Squarespace iframe
-        sandbox restrictions — uses window.open data URI fallback when clipboard
-        APIs are blocked by iframe sandbox.
-
-    Changes in v014:
-
-    Changes in v013:
-      - "View project details →" now also opens map popup (shows site markers + polygon)
-      - Copy link button: added fallback for non-HTTPS contexts (file://, http://, iframe)
-      - clearAutoExpandedState() now also clears site markers
-
-    Changes in v012:
-      - Site markers redesigned: small inverted triangles (CSS border trick, halved size)
-        with dark grey fill and subtle drop shadow
-      - Site markers scale with zoom level (smaller when zoomed out, larger when zoomed in)
-      - Project markers always render on top of site markers (zIndexOffset: 1000)
-      - Site markers use zIndexOffset: 100 to stay below project markers
-
-    Changes in v011:
-      - Collection site markers shown on map when project popup opens
-      - Site popups show name, instrument, coordinates
-      - Markers removed when project popup closes
-      - collectionSites passed through transformProject()
-      - Compatible with GAS code v18 (instrument + serial fields)
-
-    Changes in v010:
-      - Full academic citations for publications, datasets, and networks
-        (authors, year, title, journal — resolved at publish by v14 GAS via CrossRef/DataCite)
-      - renderCitationItem() helper for consistent citation display
-      - Removed standalone "Data Access" text section from expanded card
-        (Open Data pill badge in header is kept)
-
-    Changes in v009:
-      - Consumes structured JSON from v13 GAS export (no more semicolon parsing)
-      - Simplified transformProject() — data arrives pre-structured
-      - Removed parseArrayField, parseMethodsField, parseContributors,
-        parseFundingRecords, parseInstruments, parseRelatedObjects functions
 
     This version fetches project data from a static data.json file
-    hosted alongside this HTML on GitHub Pages, instead of calling
-    Google Apps Script directly. This eliminates the 4-5 second
-    GAS cold-start delay for public visitors.
-
-    Data flow:
-      Google Sheet → GAS export trigger → data.json → GitHub repo
-      GitHub Pages serves this HTML + data.json
-      Squarespace embeds via iframe
-
-    Deep linking:
-      When embedded in Squarespace, the iframe communicates with the
-      parent page via postMessage to keep the browser URL in sync.
-      Shared links point to the Squarespace page (not GitHub Pages)
-      using the SQUARESPACE_PARENT_URL config. The parent page passes
-      any ?id= parameter down to the iframe on load.
+    hosted alongside this HTML on GitHub Pages.
 -->
 <html lang="en">
 <head>
@@ -95,7 +17,6 @@
     <!-- ============================================ -->
 
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
-    <!-- git_projects_v001: Removed GAS preconnect hints - data now served locally -->
     <meta name="google-site-verification" content="yUJ1i6owu4OVxWDIjLrszS8Kdy9-qQHGLuBzCZHgmbE" />
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -265,7 +186,6 @@
         /* ============================================ */
         /* STATS DASHBOARD: Key Metrics Display        */
         /* ============================================ */
-        /* v002: No outer white box — stat items sit directly on page background */
         .stats-section {
             margin-bottom: var(--spacing-md);
         }
@@ -302,7 +222,6 @@
         /* ============================================ */
         /* FILTERS: Search and Filter Controls         */
         /* ============================================ */
-        /* v002: Inline flex layout — inputs sized to content, no outer white box */
         .filters-section {
             margin-bottom: var(--spacing-md);
         }
@@ -433,7 +352,7 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
 
-        /* Map Popup Transparency — v018: more transparent to see sites beneath */
+        /* Map Popup Transparency: more transparent to see sites beneath */
         .leaflet-popup-content-wrapper {
             opacity: 0.75 !important;
         }
@@ -526,7 +445,7 @@
 
         .project-title {
             font-size: 18px;
-            font-weight: 400;  /* Reduced boldness */
+            font-weight: 400;
             font-family: var(--font-family);
             margin-bottom: var(--spacing-xs);
             line-height: 1.3;
@@ -538,7 +457,6 @@
             opacity: 0.9;
         }
 
-        /* v007: Co-leads shown in header below contact lead */
         .header-co-leads {
             font-size: 13px;
             opacity: 0.85;
@@ -871,8 +789,6 @@
             <!-- SEO: Dynamic H2 for project descriptions and enhanced discoverability -->
             <h2 id="project-description-meta" class="visually-hidden">Geophysical research projects enabled by the ANSIR facility</h2>
 
-            <!-- v003: Stats section removed (will be on main ANSIR page) -->
-
             <!-- Filters Section: Search and Filter Controls -->
             <div class="filters-section">
                 <div class="filters-grid">
@@ -960,7 +876,7 @@
         // data.json is exported from Google Sheet and pushed to this repo
         const DATA_URL = './data/data.json';
 
-        // Website tracking endpoint (optional - still calls GAS for analytics)
+        // Website tracking endpoint (for analytics)
         const TRACKING_URL = 'https://script.google.com/macros/s/AKfycby-jo_4Lhz5E775mUElJtPMq3kmyar5Ax9eOr8psR30pTxp5SkO9nih82eIigi2S985Yg/exec';
 
         // Squarespace parent page URL for deep linking when embedded in an iframe
@@ -990,7 +906,7 @@
         /* CLIENT-SIDE DATA TRANSFORMATION FUNCTIONS   */
         /* ============================================ */
         
-        // v002: HTML escape function to prevent XSS from project data
+        // HTML escape function to prevent XSS from project data
         function escapeHtml(str) {
             if (!str) return '';
             return String(str)
@@ -1001,7 +917,7 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // v010: Render a citation item (publication, dataset, or network)
+        // Render a citation item (publication, dataset, or network)
         // Format: Authors (Year). Title. Journal.  DOI: 10.xxxx/...
         // Entire citation is one clickable link
         function renderCitationItem(item, fallbackLabel) {
@@ -1050,11 +966,6 @@
             
             return { lat: 0, lng: 0 };
         }
-
-        // v009: Old parsing functions (parseInstruments, parseArrayField,
-        // parseMethodsField, parseFundingRecords, parseContributors,
-        // parseRelatedObjects) removed — data now arrives pre-structured
-        // from v13 GAS export (transformProjectForExport).
 
         // Parse polygon coordinates
         function parsePolygon(polygonField) {
@@ -1156,7 +1067,7 @@
             return statusStr;
         }
 
-        // v003: Display name for status (internal value → user-facing label)
+        // Display name for status (internal value → user-facing label)
         function statusDisplayName(status) {
             const names = {
                 'complete': 'Finished',
@@ -1167,7 +1078,7 @@
             return names[status] || status;
         }
 
-        // v009: Transform structured JSON from v13 GAS export to display format
+        // Transform structured JSON from v13 GAS export to display format
         // Data arrives pre-structured with arrays/objects — no semicolon parsing needed
         function transformProject(rawProject, index = 0) {
             if (!rawProject) return null;
@@ -1564,8 +1475,6 @@
             if (bar) bar.style.display = 'none';
         }
 
-        // (v016 linkBarTimer removed in v017 — link preview is now hover-based)
-
         /* ============================================ */
         /* IFRAME ↔ PARENT COMMUNICATION              */
         /* ============================================ */
@@ -1675,9 +1584,9 @@
             return data;
         }
 
-        /* ============================================ */
-        /* WEBSITE TRACKING SYSTEM (Optional)          */
-        /* ============================================ */
+        /* ========================== */
+        /*     WEBSITE TRACKING       */
+        /* ========================== */
         let sessionId = null;
         let userLocation = { country: 'unknown', city: 'unknown' };
 
@@ -1823,7 +1732,7 @@
             populateStructuredData();
         }
 
-        // v015: Rewritten — no popup close/reopen, directly shows sites + polygon + fits bounds
+        // Rewritten — no popup close/reopen, directly shows sites + polygon + fits bounds
         function searchForProject(projectId) {
             // Populate search filter
             var searchInput = document.getElementById('filter-name');
@@ -1860,7 +1769,7 @@
             trackEvent('map-search-used', projectId);
         }
 
-        // v015: Show a project's sites, polygon, and popup on the map in the right order
+        // Show a project's sites, polygon, and popup on the map in the right order
         // 1. Clear previous overlays  2. Add sites + polygon  3. Fit bounds  4. Open popup
         function showProjectOnMap(project) {
             if (!project || !map) return;
