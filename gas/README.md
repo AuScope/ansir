@@ -133,7 +133,7 @@ for the volumes ANSIR sees.
    | `APPLICATIONS_SHEET_NAME` | Already correct - `ANSIR_Applications` |
    | `UPLOAD_FOLDER_ID` | **Required.** The folder ID from step 3 |
    | `ADMIN_EMAILS` | Already `ben@auscope.org.au`; add others as needed |
-   | `FACILITY_EMAILS` | Deliberately empty. Fill in when the addresses are agreed |
+   | `FACILITY_ROUTES` | Facility addresses per research method (Seismic/Nodal Seismic/DAS, Magnetotelluric, Petrophysical). Every route deliberately empty; fill in per method when the addresses are agreed |
    | `MAX_SUBMISSIONS_PER_HOUR` | `20` is a sensible starting point |
 
    If you leave `UPLOAD_FOLDER_ID` as the placeholder, uploads will fail with a
@@ -370,7 +370,7 @@ Work through this in order. Do it on the real deployment, once.
    - **no** new row appears in `ANSIR_Projects_MasterList`,
    - the applicant address receives a copy of the application,
    - `ben@auscope.org.au` receives the internal notification,
-   - the execution log records that `FACILITY_EMAILS` is empty by design.
+   - the execution log records that no facility addresses are configured for the selected methods (`FACILITY_ROUTES` empty by design).
 3. **Application with an attachment.** Attach a small PDF. Confirm:
    - the file appears in the Drive upload folder with a name like
      `ANSIR_Application_<title>_<timestamp>.pdf`,

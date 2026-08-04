@@ -83,17 +83,68 @@ var ADMIN_EMAILS = [
 ];
 
 /**
- * The ANSIR facility distribution list.
+ * Facility notifications, routed by research method.
  *
- * DELIBERATELY EMPTY. It is wired up end to end - the notification is built
- * and addressed exactly like the admin one - so filling this array in is the
- * only change needed to switch facility notifications on. While it is empty,
- * that email is skipped and a line is written to the execution log saying so.
+ * DELIBERATELY EMPTY. Each key is one of the form's method checkbox values,
+ * verbatim; the notification goes to the union of the addresses for the
+ * methods the applicant ticked, deduplicated, so a seismic application never
+ * reaches the MT operators and an MT application never reaches ANU. A
+ * mixed-method application (say Seismic + Magnetotelluric) goes to both.
  *
- * Example once you know the addresses:
- *   var FACILITY_EMAILS = ['ansir@anu.edu.au'];
+ * Filling in an address list is the only change needed to switch that
+ * method's notifications on. While every matched list is empty, the facility
+ * email is skipped and a line is written to the execution log naming the
+ * methods that had no address configured.
+ *
+ * Example once the addresses are confirmed:
+ *   'Seismic':        ['ansir@anu.edu.au'],
+ *   'Nodal Seismic':  ['ansir@anu.edu.au'],
+ *   'DAS':            ['ansir@anu.edu.au'],
+ *   'Magnetotelluric':['mt-facility@adelaide.edu.au'],
+ *   'Petrophysical':  ['petrophysics@unimelb.edu.au'],
  */
-var FACILITY_EMAILS = [];
+var FACILITY_ROUTES = {
+  'Seismic': [],
+  'Nodal Seismic': [],
+  'DAS': [],
+  'Magnetotelluric': [],
+  'Petrophysical': []
+};
+
+/**
+ * The facility addresses for one application: the union of FACILITY_ROUTES
+ * for every method the applicant selected (semicolon-delimited in
+ * methods_field), deduplicated. Unknown method strings are logged rather
+ * than silently dropped, so a renamed checkbox cannot quietly kill routing.
+ * @private
+ */
+function facilityRecipients_(formData) {
+  var methods = String(formData.methods_field || '').split(';');
+  var seen = {};
+  var recipients = [];
+  var unrouted = [];
+  for (var i = 0; i < methods.length; i++) {
+    var method = methods[i].trim();
+    if (!method) continue;
+    if (!Object.prototype.hasOwnProperty.call(FACILITY_ROUTES, method)) {
+      unrouted.push(method);
+      continue;
+    }
+    var list = FACILITY_ROUTES[method] || [];
+    for (var j = 0; j < list.length; j++) {
+      var address = String(list[j]).trim();
+      if (address && !seen[address]) {
+        seen[address] = true;
+        recipients.push(address);
+      }
+    }
+  }
+  if (unrouted.length) {
+    logLine_('No facility route configured for method(s): ' + unrouted.join(', ') +
+      '. Check FACILITY_ROUTES against the form checkbox values.');
+  }
+  return recipients;
+}
 
 /**
  * Abuse control. See rateLimitOk_ for the important caveat: Apps Script does
@@ -965,7 +1016,8 @@ function rateLimitOk_(bucket) {
  * Sends the three notifications:
  *   1. a copy of the application to the applicant,
  *   2. an internal notification to ADMIN_EMAILS,
- *   3. the same internal notification to FACILITY_EMAILS.
+ *   3. the same internal notification to the facility addresses matching
+ *      the selected methods (FACILITY_ROUTES).
  *
  * Every send is individually wrapped, because a failed email must never lose an
  * application that has already been written to the sheet.
@@ -1010,14 +1062,15 @@ function sendNotifications_(formData, ansirCode, fileInfo) {
     logLine_('ADMIN_EMAILS is empty. No administrator notification was sent.');
   }
 
-  // The facility list is wired up identically to the admin list. It is empty by
-  // design until the correct ANSIR facility addresses are known - add them to
-  // FACILITY_EMAILS at the top of this file and this send starts working with
-  // no other change.
-  if (FACILITY_EMAILS && FACILITY_EMAILS.length) {
+  // Facility notifications route by the methods the applicant ticked (see
+  // FACILITY_ROUTES at the top of this file). All routes are empty by design
+  // until the facility addresses are confirmed - filling one in switches that
+  // method's notifications on with no other change.
+  var facilityRecipients = facilityRecipients_(formData);
+  if (facilityRecipients.length) {
     try {
       MailApp.sendEmail({
-        to: FACILITY_EMAILS.join(','),
+        to: facilityRecipients.join(','),
         subject: internalSubject,
         body: internalBody,
         name: MAIL_FROM_NAME,
@@ -1029,7 +1082,8 @@ function sendNotifications_(formData, ansirCode, fileInfo) {
       logError_('sendNotifications_ (facility)', err);
     }
   } else {
-    logLine_('FACILITY_EMAILS is empty by design. No facility notification was sent.');
+    logLine_('No facility addresses configured for the selected methods ' +
+      '(FACILITY_ROUTES is empty by design). No facility notification was sent.');
   }
 
   return { sent: sent };
@@ -1072,7 +1126,7 @@ function buildApplicantEmail_(formData, ansirCode, fileInfo) {
 }
 
 /**
- * The internal notification sent to ADMIN_EMAILS and FACILITY_EMAILS.
+ * The internal notification sent to ADMIN_EMAILS and the routed facility addresses.
  * @private
  */
 function buildInternalEmail_(formData, ansirCode, fileInfo) {
