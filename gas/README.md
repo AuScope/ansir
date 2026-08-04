@@ -122,9 +122,16 @@ for the volumes ANSIR sees.
 
 1. Go to <https://script.google.com> and create a new project.
 2. Name it something obvious, for example `ANSIR Application Intake`.
-3. Delete the stub `Code.gs` contents and paste in the entire contents of
+3. **Set the project timezone to Australia/Sydney** (Project Settings, the
+   gear icon, then "Time zone"). New Apps Script projects default to a US
+   timezone, and the ANSIR reference year is read from the script's clock:
+   left on the default, an application submitted on the morning of 1 January
+   in Australia would still be numbered in the old year, because it is still
+   31 December in New York. The `TIMEZONE` constant in the code only formats
+   timestamps for display; this project setting is what governs the year.
+4. Delete the stub `Code.gs` contents and paste in the entire contents of
    `gas/Code.gs` from this repository.
-4. Edit the configuration block at the top:
+5. Edit the configuration block at the top:
 
    | Constant | Set it to |
    |---|---|
@@ -141,7 +148,7 @@ for the volumes ANSIR sees.
    intentional: the previous version discarded every PDF it was given and told
    the applicant it had worked.
 
-5. Save.
+6. Save.
 
 ### The intake tab
 
