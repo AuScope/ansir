@@ -47,8 +47,35 @@
 // CONFIGURATION
 // ============================================================================
 
-/** Google Sheet holding both the master project list and the intake tab. */
-var SHEET_ID = 'REDACTED_SEE_SCRIPT_PROPERTY';
+/**
+ * The Google Sheet holding both the master project list and the intake tab.
+ *
+ * NOT STORED IN THIS FILE. This repository is public, and while a sheet ID
+ * grants nobody access on its own (Google's sharing permissions are the actual
+ * control), publishing internal identifiers in an organisation's public
+ * repository is needless exposure: it tells an attacker exactly what to aim
+ * social engineering at, and it cannot be un-published once it is in git
+ * history.
+ *
+ * Set it once per deployment, in the Apps Script editor:
+ *   Project Settings (gear icon) > Script Properties > Add script property
+ *   Property: ANSIR_SHEET_ID
+ *   Value:    the ID from the sheet URL, between /d/ and /edit
+ *
+ * Script Properties live with the deployment, not with the code, so a fork of
+ * this repository is inert until its owner supplies their own sheet.
+ * @private
+ */
+function sheetId_() {
+  var id = PropertiesService.getScriptProperties().getProperty('ANSIR_SHEET_ID');
+  if (!id) {
+    throw new Error('Script property ANSIR_SHEET_ID is not set. In the Apps ' +
+      'Script editor: Project Settings > Script Properties > Add script ' +
+      'property, named ANSIR_SHEET_ID, with the ANSIR sheet ID as its value. ' +
+      'See gas/README.md.');
+  }
+  return id;
+}
 
 /**
  * The master project list. THIS FILE ONLY EVER READS FROM IT.
@@ -426,7 +453,7 @@ function handleSubmit_(formData) {
     return { success: false, message: check.message };
   }
 
-  var spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+  var spreadsheet = SpreadsheetApp.openById(sheetId_());
   var applicationsSheet = getApplicationsSheet_(spreadsheet);
 
   // Retrieve the supporting document, if one was uploaded, BEFORE allocating a
@@ -1186,7 +1213,7 @@ function buildInternalEmail_(formData, ansirCode, fileInfo) {
   lines.push('');
   lines.push('ANSIR reference: ' + ansirCode);
   lines.push('Received: ' + formatDateTime_(new Date()));
-  lines.push('Recorded in: ' + APPLICATIONS_SHEET_NAME + ' (Google Sheet ' + SHEET_ID + ')');
+  lines.push('Recorded in: ' + APPLICATIONS_SHEET_NAME + ' (the ANSIR project sheet)');
   lines.push('');
   lines.push('This application is NOT yet a project. It sits in the intake tab until it is');
   lines.push('reviewed and promoted. The promotion procedure is documented in docs/INTAKE.md.');

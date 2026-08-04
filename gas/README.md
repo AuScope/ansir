@@ -94,8 +94,9 @@ whole internet can now call. Treat it as an incident.
 
 ## 2. Prerequisites
 
-- A Google account that has edit access to the ANSIR project sheet
-  (`REDACTED_SEE_SCRIPT_PROPERTY`).
+- A Google account that has edit access to the ANSIR project sheet.
+- The sheet's ID, which you will store as a script property rather than in
+  code. It is the part of the sheet URL between `/d/` and `/edit`.
 - Somewhere in that same account's Drive to store uploaded PDFs.
 
 Use an account whose daily email quota you are happy to spend. A consumer
@@ -158,7 +159,7 @@ That is expected.
 
    | Constant | Set it to |
    |---|---|
-   | `SHEET_ID` | Already correct - the ANSIR project sheet |
+   | (sheet ID) | **Not in the file.** Set the script property `ANSIR_SHEET_ID` - see step 5 below |
    | `MASTER_SHEET_NAME` | Already correct - `ANSIR_Projects_MasterList` |
    | `APPLICATIONS_SHEET_NAME` | Already correct - `ANSIR_Applications` |
    | `UPLOAD_FOLDER_ID` | **Required.** The folder ID from step 3 |
@@ -173,6 +174,22 @@ That is expected.
    the applicant it had worked.
 
 6. Save.
+
+### 4a. Set the sheet ID as a script property
+
+The sheet ID is deliberately **not** in `Code.gs`: this repository is public,
+and an internal identifier committed to git cannot be un-published.
+
+1. In the Apps Script editor, open **Project Settings** (the gear icon).
+2. Scroll to **Script Properties** and click **Add script property**.
+3. Property `ANSIR_SHEET_ID`, value = the ANSIR sheet ID, which is the part of
+   the sheet URL between `/d/` and `/edit`.
+4. Save.
+
+If it is missing, the endpoint throws a message naming the property rather
+than failing obscurely. Script properties belong to the deployment, not the
+code, so anyone forking this repository gets an inert copy until they supply
+their own sheet.
 
 ### The intake tab
 
