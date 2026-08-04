@@ -3510,6 +3510,15 @@
                     });
                 },
                 onSelect: function (profile) {
+                    // The name fields hold the SEARCH QUERY at this moment,
+                    // not data: choosing a person from the list means "this
+                    // is who I meant", so the partial letters are cleared and
+                    // both name fields complete from the selected profile.
+                    // Every other field keeps the never-overwrite rule.
+                    var given = contributorField(blockId, 'given');
+                    var family = contributorField(blockId, 'family');
+                    if (given) given.value = '';
+                    if (family) family.value = '';
                     autoFillContributor(profile, blockId);
                 }
             });
