@@ -1,0 +1,2520 @@
+<!DOCTYPE html>
+<!--
+    ANSIR Instrument Availability and Schedule - GitHub Pages version
+
+    Renders ../data/schedule.json, which is normalised from the "ANSIR Seismic
+    Fleet Status" Google Sheet by scripts/fetch-schedule.js on a daily GitHub
+    Action. This page contains no fleet data of its own: every number, name and
+    date on screen comes from that file.
+
+    Designed to be embedded as an iframe on https://www.auscope.org.au/ansir-schedule.
+    It posts its content height to the parent so the iframe auto-sizes with no
+    inner scrollbar, using the same convention as ../index.html and ../stats/index.html.
+
+    See docs/SCHEDULE_PAGE.md for how to embed it and docs/SCHEDULE_DATA.md for
+    the spreadsheet layout contract behind the JSON.
+-->
+<html lang="en-AU">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANSIR Instrument Availability and Schedule</title>
+    <meta name="description" content="Current availability of the Australian National Seismic Imaging Resource (ANSIR) seismic instrument fleet: what is available now, what is committed to which experiments, deployment dates, and rapid response capability.">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:title" content="ANSIR Instrument Availability and Schedule">
+    <meta property="og:description" content="What is available now from the ANSIR seismic instrument fleet, and what is committed where.">
+    <meta property="og:type" content="website">
+
+    <style>
+        /* ============================================ */
+        /* DESIGN SYSTEM: CSS Variables                 */
+        /* Names and values mirror ../index.html and    */
+        /* ../stats/index.html so the pages stay        */
+        /* visually identical.                          */
+        /* ============================================ */
+        :root {
+            /* Brand Colors */
+            --primary-bg: #282572;          /* AuScope brand purple */
+            --primary-hover: #1f1d5a;       /* Darker purple for hover states */
+            --white: #ffffff;
+
+            /* UI Colors */
+            --light-gray: #e9ecef;          /* Background for sections */
+            --medium-gray: #868e96;         /* Secondary text */
+            --border-color: #dee2e6;        /* Borders and dividers */
+            --text-color: #495057;          /* Primary text */
+            --background-light: #f2f2f1;    /* Page background - matches Squarespace */
+
+            /* Project Status Colors (as used on the projects page) */
+            --status-planning-bg: #fff3cd;
+            --status-planning-color: #856404;
+            --status-planning-marker: #ffc107;
+            --status-in-progress-bg: #e8dff5;
+            --status-in-progress-color: #4a2d7a;
+            --status-in-progress-marker: #6f42c1;
+            --status-complete-bg: #d4edda;
+            --status-complete-color: #155724;
+            --status-complete-marker: #28a745;
+
+            /* Typography */
+            --font-family: Arial, sans-serif;
+
+            /* Spacing System */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+
+            /* Border Radius */
+            --border-radius-sm: 3px;
+            --border-radius-md: 4px;
+            --border-radius-lg: 6px;
+            --border-radius-xl: 8px;
+
+            /* ---- Chart and status tokens (this page only) ---- */
+            /* Two categorical series carry the timeline: equipment physically in
+               the field, and equipment booked but not yet shipped. The pair was
+               checked with the dataviz palette validator against the white chart
+               surface and passes the lightness band, chroma floor, adjacent CVD
+               separation (protan dE 30.8, tritan 20.0), normal-vision separation
+               (dE 32.9) and the 3:1 contrast floor. --series-deployed is the same
+               indigo the projects page uses for "In Progress"; --series-reserved
+               is one step darker than the projects amber so it clears 3:1 on
+               white, which the lighter step did not. */
+            --series-deployed: #6f42c1;     /* indigo - in the field now */
+            --series-reserved: #b87b00;     /* amber  - booked, not yet shipped */
+            --series-available: #1e7e34;    /* green  - field-ready, not reserved */
+            --series-available-track: #e3efe6;
+            --today-color: #c0392b;         /* the today rule on the timeline */
+
+            /* Chart chrome and ink */
+            --chart-surface: #ffffff;
+            --chart-grid: #e7e7e4;          /* hairline gridline */
+            --chart-axis: #c9c9c4;          /* baseline / axis rule */
+            --chart-ink-muted: #6d6c68;     /* axis + label ink */
+            --chart-ink-strong: #262626;    /* values */
+            --focus-ring: #282572;
+
+            /* Notice band */
+            --notice-bg: #fff8e6;
+            --notice-border: #e8c76a;
+            --notice-ink: #6b5310;
+
+            /* Timeline geometry, mirrored in JS */
+            --row-height: 34px;
+        }
+
+        /* ============================================ */
+        /* BASE                                         */
+        /* ============================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* Explicit display values below would otherwise beat the hidden attribute */
+        [hidden] { display: none !important; }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-light);
+            color: var(--text-color);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* Never scroll the body sideways - wide content scrolls in its own box */
+            overflow-x: hidden;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--focus-ring);
+            outline-offset: 2px;
+            border-radius: var(--border-radius-sm);
+        }
+
+        a { color: var(--primary-bg); }
+        a:hover { color: var(--primary-hover); }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* ============================================ */
+        /* LAYOUT                                       */
+        /* ============================================ */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl) var(--spacing-md) 32px;
+        }
+
+        .page-header { margin-bottom: var(--spacing-xl); }
+
+        .page-header h1 {
+            font-size: clamp(1.35rem, 1.1rem + 1.1vw, 1.85rem);
+            line-height: 1.25;
+            color: var(--primary-bg);
+            font-weight: bold;
+        }
+
+        .page-header .lede {
+            margin-top: var(--spacing-sm);
+            max-width: 68ch;
+            font-size: 0.95rem;
+            color: var(--text-color);
+        }
+
+        .data-currency {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs) var(--spacing-md);
+            align-items: baseline;
+            margin-top: var(--spacing-md);
+            padding: 8px 12px;
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--primary-bg);
+            border-radius: var(--border-radius-lg);
+            font-size: 0.82rem;
+            color: var(--medium-gray);
+        }
+        .data-currency strong { color: var(--text-color); font-weight: bold; }
+
+        /* ============================================ */
+        /* SECTIONS + CARDS                             */
+        /* ============================================ */
+        .section { margin-top: 28px; }
+
+        .section > h2 {
+            font-size: 1.05rem;
+            color: var(--primary-bg);
+            margin-bottom: var(--spacing-xs);
+            font-weight: bold;
+        }
+
+        .section > .section-note {
+            font-size: 0.82rem;
+            color: var(--medium-gray);
+            margin-bottom: var(--spacing-md);
+            max-width: 74ch;
+        }
+
+        .card {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-lg);
+        }
+
+        .card h3 {
+            font-size: 0.95rem;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .card .card-note {
+            margin-top: 2px;
+            font-size: 0.78rem;
+            color: var(--medium-gray);
+        }
+
+        /* ============================================ */
+        /* HEADLINE + KPI TILES                         */
+        /* ============================================ */
+        .headline {
+            display: grid;
+            gap: var(--spacing-md);
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 780px) {
+            .headline { grid-template-columns: minmax(260px, 1.15fr) 2fr; align-items: stretch; }
+        }
+
+        .hero-tile {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-top: 3px solid var(--series-available);
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-lg);
+        }
+
+        .hero-value {
+            display: block;
+            /* Proportional figures: tabular-nums makes a big standalone number look loose */
+            font-family: var(--font-family);
+            font-size: clamp(2.6rem, 1.8rem + 4vw, 3.4rem);
+            font-weight: bold;
+            line-height: 1.05;
+            color: var(--series-available);
+        }
+        .hero-label {
+            display: block;
+            margin-top: var(--spacing-xs);
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        .hero-sub {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+        }
+
+        .kpi-grid {
+            display: grid;
+            gap: var(--spacing-md);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        @media (min-width: 620px) { .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+        .kpi {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-xl);
+            border-top: 3px solid var(--primary-bg);
+            padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+        }
+        .kpi.is-deployed { border-top-color: var(--series-deployed); }
+        .kpi.is-reserved { border-top-color: var(--series-reserved); }
+
+        .kpi .kpi-value {
+            display: block;
+            font-size: clamp(1.45rem, 1.1rem + 1.5vw, 1.9rem);
+            font-weight: bold;
+            line-height: 1.1;
+            color: var(--primary-bg);
+        }
+        .kpi .kpi-label {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        .kpi .kpi-sub {
+            display: block;
+            margin-top: 2px;
+            font-size: 0.72rem;
+            color: var(--medium-gray);
+        }
+
+        /* ============================================ */
+        /* NOTICES                                      */
+        /* ============================================ */
+        .notice {
+            background: var(--notice-bg);
+            border: 1px solid var(--notice-border);
+            border-left: 4px solid var(--notice-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+            font-size: 0.84rem;
+            color: var(--notice-ink);
+        }
+        .notice h2 {
+            font-size: 0.88rem;
+            font-weight: bold;
+            color: var(--notice-ink);
+            margin-bottom: var(--spacing-xs);
+        }
+        .notice ul { margin: var(--spacing-sm) 0 0 var(--spacing-xl); }
+        .notice li + li { margin-top: var(--spacing-xs); }
+        .notice .notice-tail { margin-top: var(--spacing-sm); }
+
+        /* ============================================ */
+        /* CATEGORY ACCORDIONS                          */
+        /* ============================================ */
+        details.category {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-xl);
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+        }
+
+        details.category > summary {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--spacing-xs) var(--spacing-md);
+            cursor: pointer;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--light-gray);
+            list-style: none;
+            font-weight: bold;
+            color: var(--primary-bg);
+        }
+        details.category > summary::-webkit-details-marker { display: none; }
+        details.category > summary::marker { content: ''; }
+        details.category > summary:hover { background: #e0e3e6; }
+        details.category > summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+
+        .cat-chevron {
+            width: 9px; height: 9px;
+            flex: 0 0 auto;
+            border-right: 2px solid var(--primary-bg);
+            border-bottom: 2px solid var(--primary-bg);
+            transform: rotate(45deg);
+            transition: transform 150ms ease;
+            margin-right: var(--spacing-xs);
+            position: relative;
+            top: -2px;
+        }
+        details.category[open] > summary .cat-chevron { transform: rotate(-135deg); top: 1px; }
+
+        .cat-name { font-size: 0.95rem; }
+        .cat-meta {
+            font-weight: normal;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            margin-left: auto;
+        }
+        .cat-meta b { color: var(--series-available); }
+
+        .cat-body {
+            padding: var(--spacing-lg);
+            display: grid;
+            gap: var(--spacing-md);
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 720px) { .cat-body { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (min-width: 1060px) { .cat-body { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+        /* ============================================ */
+        /* INSTRUMENT CARDS                             */
+        /* ============================================ */
+        .instrument {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+        }
+        .instrument.is-none { background: #fbfbfa; }
+
+        .instrument h4 {
+            font-size: 0.88rem;
+            font-weight: bold;
+            color: var(--text-color);
+            line-height: 1.35;
+        }
+
+        .avail-line {
+            display: flex;
+            align-items: baseline;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+        .avail-value {
+            font-size: 1.9rem;
+            font-weight: bold;
+            line-height: 1;
+            color: var(--series-available);
+        }
+        .instrument.is-none .avail-value { color: var(--medium-gray); }
+        .avail-caption { font-size: 0.78rem; color: var(--medium-gray); }
+
+        .meter {
+            margin-top: var(--spacing-sm);
+            height: 8px;
+            border-radius: 4px;
+            background: var(--series-available-track);
+            overflow: hidden;
+        }
+        .meter > span {
+            display: block;
+            height: 100%;
+            border-radius: 4px;
+            background: var(--series-available);
+        }
+
+        .inst-stats {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs) var(--spacing-md);
+            margin-top: var(--spacing-sm);
+            font-size: 0.75rem;
+            color: var(--medium-gray);
+        }
+        .inst-stats b { color: var(--text-color); font-variant-numeric: tabular-nums; }
+
+        .alloc-heading {
+            margin-top: var(--spacing-md);
+            font-size: 0.72rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--medium-gray);
+        }
+
+        table.alloc-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: var(--spacing-xs);
+            font-size: 0.76rem;
+        }
+        table.alloc-table th {
+            text-align: left;
+            font-weight: bold;
+            color: var(--medium-gray);
+            font-size: 0.7rem;
+            padding: 0 6px 3px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        table.alloc-table td {
+            padding: 5px 6px 5px 0;
+            border-bottom: 1px solid var(--light-gray);
+            vertical-align: top;
+        }
+        table.alloc-table tr:last-child td { border-bottom: none; }
+        table.alloc-table th.num, table.alloc-table td.num {
+            text-align: right;
+            padding-right: var(--spacing-sm);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        table.alloc-table td.num b { color: var(--chart-ink-strong); }
+        table.alloc-table td.date { white-space: nowrap; color: var(--medium-gray); }
+        .alloc-name { color: var(--text-color); }
+        .alloc-code {
+            display: block;
+            font-size: 0.68rem;
+            color: var(--medium-gray);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .empty-note {
+            margin-top: var(--spacing-md);
+            font-size: 0.76rem;
+            color: var(--medium-gray);
+        }
+
+        /* A stock annotation carried on the instrument name in the sheet, for
+           example "+50 units in production". Quiet: it qualifies the name, it is
+           not a status. */
+        .inst-note {
+            margin-top: 2px;
+            font-size: 0.74rem;
+            color: var(--medium-gray);
+        }
+
+        /* ============================================ */
+        /* PILLS                                        */
+        /* ============================================ */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            font-weight: bold;
+            line-height: 1.4;
+            padding: 1px 7px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        .pill::before {
+            content: '';
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            flex: 0 0 auto;
+        }
+        .pill-deployed { background: var(--status-in-progress-bg); color: #4a2d7a; }
+        .pill-reserved { background: #fbf0da; color: #7a5200; }
+        .pill-tentative {
+            background: repeating-linear-gradient(135deg, #fbf0da, #fbf0da 4px, #f4e3c2 4px, #f4e3c2 8px);
+            color: #7a5200;
+            border: 1px dashed var(--notice-border);
+        }
+        .pill-tentative::before { background: none; border: 1.5px dashed currentColor; }
+
+        /* ============================================ */
+        /* TIMELINE                                     */
+        /* ============================================ */
+        .timeline-wrap {
+            display: flex;
+            align-items: flex-start;
+            margin-top: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+        }
+
+        /* The name gutter is the timeline's direct labelling, so it never scrolls
+           away. It gives up width first on a phone, where the plot needs it more. */
+        .timeline-names {
+            flex: 0 0 auto;
+            width: 122px;
+            background: var(--chart-surface);
+            border-right: 1px solid var(--border-color);
+        }
+        @media (min-width: 500px) { .timeline-names { width: 158px; } }
+        @media (min-width: 620px) { .timeline-names { width: 210px; } }
+
+        .timeline-names .names-head {
+            border-bottom: 1px solid var(--chart-axis);
+        }
+
+        .name-row {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: var(--row-height);
+            padding: 0 var(--spacing-sm) 0 var(--spacing-md);
+            border-bottom: 1px solid var(--chart-grid);
+            overflow: hidden;
+        }
+        .name-row:last-child { border-bottom: none; }
+        .name-row .n-main {
+            font-size: 0.78rem;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .name-row .n-sub {
+            font-size: 0.66rem;
+            color: var(--medium-gray);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Wide plots scroll inside their own container, never the page */
+        .timeline-plot {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            background: var(--chart-surface);
+        }
+        .timeline-plot:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+
+        svg.chart { display: block; }
+        svg.chart text { font-family: var(--font-family); }
+        svg.chart .bar-group { cursor: default; outline: none; }
+        svg.chart .focus-halo { opacity: 0; fill: none; stroke: var(--focus-ring); stroke-width: 2; }
+        svg.chart .bar-group:focus-visible .focus-halo,
+        svg.chart .bar-group.is-active .focus-halo { opacity: 1; }
+
+        .scroll-hint {
+            margin-top: 6px;
+            font-size: 0.74rem;
+            color: var(--medium-gray);
+        }
+
+        /* Legend - always present for two or more series */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm) var(--spacing-lg);
+            margin-top: var(--spacing-md);
+            font-size: 0.78rem;
+            color: var(--text-color);
+        }
+        .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+
+        /* The same legend pattern, defining the status pills used on the
+           instrument cards below it. */
+        .pill-legend {
+            margin-top: 0;
+            margin-bottom: var(--spacing-md);
+            font-size: 0.76rem;
+            color: var(--medium-gray);
+        }
+        .legend-swatch { width: 14px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+        .legend-rule { width: 3px; height: 14px; border-radius: 1px; flex: 0 0 auto; }
+
+        /* ============================================ */
+        /* TOOLTIP                                      */
+        /* ============================================ */
+        .viz-tip {
+            position: fixed;
+            z-index: 50;
+            max-width: 260px;
+            padding: 8px 10px;
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+            font-size: 0.78rem;
+            color: var(--text-color);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(2px);
+            transition: opacity 120ms ease, transform 120ms ease;
+        }
+        .viz-tip[data-open="true"] { opacity: 1; transform: translateY(0); }
+        .viz-tip .tip-title {
+            display: block;
+            font-weight: bold;
+            color: var(--chart-ink-strong);
+            line-height: 1.25;
+        }
+        .viz-tip .tip-line { display: block; margin-top: 3px; }
+        .viz-tip .tip-line b { color: var(--chart-ink-strong); }
+
+        /* ============================================ */
+        /* DATA TABLES (the accessible twin of a chart) */
+        /* ============================================ */
+        details.table-view { margin-top: var(--spacing-md); }
+        details.table-view > summary {
+            display: inline-block;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--primary-bg);
+            font-weight: bold;
+            padding: 4px 2px;
+            border-radius: var(--border-radius-sm);
+        }
+        details.table-view > summary:hover { color: var(--primary-hover); text-decoration: underline; }
+
+        .table-scroll { overflow-x: auto; margin-top: var(--spacing-sm); }
+
+        table.data-table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 520px;
+            font-size: 0.78rem;
+        }
+        table.data-table caption {
+            text-align: left;
+            font-size: 0.76rem;
+            color: var(--medium-gray);
+            padding-bottom: 6px;
+        }
+        table.data-table th, table.data-table td {
+            text-align: left;
+            padding: 6px 12px 6px 0;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+        table.data-table th { color: var(--text-color); font-weight: bold; }
+        table.data-table td.num, table.data-table th.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            padding-right: 0;
+        }
+        table.data-table td.date { white-space: nowrap; }
+
+        /* ============================================ */
+        /* EXPERIMENT CARDS                             */
+        /* ============================================ */
+        .exp-grid {
+            display: grid;
+            gap: var(--spacing-md);
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 780px) { .exp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+        .exp-card {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--series-deployed);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+        .exp-card.is-reserved { border-left-color: var(--series-reserved); }
+
+        .exp-card h3 {
+            font-size: 0.95rem;
+            color: var(--primary-bg);
+            font-weight: bold;
+        }
+        .exp-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-top: 5px;
+        }
+        .exp-code {
+            font-size: 0.74rem;
+            color: var(--medium-gray);
+            font-variant-numeric: tabular-nums;
+        }
+        .exp-dates {
+            margin-top: var(--spacing-sm);
+            font-size: 0.8rem;
+            color: var(--text-color);
+        }
+        .exp-dates b { font-weight: bold; }
+        .exp-commit {
+            margin-top: var(--spacing-sm);
+            font-size: 0.8rem;
+            color: var(--text-color);
+        }
+        .exp-commit strong { color: var(--chart-ink-strong); }
+        .exp-loans {
+            list-style: none;
+            margin-top: 6px;
+            font-size: 0.76rem;
+            color: var(--medium-gray);
+        }
+        .exp-loans li { padding: 2px 0; }
+        .exp-loans b { color: var(--text-color); font-variant-numeric: tabular-nums; }
+
+        details.exp-about { margin-top: var(--spacing-md); }
+        details.exp-about > summary {
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: bold;
+            color: var(--primary-bg);
+            padding: 2px;
+            border-radius: var(--border-radius-sm);
+        }
+        details.exp-about > summary:hover { text-decoration: underline; }
+        details.exp-about .about-body { margin-top: var(--spacing-sm); font-size: 0.78rem; }
+        details.exp-about .about-body p + p { margin-top: var(--spacing-sm); }
+        details.exp-about .about-body .about-label {
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        /* ============================================ */
+        /* RAPID RESPONSE                               */
+        /* ============================================ */
+        .rr-grid {
+            display: grid;
+            gap: var(--spacing-md);
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 780px) { .rr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+        .rr-card {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--today-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+        .rr-card h3 { font-size: 0.9rem; color: var(--primary-bg); font-weight: bold; }
+        .rr-meta { margin-top: 4px; font-size: 0.78rem; color: var(--medium-gray); }
+        .rr-dl {
+            margin-top: var(--spacing-sm);
+            font-size: 0.78rem;
+            display: grid;
+            grid-template-columns: max-content 1fr;
+            gap: 4px var(--spacing-md);
+        }
+        .rr-dl dt { color: var(--medium-gray); }
+        .rr-dl dd { color: var(--text-color); }
+
+        /* ============================================ */
+        /* STATES                                       */
+        /* ============================================ */
+        .state-box {
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-xl);
+            padding: 28px var(--spacing-xl);
+            text-align: center;
+        }
+        .state-box h2 {
+            font-size: 1rem;
+            color: var(--primary-bg);
+            margin-bottom: var(--spacing-sm);
+        }
+        .state-box p {
+            font-size: 0.88rem;
+            color: var(--text-color);
+            max-width: 60ch;
+            margin: 0 auto var(--spacing-md);
+        }
+        .state-box .detail {
+            font-size: 0.78rem;
+            color: var(--medium-gray);
+            word-break: break-word;
+        }
+        .retry-button {
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            background: var(--primary-bg);
+            color: var(--white);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: 9px 18px;
+            cursor: pointer;
+        }
+        .retry-button:hover { background: var(--primary-hover); }
+
+        .spinner {
+            width: 30px; height: 30px;
+            margin: 0 auto var(--spacing-md);
+            border: 3px solid var(--light-gray);
+            border-top-color: var(--primary-bg);
+            border-radius: 50%;
+            animation: spin 900ms linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+            .spinner { animation: none; border-top-color: var(--primary-bg); }
+        }
+
+        .page-footer {
+            margin-top: 32px;
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.76rem;
+            color: var(--medium-gray);
+        }
+        .page-footer p + p { margin-top: var(--spacing-xs); }
+        .page-footer .footer-note { margin-top: var(--spacing-xs); }
+        .page-footer a { word-break: break-word; }
+
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @media print {
+            body { background: var(--white); }
+            .timeline-plot { overflow: visible; }
+            details.table-view[open] > summary { display: none; }
+            details.category { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+
+    <header class="page-header">
+        <h1>ANSIR instrument availability and schedule</h1>
+        <p class="lede">
+            What ANSIR's seismic fleet - recorders, seismometers and fibre-optic sensing - has
+            available now, what is committed to which experiments, and when instruments are due
+            back. Researchers planning an application should read the availability figures first,
+            then check the deployment timeline for the window they need.
+            <!-- Delete this sentence when the Fleet Status sheet gains MT rows - the categories below render whatever the sheet contains. -->
+            Magnetotelluric (MT) instruments are managed separately; email
+            <a href="mailto:ansir@anu.edu.au">ansir@anu.edu.au</a> to discuss MT availability.
+        </p>
+        <p class="data-currency" id="data-currency" hidden>
+            <span>Availability as of <strong id="as-of-date">-</strong></span>
+            <span id="synced-wrap" hidden>Last synced from the source sheet <strong id="synced-date">-</strong></span>
+            <span><a id="source-link" href="#" rel="noopener">View the source spreadsheet</a></span>
+        </p>
+    </header>
+
+    <!-- Loading state -->
+    <div id="loading-state" class="state-box" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Loading the instrument schedule.</p>
+    </div>
+
+    <!-- Error state. The fallback link is hardcoded so it still works when the fetch fails. -->
+    <div id="error-state" class="state-box" role="alert" hidden>
+        <h2>The instrument schedule could not be loaded</h2>
+        <p>
+            The fleet data file did not load, so availability figures cannot be shown here.
+            This is usually temporary.
+        </p>
+        <p>
+            The authoritative source is the ANSIR Seismic Fleet Status spreadsheet, which you can
+            read directly:
+            <a id="fallback-source-link" href="#" rel="noopener">open the ANSIR Seismic Fleet Status sheet</a>.
+        </p>
+        <p>
+            To discuss instruments and availability, email
+            <a href="mailto:ansir@anu.edu.au">ansir@anu.edu.au</a>.
+        </p>
+        <p><button type="button" class="retry-button" id="retry-button">Try again</button></p>
+        <p class="detail" id="error-detail"></p>
+    </div>
+
+    <!-- Schedule -->
+    <main id="schedule-root" hidden>
+
+        <section class="section" aria-labelledby="h-headline">
+            <h2 id="h-headline">Availability at a glance</h2>
+            <p class="section-note" id="headline-note"></p>
+            <div class="headline">
+                <div class="hero-tile">
+                    <span class="hero-value" id="hero-available">-</span>
+                    <span class="hero-label">instruments available</span>
+                    <span class="hero-sub" id="hero-sub"></span>
+                </div>
+                <div class="kpi-grid" id="kpi-grid"></div>
+            </div>
+
+            <!-- Data-quality notice, populated only when the source file carries
+                 warnings. It sits below the figures it qualifies, so the answer
+                 comes first and the caveat second. -->
+            <div class="notice" id="warnings-box" role="note" hidden>
+                <h2 id="warnings-heading">Notes on the source data</h2>
+                <p>
+                    The following were recorded when this data was last read from the spreadsheet.
+                    The figures here are shown exactly as the sheet records them and have not been
+                    adjusted to make them agree.
+                </p>
+                <ul id="warnings-list"></ul>
+                <p class="notice-tail">
+                    For a definitive figure on any instrument type, contact ANSIR directly.
+                </p>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="h-categories">
+            <h2 id="h-categories">Availability by instrument type</h2>
+            <p class="section-note">
+                Every instrument type in the fleet, grouped as the source sheet groups them.
+                The large figure is the number field-ready and not reserved. Select a heading to
+                collapse or expand a group.
+            </p>
+            <div class="legend pill-legend">
+                <span class="legend-item">
+                    <span class="pill pill-deployed">Deployed</span> in the field now
+                </span>
+                <span class="legend-item">
+                    <span class="pill pill-reserved">Reserved</span> approved project, not yet shipped
+                </span>
+                <span class="legend-item">
+                    <span class="pill pill-tentative">EOI</span> expression of interest - not an approved project
+                </span>
+            </div>
+            <div id="categories"></div>
+        </section>
+
+        <section class="section" aria-labelledby="h-timeline">
+            <h2 id="h-timeline">Deployment timeline</h2>
+            <p class="section-note" id="timeline-note"></p>
+            <div class="card">
+                <h3>Current and approved deployments</h3>
+                <p class="card-note" id="timeline-caption"></p>
+                <div class="legend" id="timeline-legend"></div>
+                <div class="timeline-wrap">
+                    <div class="timeline-names" id="timeline-names"></div>
+                    <div class="timeline-plot" id="timeline-plot" tabindex="0" role="group"
+                         aria-label="Deployment timeline, scrollable horizontally"></div>
+                </div>
+                <p class="scroll-hint" id="timeline-hint" hidden>Scroll sideways to see the full date range.</p>
+                <details class="table-view">
+                    <summary>Show data table</summary>
+                    <div class="table-scroll" id="timeline-table"></div>
+                </details>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="h-experiments">
+            <h2 id="h-experiments">Experiments holding instruments</h2>
+            <p class="section-note" id="experiments-note"></p>
+            <div class="exp-grid" id="experiments"></div>
+        </section>
+
+        <section class="section" aria-labelledby="h-rapid">
+            <h2 id="h-rapid">Rapid response deployments</h2>
+            <p class="section-note">
+                ANSIR holds capacity to deploy instruments at short notice following a significant
+                earthquake. These are the deployments made under that arrangement.
+            </p>
+            <div class="rr-grid" id="rapid-response"></div>
+            <p class="section-note" id="rapid-empty" hidden>
+                No rapid response deployments are currently recorded.
+            </p>
+        </section>
+
+        <footer class="page-footer">
+            <p>
+                ANSIR, the Australian National Seismic Imaging Resource, is a research facility of
+                AuScope, funded under the National Collaborative Research Infrastructure Strategy (NCRIS).
+            </p>
+            <!-- Eligibility, the application terms link and the ANSIR contact address.
+                 Written by buildFooter from the notes below the fleet table in the
+                 source sheet, with a fixed fallback if the sheet ever drops them. -->
+            <div id="footer-terms"></div>
+            <p id="footer-currency"></p>
+        </footer>
+
+    </main>
+
+</div>
+
+<div class="viz-tip" id="viz-tip" role="status" aria-live="off" aria-hidden="true"></div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ============================================ */
+    /* CONFIGURATION                                */
+    /* ============================================ */
+
+    // Static JSON normalised from the "ANSIR Seismic Fleet Status" sheet by
+    // scripts/fetch-schedule.js and committed to this repository.
+    var DATA_URL = '../data/schedule.json';
+
+    // Where to send someone when the data file will not load. Hardcoded because
+    // sourceUrl lives inside the file we just failed to read.
+    var FALLBACK_SOURCE_URL =
+        'https://docs.google.com/spreadsheets/d/e/2PACX-1vRyK1XUmYMXIHt-5BWhoZchVtMD3Lxtgqi69WoxEuWgUem7Ob_VzdG8L1OHlBjD7g/pub';
+
+    // Squarespace parent page where this iframe is embedded. The parent listener
+    // on that page already watches for an iframe with id "ansir-schedule".
+    var SQUARESPACE_PARENT_URL = 'https://www.auscope.org.au/ansir-schedule';
+
+    // Origin derived from the parent URL, used to target postMessage.
+    var PARENT_ORIGIN = (function () {
+        try {
+            return new URL(SQUARESPACE_PARENT_URL).origin;
+        } catch (e) {
+            return '*';
+        }
+    })();
+
+    // Detect if we are running inside an iframe
+    var IS_EMBEDDED = (window !== window.top);
+
+    // Timeline geometry. ROW_H is mirrored by --row-height in the stylesheet so
+    // the HTML name column and the SVG rows stay on the same grid.
+    var ROW_H = 34;
+    var AXIS_H = 42;
+    var BAR_H = 16;          // <= 24px per the mark spec
+    var BAR_R = 4;           // 4px rounded data-ends
+    var PLOT_PAD_R = 16;
+    var MONTH_W_MIN = 18;
+    var MONTH_W_MAX = 40;
+
+    // How far back the timeline axis starts, at most, relative to today. A long
+    // running deployment that began before this is drawn clipped at the left
+    // edge with a square end, and its true start date is given in the row label,
+    // the tooltip and the table. Without this clamp one 2018 deployment would
+    // stretch the axis over eight mostly empty years.
+    var MONTHS_BACK = 18;
+
+    /* ============================================ */
+    /* SMALL HELPERS                                */
+    /* ============================================ */
+
+    function byId(id) { return document.getElementById(id); }
+
+    function el(tag, className, textContent) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (textContent !== undefined && textContent !== null) {
+            node.appendChild(document.createTextNode(String(textContent)));
+        }
+        return node;
+    }
+
+    function clear(node) {
+        while (node.firstChild) node.removeChild(node.firstChild);
+    }
+
+    function text(value) {
+        return (value === null || value === undefined) ? '' : String(value).trim();
+    }
+
+    // A number we are willing to print. Anything else prints as a dash, because
+    // the parser writes null for a cell it could not read as a whole number.
+    function isNum(value) {
+        return typeof value === 'number' && isFinite(value);
+    }
+
+    function num(value) {
+        return isNum(value) ? value : 0;
+    }
+
+    function formatNumber(value) {
+        if (!isNum(value)) return '-';
+        return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function plural(count, singular, pluralForm) {
+        return count === 1 ? singular : (pluralForm || singular + 's');
+    }
+
+    var MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+    var MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // Format an ISO prefix by its own parts. Deliberately not via Date parsing:
+    // new Date('2026-07-21') is UTC midnight, which renders as 20 July in any
+    // timezone behind UTC.
+    function formatIso(iso, style) {
+        var parts = text(iso).split('-');
+        if (!parts[0]) return '';
+        var months = (style === 'short') ? MONTHS_SHORT : MONTHS_LONG;
+        var year = parts[0];
+        if (parts.length === 1) return year;
+        var mi = parseInt(parts[1], 10) - 1;
+        if (!(mi >= 0 && mi < 12)) return year;
+        if (parts.length === 2) return months[mi] + ' ' + year;
+        var day = parseInt(parts[2], 10);
+        if (!isFinite(day)) return months[mi] + ' ' + year;
+        return day + ' ' + months[mi] + ' ' + year;
+    }
+
+    // A date object from the JSON: { raw, iso, precision, tentative }. The whole
+    // object may also be null, which several historical rows are.
+    function formatDateObj(dateObj, style) {
+        if (!dateObj) return 'Not recorded';
+        if (!dateObj.iso) {
+            if (dateObj.tentative) return 'To be confirmed';
+            return text(dateObj.raw) || 'Not recorded';
+        }
+        return formatIso(dateObj.iso, style);
+    }
+
+    function daysInMonth(year, month1) {
+        return new Date(Date.UTC(year, month1, 0)).getUTCDate();
+    }
+
+    // Position on a continuous month scale. isEnd pushes a month-precision or
+    // year-precision value to the end of its period, so "out 06-2026, due
+    // 09-2026" spans four whole months rather than three.
+    function monthPos(dateObj, isEnd) {
+        if (!dateObj || !dateObj.iso) return null;
+        var parts = text(dateObj.iso).split('-');
+        var year = parseInt(parts[0], 10);
+        if (!isFinite(year)) return null;
+        if (parts.length === 1) {
+            return isEnd ? (year * 12 + 12) : (year * 12);
+        }
+        var month1 = parseInt(parts[1], 10);
+        if (!(month1 >= 1 && month1 <= 12)) return null;
+        var base = year * 12 + (month1 - 1);
+        if (parts.length === 2) return isEnd ? base + 1 : base;
+        var day = parseInt(parts[2], 10);
+        if (!isFinite(day)) return isEnd ? base + 1 : base;
+        return base + (day - 1) / daysInMonth(year, month1);
+    }
+
+    function todayPos() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month1 = now.getMonth() + 1;
+        return year * 12 + (month1 - 1) + (now.getDate() - 1) / daysInMonth(year, month1);
+    }
+
+    function todayIso() {
+        var now = new Date();
+        var mm = now.getMonth() + 1;
+        var dd = now.getDate();
+        return now.getFullYear() + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd;
+    }
+
+    // Turn bare URLs and email addresses in a note into links, without ever
+    // assigning data to innerHTML.
+    var LINKIFY = /(https?:\/\/[^\s<>()]+[^\s<>().,;:])|([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+
+    function appendLinkified(parent, str) {
+        var source = text(str);
+        var lastIndex = 0;
+        var match;
+        LINKIFY.lastIndex = 0;
+        while ((match = LINKIFY.exec(source)) !== null) {
+            if (match.index > lastIndex) {
+                parent.appendChild(document.createTextNode(source.slice(lastIndex, match.index)));
+            }
+            var anchor = document.createElement('a');
+            if (match[1]) {
+                anchor.href = match[1];
+                anchor.rel = 'noopener';
+            } else {
+                anchor.href = 'mailto:' + match[2];
+            }
+            anchor.appendChild(document.createTextNode(match[0]));
+            parent.appendChild(anchor);
+            lastIndex = match.index + match[0].length;
+        }
+        if (lastIndex < source.length) {
+            parent.appendChild(document.createTextNode(source.slice(lastIndex)));
+        }
+    }
+
+    /* ============================================ */
+    /* SVG HELPERS                                  */
+    /* ============================================ */
+
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+
+    function svgEl(name, attrs) {
+        var node = document.createElementNS(SVG_NS, name);
+        if (attrs) for (var k in attrs) {
+            if (Object.prototype.hasOwnProperty.call(attrs, k) && attrs[k] !== null && attrs[k] !== undefined) {
+                node.setAttribute(k, String(attrs[k]));
+            }
+        }
+        return node;
+    }
+
+    function svgText(str, attrs) {
+        var node = svgEl('text', attrs);
+        node.appendChild(document.createTextNode(String(str)));
+        return node;
+    }
+
+    // A horizontal range bar. Ends are rounded where the date is real and square
+    // where the bar has been clipped by the axis domain, which reads as
+    // "continues beyond this edge".
+    function rangeBarPath(x1, x2, y, h, r, roundLeft, roundRight) {
+        var w = Math.max(2, x2 - x1);
+        var rad = Math.max(0, Math.min(r, w / 2, h / 2));
+        var rl = roundLeft ? rad : 0;
+        var rr = roundRight ? rad : 0;
+        var right = x1 + w;
+        return 'M' + (x1 + rl) + ',' + y +
+            'H' + (right - rr) +
+            (rr ? ('A' + rr + ',' + rr + ' 0 0 1 ' + right + ',' + (y + rr)) : ('V' + y)) +
+            'V' + (y + h - rr) +
+            (rr ? ('A' + rr + ',' + rr + ' 0 0 1 ' + (right - rr) + ',' + (y + h)) : ('V' + (y + h))) +
+            'H' + (x1 + rl) +
+            (rl ? ('A' + rl + ',' + rl + ' 0 0 1 ' + x1 + ',' + (y + h - rl)) : ('V' + (y + h))) +
+            'V' + (y + rl) +
+            (rl ? ('A' + rl + ',' + rl + ' 0 0 1 ' + (x1 + rl) + ',' + y) : ('V' + y)) +
+            'Z';
+    }
+
+    /* ============================================ */
+    /* TOOLTIP                                      */
+    /* ============================================ */
+
+    var tip = byId('viz-tip');
+    var tipOwner = null;
+
+    function showTip(owner, lines, event) {
+        clear(tip);
+        var title = el('span', 'tip-title', lines.title);
+        tip.appendChild(title);
+        for (var i = 0; i < lines.rows.length; i++) {
+            var row = el('span', 'tip-line');
+            row.appendChild(document.createTextNode(lines.rows[i].label + ' '));
+            row.appendChild(el('b', null, lines.rows[i].value));
+            tip.appendChild(row);
+        }
+        tip.setAttribute('data-open', 'true');
+        tip.setAttribute('aria-hidden', 'false');
+        tipOwner = owner;
+        positionTip(event, owner);
+    }
+
+    function positionTip(event, owner) {
+        var x, y;
+        if (event && typeof event.clientX === 'number' && event.clientX) {
+            x = event.clientX + 14;
+            y = event.clientY + 16;
+        } else if (owner && owner.getBoundingClientRect) {
+            var box = owner.getBoundingClientRect();
+            x = box.left + 8;
+            y = box.bottom + 8;
+        } else {
+            return;
+        }
+        var w = tip.offsetWidth || 200;
+        var h = tip.offsetHeight || 80;
+        if (x + w > window.innerWidth - 8) x = Math.max(8, window.innerWidth - w - 8);
+        if (y + h > window.innerHeight - 8) y = Math.max(8, y - h - 28);
+        tip.style.left = x + 'px';
+        tip.style.top = y + 'px';
+    }
+
+    function hideTip(owner) {
+        if (owner && tipOwner && owner !== tipOwner) return;
+        tip.setAttribute('data-open', 'false');
+        tip.setAttribute('aria-hidden', 'true');
+        tipOwner = null;
+    }
+
+    /* ============================================ */
+    /* DERIVED FIGURES                              */
+    /* All of these are sums of published values.   */
+    /* Nothing here reconciles one figure against   */
+    /* another: where the sheet disagrees with      */
+    /* itself, both numbers are shown as recorded.  */
+    /* ============================================ */
+
+    function allInstruments(payload) {
+        var out = [];
+        var categories = payload.categories || [];
+        for (var c = 0; c < categories.length; c++) {
+            var instruments = categories[c].instruments || [];
+            for (var i = 0; i < instruments.length; i++) out.push(instruments[i]);
+        }
+        return out;
+    }
+
+    function summarise(payload) {
+        var instruments = allInstruments(payload);
+        var s = {
+            instrumentTypes: instruments.length,
+            fleet: 0,
+            available: 0,
+            onLoan: 0,
+            testing: 0,
+            repair: 0,
+            reserved: 0,
+            unnamedInterest: 0,
+            tentativeAllocations: 0
+        };
+        for (var i = 0; i < instruments.length; i++) {
+            var inst = instruments[i];
+            s.fleet += num(inst.totalFleet);
+            s.available += num(inst.available);
+            s.onLoan += num(inst.onLoan);
+            s.testing += num(inst.testing);
+            s.repair += num(inst.repair);
+            s.unnamedInterest += num(inst.unnamedInterest);
+            var allocations = inst.allocations || [];
+            for (var a = 0; a < allocations.length; a++) {
+                var alloc = allocations[a];
+                if (alloc.tentative) s.tentativeAllocations++;
+                if (alloc.status === 'reserved' && isNum(alloc.count)) s.reserved += alloc.count;
+            }
+        }
+        // Prefer the file's own fleet total where it has one, so the headline
+        // figure is the sheet's, not ours.
+        if (payload.totals && isNum(payload.totals.fleetInstruments)) {
+            s.fleet = payload.totals.fleetInstruments;
+        }
+        return s;
+    }
+
+    // Roll the per-instrument allocations up per experiment, so an experiment
+    // card can say what it holds without a second pass in the markup.
+    function commitmentsByExperiment(payload) {
+        var map = {};
+        var instruments = allInstruments(payload);
+        for (var i = 0; i < instruments.length; i++) {
+            var inst = instruments[i];
+            var allocations = inst.allocations || [];
+            for (var a = 0; a < allocations.length; a++) {
+                var alloc = allocations[a];
+                var key = text(alloc.experiment);
+                if (!key) continue;
+                if (!map[key]) map[key] = { total: 0, anyTentative: false, rows: [] };
+                map[key].rows.push({
+                    instrument: inst.name,
+                    count: alloc.count,
+                    tentative: !!alloc.tentative
+                });
+                if (alloc.tentative) map[key].anyTentative = true;
+                if (isNum(alloc.count)) map[key].total += alloc.count;
+            }
+        }
+        return map;
+    }
+
+    function supportedByCode(payload) {
+        var map = {};
+        var list = payload.supportedExperiments || [];
+        for (var i = 0; i < list.length; i++) {
+            var code = text(list[i].ansirCode);
+            if (code && !map[code]) map[code] = list[i];
+        }
+        return map;
+    }
+
+    /* ============================================ */
+    /* RENDER: HEADLINE                             */
+    /* ============================================ */
+
+    // The three labels defined in the legend above the instrument cards. EOI is
+    // an expression of interest: someone has asked, no project has been approved.
+    function statusPill(status, tentative) {
+        if (tentative) return el('span', 'pill pill-tentative', 'EOI');
+        if (status === 'reserved') return el('span', 'pill pill-reserved', 'Reserved');
+        return el('span', 'pill pill-deployed', 'Deployed');
+    }
+
+    function buildHeadline(payload, summary) {
+        byId('hero-available').textContent = formatNumber(summary.available);
+
+        var sub = 'of ' + formatNumber(summary.fleet) + ' instruments in the fleet, across ' +
+            formatNumber(summary.instrumentTypes) + ' ' + plural(summary.instrumentTypes, 'type') + '.';
+        if (payload.definitions && text(payload.definitions.totalAvailable)) {
+            sub += ' ' + text(payload.definitions.totalAvailable);
+        }
+        byId('hero-sub').textContent = sub;
+
+        var tiles = [
+            {
+                value: summary.onLoan,
+                label: 'On loan',
+                sub: 'in the field with an experiment',
+                cls: 'kpi is-deployed'
+            },
+            {
+                value: summary.reserved,
+                label: 'Reserved',
+                sub: 'committed to approved projects not yet in the field',
+                cls: 'kpi is-reserved'
+            },
+            {
+                value: summary.testing,
+                label: 'In testing',
+                sub: 'being checked before or after a deployment',
+                cls: 'kpi'
+            },
+            {
+                value: summary.repair,
+                label: 'Under repair',
+                sub: 'not currently field-ready',
+                cls: 'kpi'
+            }
+        ];
+
+        var grid = byId('kpi-grid');
+        clear(grid);
+        for (var i = 0; i < tiles.length; i++) {
+            var tile = el('div', tiles[i].cls);
+            tile.appendChild(el('span', 'kpi-value', formatNumber(tiles[i].value)));
+            tile.appendChild(el('span', 'kpi-label', tiles[i].label));
+            tile.appendChild(el('span', 'kpi-sub', tiles[i].sub));
+            grid.appendChild(tile);
+        }
+
+        byId('headline-note').textContent =
+            'Available, On loan, In testing and Under repair are each the sum of that column in the ' +
+            'source spreadsheet. The columns are maintained independently, so they are not expected ' +
+            'to add up to the fleet total. Reserved is different: it is the sum of the instrument ' +
+            'bookings to approved projects listed in the tables below.';
+    }
+
+    /* ============================================ */
+    /* RENDER: AVAILABILITY BY CATEGORY             */
+    /* ============================================ */
+
+    function buildAllocationTable(inst) {
+        var allocations = inst.allocations || [];
+        var table = el('table', 'alloc-table');
+
+        var thead = el('thead');
+        var headRow = el('tr');
+        headRow.appendChild(el('th', null, 'Committed to'));
+        var thUnits = el('th', 'num', 'Units');
+        headRow.appendChild(thUnits);
+        headRow.appendChild(el('th', null, 'Out'));
+        headRow.appendChild(el('th', null, 'Due'));
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        var tbody = el('tbody');
+        for (var i = 0; i < allocations.length; i++) {
+            var alloc = allocations[i];
+            var meta = experimentIndex[text(alloc.experiment)] || null;
+            var row = el('tr');
+
+            var nameCell = el('td');
+            var nameSpan = el('span', 'alloc-name', text(alloc.experiment) || 'Unnamed');
+            nameCell.appendChild(nameSpan);
+            var codeText = text(alloc.ansirCode);
+            var pillWrap = el('span', 'alloc-code');
+            if (codeText) {
+                pillWrap.appendChild(document.createTextNode(codeText + ' '));
+            }
+            pillWrap.appendChild(statusPill(alloc.status, alloc.tentative));
+            nameCell.appendChild(pillWrap);
+            row.appendChild(nameCell);
+
+            var unitsCell = el('td', 'num');
+            if (isNum(alloc.count)) {
+                unitsCell.appendChild(el('b', null, formatNumber(alloc.count)));
+            } else {
+                unitsCell.appendChild(document.createTextNode(alloc.tentative ? 'TBC' : '-'));
+            }
+            row.appendChild(unitsCell);
+
+            row.appendChild(el('td', 'date', meta ? formatDateObj(meta.outDate, 'short') : 'Not recorded'));
+            row.appendChild(el('td', 'date', meta ? formatDateObj(meta.dueDate, 'short') : 'Not recorded'));
+
+            tbody.appendChild(row);
+        }
+
+        // Expressions of interest against this instrument type, appended last.
+        // An EOI is not an allocation: there is no project, no ANSIR reference
+        // and no dates, so those cells stay empty. The sheet records each one as
+        // a mark rather than a quantity, so the number of interests is stated in
+        // the first cell and the units column says TBC unless the sheet has
+        // actually written a quantity down. Nothing here is added to Reserved:
+        // Reserved is instruments committed to approved projects, and an
+        // expression of interest is not one.
+        var interest = num(inst.unnamedInterest);
+        if (interest > 0) {
+            var eoiRow = el('tr');
+
+            var eoiNameCell = el('td');
+            eoiNameCell.appendChild(el('span', 'alloc-name',
+                interest === 1
+                    ? 'Expression of interest'
+                    : formatNumber(interest) + ' expressions of interest'));
+            var eoiPillWrap = el('span', 'alloc-code');
+            eoiPillWrap.appendChild(statusPill('reserved', true));
+            eoiNameCell.appendChild(eoiPillWrap);
+            eoiRow.appendChild(eoiNameCell);
+
+            var eoiUnits = el('td', 'num');
+            if (isNum(inst.unnamedInterestUnits)) {
+                eoiUnits.appendChild(el('b', null, formatNumber(inst.unnamedInterestUnits)));
+            } else {
+                eoiUnits.appendChild(document.createTextNode('TBC'));
+            }
+            eoiRow.appendChild(eoiUnits);
+
+            eoiRow.appendChild(el('td', 'date'));
+            eoiRow.appendChild(el('td', 'date'));
+
+            tbody.appendChild(eoiRow);
+        }
+
+        table.appendChild(tbody);
+        return table;
+    }
+
+    function buildInstrumentCard(inst) {
+        var available = num(inst.available);
+        var fleet = num(inst.totalFleet);
+        var card = el('article', 'instrument' + (available > 0 ? '' : ' is-none'));
+
+        card.appendChild(el('h4', null, text(inst.name)));
+
+        // A stock annotation split off the instrument name by the parser, for
+        // example "+50 units in production". It qualifies the name, so it sits
+        // directly under it and stays quiet.
+        if (text(inst.note)) {
+            card.appendChild(el('p', 'inst-note', text(inst.note)));
+        }
+
+        var line = el('div', 'avail-line');
+        line.appendChild(el('span', 'avail-value', isNum(inst.available) ? formatNumber(inst.available) : '-'));
+        line.appendChild(el('span', 'avail-caption',
+            'available of ' + formatNumber(inst.totalFleet) + ' in the fleet'));
+        card.appendChild(line);
+
+        var pct = fleet > 0 ? Math.max(0, Math.min(100, (available / fleet) * 100)) : 0;
+        var meter = el('div', 'meter');
+        meter.setAttribute('role', 'img');
+        meter.setAttribute('aria-label',
+            formatNumber(inst.available) + ' of ' + formatNumber(inst.totalFleet) + ' available');
+        var fill = el('span');
+        fill.style.width = pct + '%';
+        meter.appendChild(fill);
+        card.appendChild(meter);
+
+        var stats = el('ul', 'inst-stats');
+        var statFields = [
+            { label: 'On loan', value: inst.onLoan },
+            { label: 'Testing', value: inst.testing },
+            { label: 'Repair', value: inst.repair }
+        ];
+        for (var s = 0; s < statFields.length; s++) {
+            var li = el('li');
+            li.appendChild(document.createTextNode(statFields[s].label + ' '));
+            li.appendChild(el('b', null, isNum(statFields[s].value) ? formatNumber(statFields[s].value) : '-'));
+            stats.appendChild(li);
+        }
+        card.appendChild(stats);
+
+        // The table also carries the expression-of-interest row, so an instrument
+        // with no allocations but an interest against it still gets one.
+        var allocations = inst.allocations || [];
+        if (allocations.length || num(inst.unnamedInterest) > 0) {
+            card.appendChild(buildAllocationTable(inst));
+        } else {
+            card.appendChild(el('p', 'empty-note', 'No experiment allocations recorded against this instrument type.'));
+        }
+
+        return card;
+    }
+
+    function buildCategories(payload) {
+        var host = byId('categories');
+        clear(host);
+        var categories = payload.categories || [];
+
+        for (var c = 0; c < categories.length; c++) {
+            var category = categories[c];
+            var instruments = category.instruments || [];
+
+            var catAvailable = 0;
+            var catFleet = 0;
+            for (var i = 0; i < instruments.length; i++) {
+                catAvailable += num(instruments[i].available);
+                catFleet += num(instruments[i].totalFleet);
+            }
+
+            var details = el('details', 'category');
+            details.open = true;
+
+            var summary = el('summary');
+            summary.appendChild(el('span', 'cat-chevron'));
+            summary.appendChild(el('span', 'cat-name', text(category.name)));
+
+            var meta = el('span', 'cat-meta');
+            meta.appendChild(el('b', null, formatNumber(catAvailable)));
+            meta.appendChild(document.createTextNode(' available of ' + formatNumber(catFleet) +
+                ' - ' + formatNumber(instruments.length) + ' ' +
+                plural(instruments.length, 'instrument type')));
+            summary.appendChild(meta);
+            details.appendChild(summary);
+
+            var body = el('div', 'cat-body');
+            for (var j = 0; j < instruments.length; j++) {
+                body.appendChild(buildInstrumentCard(instruments[j]));
+            }
+            details.appendChild(body);
+
+            details.addEventListener('toggle', sendHeightToParent);
+            host.appendChild(details);
+        }
+    }
+
+    /* ============================================ */
+    /* RENDER: TIMELINE                             */
+    /* ============================================ */
+
+    var timelineRows = [];
+    var timelineDomain = null;
+
+    function prepareTimeline(payload, commitments) {
+        var experiments = payload.experiments || [];
+        timelineRows = [];
+
+        var minOut = null;
+        var maxDue = null;
+
+        for (var i = 0; i < experiments.length; i++) {
+            var exp = experiments[i];
+            var start = monthPos(exp.outDate, false);
+            var end = monthPos(exp.dueDate, true);
+            if (start !== null) minOut = (minOut === null) ? start : Math.min(minOut, start);
+            if (end !== null) maxDue = (maxDue === null) ? end : Math.max(maxDue, end);
+
+            var name = text(exp.name);
+            var commitment = commitments[name] || null;
+
+            timelineRows.push({
+                experiment: exp,
+                name: name,
+                code: text(exp.ansirCode),
+                status: exp.status === 'reserved' ? 'reserved' : 'deployed',
+                start: start,
+                end: end,
+                units: commitment ? commitment.total : 0,
+                anyTentative: commitment ? commitment.anyTentative : false
+            });
+        }
+
+        var today = todayPos();
+        var clampStart = Math.floor(today) - MONTHS_BACK;
+
+        var domainStart = (minOut === null) ? clampStart : Math.floor(Math.max(minOut, clampStart));
+        // One month of headroom so the longest bar does not run into the right edge,
+        // where a rounded end would be mistaken for a clipped one.
+        var domainEnd = (maxDue === null) ? (clampStart + 24) : (Math.ceil(maxDue) + 1);
+        if (domainEnd < today + 3) domainEnd = Math.ceil(today) + 3;
+        if (domainEnd <= domainStart) domainEnd = domainStart + 12;
+
+        var clippedLeft = 0;
+        for (var r = 0; r < timelineRows.length; r++) {
+            if (timelineRows[r].start !== null && timelineRows[r].start < domainStart) clippedLeft++;
+        }
+
+        timelineDomain = {
+            start: domainStart,
+            end: domainEnd,
+            months: domainEnd - domainStart,
+            today: today,
+            clippedLeft: clippedLeft,
+            undated: timelineRows.filter(function (row) { return row.start === null && row.end === null; }).length
+        };
+    }
+
+    function buildTimelineLegend() {
+        var legend = byId('timeline-legend');
+        clear(legend);
+
+        var series = [
+            { label: 'Deployed - in the field now', color: 'var(--series-deployed)' },
+            { label: 'Reserved - approved, not yet shipped', color: 'var(--series-reserved)' }
+        ];
+        for (var i = 0; i < series.length; i++) {
+            var item = el('span', 'legend-item');
+            var swatch = el('span', 'legend-swatch');
+            swatch.style.background = series[i].color;
+            item.appendChild(swatch);
+            item.appendChild(document.createTextNode(series[i].label));
+            legend.appendChild(item);
+        }
+
+        var todayItem = el('span', 'legend-item');
+        var rule = el('span', 'legend-rule');
+        rule.style.background = 'var(--today-color)';
+        todayItem.appendChild(rule);
+        todayItem.appendChild(document.createTextNode('Today, ' + formatIso(todayIso(), 'long')));
+        legend.appendChild(todayItem);
+    }
+
+    function buildTimelineNames() {
+        var host = byId('timeline-names');
+        clear(host);
+
+        var head = el('div', 'names-head');
+        head.style.height = AXIS_H + 'px';
+        host.appendChild(head);
+
+        for (var i = 0; i < timelineRows.length; i++) {
+            var row = timelineRows[i];
+            var wrap = el('div', 'name-row');
+            var main = el('div', 'n-main', row.name);
+            main.title = row.name;
+            wrap.appendChild(main);
+
+            var subText;
+            if (row.code) {
+                subText = row.code;
+            } else if (row.start === null && row.end === null) {
+                subText = 'Dates to be confirmed';
+            } else {
+                subText = 'No ANSIR reference';
+            }
+            wrap.appendChild(el('div', 'n-sub', subText));
+            host.appendChild(wrap);
+        }
+    }
+
+    function drawTimeline() {
+        var plot = byId('timeline-plot');
+        clear(plot);
+        if (!timelineDomain) return;
+
+        var months = timelineDomain.months;
+        var avail = plot.clientWidth || 640;
+        var monthW = Math.max(MONTH_W_MIN, Math.min(MONTH_W_MAX, (avail - PLOT_PAD_R) / months));
+        var plotW = Math.round(months * monthW) + PLOT_PAD_R;
+        var height = AXIS_H + timelineRows.length * ROW_H;
+
+        function x(pos) {
+            return (pos - timelineDomain.start) * monthW;
+        }
+
+        var svg = svgEl('svg', {
+            'class': 'chart',
+            width: plotW,
+            height: height,
+            viewBox: '0 0 ' + plotW + ' ' + height,
+            role: 'img',
+            'aria-label': 'Timeline of ' + timelineRows.length + ' ANSIR experiments from ' +
+                monthLabel(timelineDomain.start) + ' to ' + monthLabel(timelineDomain.end - 1) +
+                '. The same information is in the data table below.'
+        });
+
+        /* ---- year bands and gridlines ---- */
+        var firstYear = Math.floor(timelineDomain.start / 12);
+        var lastYear = Math.floor((timelineDomain.end - 1) / 12);
+        var year;
+        for (year = firstYear; year <= lastYear + 1; year++) {
+            var boundary = year * 12;
+            if (boundary <= timelineDomain.start || boundary >= timelineDomain.end) continue;
+            svg.appendChild(svgEl('line', {
+                x1: x(boundary), x2: x(boundary), y1: AXIS_H - 12, y2: height,
+                stroke: 'var(--chart-grid)', 'stroke-width': 1
+            }));
+        }
+
+        /* ---- year labels ---- */
+        for (year = firstYear; year <= lastYear; year++) {
+            var yStart = Math.max(year * 12, timelineDomain.start);
+            var yEnd = Math.min((year + 1) * 12, timelineDomain.end);
+            if (yEnd - yStart < 1.5) continue;
+            svg.appendChild(svgText(String(year), {
+                x: (x(yStart) + x(yEnd)) / 2,
+                y: 14,
+                'text-anchor': 'middle',
+                'font-size': 11,
+                'font-weight': 'bold',
+                fill: 'var(--chart-ink-muted)'
+            }));
+        }
+
+        /* ---- month ticks, thinned until the labels stop colliding ---- */
+        var quarterStep = monthW >= 34 ? 1 : (monthW >= 12 ? 3 : 6);
+        for (var m = timelineDomain.start; m < timelineDomain.end; m++) {
+            var monthOfYear = ((m % 12) + 12) % 12;
+            if (monthOfYear % quarterStep !== 0) continue;
+            svg.appendChild(svgText(MONTHS_SHORT[monthOfYear], {
+                x: x(m) + 3,
+                y: AXIS_H - 10,
+                'text-anchor': 'start',
+                'font-size': 10,
+                fill: 'var(--chart-ink-muted)'
+            }));
+            svg.appendChild(svgEl('line', {
+                x1: x(m), x2: x(m), y1: AXIS_H - 7, y2: AXIS_H,
+                stroke: 'var(--chart-axis)', 'stroke-width': 1
+            }));
+        }
+
+        /* ---- axis rule ---- */
+        svg.appendChild(svgEl('line', {
+            x1: 0, x2: plotW, y1: AXIS_H, y2: AXIS_H,
+            stroke: 'var(--chart-axis)', 'stroke-width': 1
+        }));
+
+        /* ---- row separators ---- */
+        for (var s = 0; s < timelineRows.length; s++) {
+            var sy = AXIS_H + (s + 1) * ROW_H;
+            if (s === timelineRows.length - 1) continue;
+            svg.appendChild(svgEl('line', {
+                x1: 0, x2: plotW, y1: sy, y2: sy,
+                stroke: 'var(--chart-grid)', 'stroke-width': 1
+            }));
+        }
+
+        /* ---- bars ---- */
+        for (var i = 0; i < timelineRows.length; i++) {
+            var row = timelineRows[i];
+            var rowTop = AXIS_H + i * ROW_H;
+            var barY = rowTop + (ROW_H - BAR_H) / 2;
+
+            if (row.start === null && row.end === null) {
+                svg.appendChild(svgText('Dates to be confirmed', {
+                    x: 6,
+                    y: rowTop + ROW_H / 2 + 4,
+                    'font-size': 10,
+                    'font-style': 'italic',
+                    fill: 'var(--chart-ink-muted)'
+                }));
+                continue;
+            }
+
+            var rawStart = (row.start === null) ? timelineDomain.start : row.start;
+            var rawEnd = (row.end === null) ? timelineDomain.end : row.end;
+            var clippedLeft = rawStart < timelineDomain.start || row.start === null;
+            var clippedRight = rawEnd > timelineDomain.end || row.end === null;
+            var drawStart = Math.max(rawStart, timelineDomain.start);
+            var drawEnd = Math.min(rawEnd, timelineDomain.end);
+            if (drawEnd <= drawStart) drawEnd = drawStart + 0.35;
+
+            var color = row.status === 'reserved' ? 'var(--series-reserved)' : 'var(--series-deployed)';
+
+            var group = svgEl('g', {
+                'class': 'bar-group',
+                tabindex: 0,
+                role: 'img',
+                'aria-label': timelineAriaLabel(row)
+            });
+
+            group.appendChild(svgEl('rect', {
+                'class': 'focus-halo',
+                x: x(drawStart) - 3,
+                y: barY - 3,
+                width: Math.max(2, x(drawEnd) - x(drawStart)) + 6,
+                height: BAR_H + 6,
+                rx: BAR_R + 3
+            }));
+
+            group.appendChild(svgEl('path', {
+                d: rangeBarPath(x(drawStart), x(drawEnd), barY, BAR_H, BAR_R, !clippedLeft, !clippedRight),
+                fill: color
+            }));
+
+            // A hatched cap where a bar runs off the edge of the drawn window.
+            if (clippedLeft) {
+                group.appendChild(svgEl('rect', {
+                    x: 0, y: barY, width: 3, height: BAR_H, fill: 'var(--chart-surface)', opacity: 0.55
+                }));
+            }
+            if (clippedRight) {
+                group.appendChild(svgEl('rect', {
+                    x: x(drawEnd) - 3, y: barY, width: 3, height: BAR_H,
+                    fill: 'var(--chart-surface)', opacity: 0.55
+                }));
+            }
+
+            attachTip(group, row);
+            svg.appendChild(group);
+        }
+
+        /* ---- today rule, drawn last so it sits above the bars ---- */
+        if (timelineDomain.today >= timelineDomain.start && timelineDomain.today <= timelineDomain.end) {
+            var tx = x(timelineDomain.today);
+            svg.appendChild(svgEl('line', {
+                x1: tx, x2: tx, y1: AXIS_H - 4, y2: height,
+                stroke: 'var(--today-color)', 'stroke-width': 2
+            }));
+            var chipW = 40;
+            var chipX = Math.max(0, Math.min(plotW - chipW, tx - chipW / 2));
+            svg.appendChild(svgEl('rect', {
+                x: chipX, y: AXIS_H - 22, width: chipW, height: 15,
+                rx: 3, fill: 'var(--today-color)'
+            }));
+            svg.appendChild(svgText('Today', {
+                x: chipX + chipW / 2, y: AXIS_H - 11,
+                'text-anchor': 'middle', 'font-size': 10, 'font-weight': 'bold',
+                fill: '#ffffff'
+            }));
+        }
+
+        plot.appendChild(svg);
+
+        var overflows = plotW > plot.clientWidth + 2;
+        byId('timeline-hint').hidden = !overflows;
+
+        // When the plot has to scroll, open it on today rather than on the far
+        // left of the window, which is 18 months of history nobody asked for.
+        if (overflows && timelineDomain.today >= timelineDomain.start) {
+            plot.scrollLeft = Math.max(0, x(timelineDomain.today) - plot.clientWidth * 0.35);
+        }
+    }
+
+    function monthLabel(pos) {
+        var whole = Math.floor(pos);
+        var year = Math.floor(whole / 12);
+        var monthIndex = whole - year * 12;
+        return MONTHS_SHORT[monthIndex] + ' ' + year;
+    }
+
+    function timelineAriaLabel(row) {
+        var parts = [row.name];
+        if (row.code) parts.push(row.code);
+        parts.push(row.status === 'reserved' ? 'reserved' : 'deployed');
+        parts.push('out ' + formatDateObj(row.experiment.outDate, 'long'));
+        parts.push('due ' + formatDateObj(row.experiment.dueDate, 'long'));
+        if (row.units > 0) parts.push(formatNumber(row.units) + ' instruments committed');
+        return parts.join(', ') + '.';
+    }
+
+    function attachTip(group, row) {
+        var rows = [
+            { label: 'Status', value: row.status === 'reserved' ? 'Reserved' : 'Deployed' },
+            { label: 'Out', value: formatDateObj(row.experiment.outDate, 'long') },
+            { label: 'Due', value: formatDateObj(row.experiment.dueDate, 'long') }
+        ];
+        if (row.units > 0) {
+            rows.push({
+                label: 'Instruments committed',
+                value: formatNumber(row.units) + (row.anyTentative ? ' plus expressions of interest' : '')
+            });
+        }
+        var lines = { title: row.name + (row.code ? ' (' + row.code + ')' : ''), rows: rows };
+
+        group.addEventListener('mouseenter', function (event) {
+            group.classList.add('is-active');
+            showTip(group, lines, event);
+        });
+        group.addEventListener('mousemove', function (event) { positionTip(event, group); });
+        group.addEventListener('mouseleave', function () {
+            group.classList.remove('is-active');
+            hideTip(group);
+        });
+        group.addEventListener('focus', function () { showTip(group, lines, null); });
+        group.addEventListener('blur', function () { hideTip(group); });
+    }
+
+    function buildTimelineTable() {
+        var host = byId('timeline-table');
+        clear(host);
+
+        var table = el('table', 'data-table');
+        var caption = el('caption', null,
+            'Every experiment on the timeline, with the dates exactly as the source sheet records them.');
+        table.appendChild(caption);
+
+        var thead = el('thead');
+        var headRow = el('tr');
+        var headings = ['Experiment', 'ANSIR reference', 'Status', 'Out', 'Due'];
+        for (var h = 0; h < headings.length; h++) {
+            headRow.appendChild(el('th', null, headings[h]));
+        }
+        var unitsHead = el('th', 'num', 'Instruments committed');
+        unitsHead.scope = 'col';
+        headRow.appendChild(unitsHead);
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        var tbody = el('tbody');
+        for (var i = 0; i < timelineRows.length; i++) {
+            var row = timelineRows[i];
+            var tr = el('tr');
+            var nameCell = el('th', null, row.name);
+            nameCell.scope = 'row';
+            tr.appendChild(nameCell);
+            tr.appendChild(el('td', null, row.code || 'Not assigned'));
+            tr.appendChild(el('td', null, row.status === 'reserved' ? 'Reserved' : 'Deployed'));
+            tr.appendChild(el('td', 'date', formatDateObj(row.experiment.outDate, 'long')));
+            tr.appendChild(el('td', 'date', formatDateObj(row.experiment.dueDate, 'long')));
+            tr.appendChild(el('td', 'num', row.units > 0 ? formatNumber(row.units) : '-'));
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        host.appendChild(table);
+    }
+
+    function buildTimelineCaption() {
+        var caption = 'One row per experiment currently holding or reserving ANSIR instruments. ' +
+            'A bar runs from the out date to the due date recorded in the sheet.';
+        if (timelineDomain.clippedLeft > 0) {
+            caption += ' ' + formatNumber(timelineDomain.clippedLeft) + ' ' +
+                plural(timelineDomain.clippedLeft, 'deployment') + ' started before this window opens ' +
+                'and ' + (timelineDomain.clippedLeft === 1 ? 'is' : 'are') +
+                ' drawn with a square left end; the true out date is in the table below.';
+        }
+        if (timelineDomain.undated > 0) {
+            caption += ' ' + formatNumber(timelineDomain.undated) + ' ' +
+                plural(timelineDomain.undated, 'experiment') + ' ' +
+                (timelineDomain.undated === 1 ? 'has' : 'have') + ' no dates recorded yet.';
+        }
+        byId('timeline-caption').textContent = caption;
+
+        byId('timeline-note').textContent =
+            'Where deployments overlap, the fleet is at its most committed; the gaps are where ' +
+            'instruments come free. Dates recorded only to the month are drawn across the whole month.';
+    }
+
+    /* ============================================ */
+    /* RENDER: EXPERIMENTS                          */
+    /* ============================================ */
+
+    var experimentIndex = {};
+
+    function buildExperiments(payload, commitments) {
+        var host = byId('experiments');
+        clear(host);
+
+        var experiments = payload.experiments || [];
+        var supported = supportedByCode(payload);
+        var described = 0;
+
+        for (var i = 0; i < experiments.length; i++) {
+            var exp = experiments[i];
+            var name = text(exp.name);
+            var isReserved = exp.status === 'reserved';
+            var commitment = commitments[name] || { total: 0, rows: [], anyTentative: false };
+
+            var card = el('article', 'exp-card' + (isReserved ? ' is-reserved' : ''));
+            card.appendChild(el('h3', null, name));
+
+            var head = el('div', 'exp-head');
+            head.appendChild(statusPill(exp.status, false));
+            head.appendChild(el('span', 'exp-code', text(exp.ansirCode) || 'No ANSIR reference recorded'));
+            card.appendChild(head);
+
+            var dates = el('p', 'exp-dates');
+            dates.appendChild(document.createTextNode('Out '));
+            dates.appendChild(el('b', null, formatDateObj(exp.outDate, 'long')));
+            dates.appendChild(document.createTextNode('. Due '));
+            dates.appendChild(el('b', null, formatDateObj(exp.dueDate, 'long')));
+            dates.appendChild(document.createTextNode('.'));
+            card.appendChild(dates);
+
+            var commit = el('p', 'exp-commit');
+            if (commitment.rows.length) {
+                commit.appendChild(el('strong', null, formatNumber(commitment.total)));
+                commit.appendChild(document.createTextNode(
+                    ' ' + plural(commitment.total, 'instrument') + ' across ' +
+                    formatNumber(commitment.rows.length) + ' ' +
+                    plural(commitment.rows.length, 'instrument type') + '.'));
+            } else {
+                commit.appendChild(document.createTextNode('No instrument allocations recorded against this experiment.'));
+            }
+            card.appendChild(commit);
+
+            if (commitment.rows.length) {
+                var loans = el('ul', 'exp-loans');
+                for (var r = 0; r < commitment.rows.length; r++) {
+                    var loanRow = commitment.rows[r];
+                    var li = el('li');
+                    li.appendChild(el('b', null, isNum(loanRow.count) ? formatNumber(loanRow.count) : 'TBC'));
+                    li.appendChild(document.createTextNode(' x ' + text(loanRow.instrument)));
+                    if (loanRow.tentative) li.appendChild(document.createTextNode(' (expression of interest)'));
+                    loans.appendChild(li);
+                }
+                card.appendChild(loans);
+            }
+
+            var record = supported[text(exp.ansirCode)];
+            if (record) {
+                described++;
+                var about = el('details', 'exp-about');
+                about.appendChild(el('summary', null, 'About this project'));
+                var body = el('div', 'about-body');
+
+                if (text(record.description)) {
+                    body.appendChild(el('p', null, text(record.description)));
+                }
+                if (text(record.applicants)) {
+                    var applicantsP = el('p');
+                    applicantsP.appendChild(el('span', 'about-label', 'Applicants: '));
+                    applicantsP.appendChild(document.createTextNode(text(record.applicants)));
+                    body.appendChild(applicantsP);
+                }
+                if (text(record.fundingSource)) {
+                    var fundingP = el('p');
+                    fundingP.appendChild(el('span', 'about-label', 'Funding: '));
+                    fundingP.appendChild(document.createTextNode(text(record.fundingSource)));
+                    body.appendChild(fundingP);
+                }
+                if (text(record.fdsnNetwork)) {
+                    var fdsnP = el('p');
+                    fdsnP.appendChild(el('span', 'about-label', 'FDSN network: '));
+                    fdsnP.appendChild(document.createTextNode(text(record.fdsnLabel) || text(record.fdsnNetwork)));
+                    body.appendChild(fdsnP);
+                }
+
+                about.appendChild(body);
+                about.addEventListener('toggle', sendHeightToParent);
+                card.appendChild(about);
+            }
+
+            host.appendChild(card);
+        }
+
+        var supportedCount = (payload.supportedExperiments || []).length;
+        var note = 'Instruments currently allocated to a named experiment, in the order the source sheet ' +
+            'lists them. Reserved experiments have been approved but have not yet shipped.';
+        if (described > 0) {
+            note += ' ' + formatNumber(described) + ' of these ' +
+                plural(experiments.length, 'experiment') + ' ' +
+                (described === 1 ? 'has' : 'have') +
+                ' a matching entry in the approved-application register, shown under "About this project".';
+        }
+        if (supportedCount > 0) {
+            note += ' The register holds ' + formatNumber(supportedCount) +
+                ' approved applications in total, including completed work.';
+        }
+        byId('experiments-note').textContent = note;
+    }
+
+    /* ============================================ */
+    /* RENDER: RAPID RESPONSE                       */
+    /* ============================================ */
+
+    function buildRapidResponse(payload) {
+        var host = byId('rapid-response');
+        clear(host);
+        var list = payload.rapidResponse || [];
+
+        if (!list.length) {
+            byId('rapid-empty').hidden = false;
+            return;
+        }
+        byId('rapid-empty').hidden = true;
+
+        for (var i = 0; i < list.length; i++) {
+            var entry = list[i];
+            var card = el('article', 'rr-card');
+
+            card.appendChild(el('h3', null, text(entry.earthquake) || 'Rapid response deployment'));
+            card.appendChild(el('p', 'rr-meta', text(entry.institute) || 'Institute not recorded'));
+
+            var dl = el('dl', 'rr-dl');
+
+            var addRow = function (label, valueNode) {
+                dl.appendChild(el('dt', null, label));
+                var dd = el('dd');
+                if (typeof valueNode === 'string') {
+                    dd.appendChild(document.createTextNode(valueNode));
+                } else {
+                    dd.appendChild(valueNode);
+                }
+                dl.appendChild(dd);
+            };
+
+            var networkText = text(entry.fdsnNetwork) || 'Not recorded';
+            if (text(entry.doi)) {
+                var networkWrap = document.createElement('span');
+                networkWrap.appendChild(document.createTextNode(networkText + ' '));
+                var doiLink = document.createElement('a');
+                doiLink.href = 'https://doi.org/' + text(entry.doi);
+                doiLink.rel = 'noopener';
+                doiLink.appendChild(document.createTextNode(text(entry.doi)));
+                networkWrap.appendChild(doiLink);
+                addRow('FDSN network', networkWrap);
+            } else {
+                addRow('FDSN network', networkText);
+            }
+
+            addRow('Deployed', formatDateObj(entry.startDate, 'long'));
+            addRow('Recovered', formatDateObj(entry.endDate, 'long'));
+
+            var location = entry.location || null;
+            if (location && isNum(location.latitude) && isNum(location.longitude)) {
+                addRow('Location', location.latitude + ', ' + location.longitude);
+            } else if (location && text(location.raw)) {
+                addRow('Location', text(location.raw));
+            } else {
+                addRow('Location', 'Not recorded');
+            }
+
+            addRow('Equipment', text(entry.equipment) || 'Not recorded');
+
+            card.appendChild(dl);
+            host.appendChild(card);
+        }
+    }
+
+    /* ============================================ */
+    /* RENDER: FOOTER                               */
+    /* ============================================ */
+
+    // The three pieces the footer must always carry, whatever the sheet says.
+    var TERMS_URL = 'https://www.auscope.org.au/ansir-terms';
+    var CONTACT_EMAIL = 'ansir@anu.edu.au';
+
+    function buildFooter(payload) {
+        // Eligibility, the application terms and the contact address are
+        // maintained in the source sheet, in the notes below the fleet table, so
+        // they are rendered from the data rather than duplicated here. The
+        // fallback below guarantees a researcher can always find the terms and
+        // the address even if a note is edited away.
+        var host = byId('footer-terms');
+        clear(host);
+
+        var notes = payload.notes || [];
+        var joined = '';
+        for (var i = 0; i < notes.length; i++) {
+            var noteText = text(notes[i]);
+            if (!noteText) continue;
+            joined += ' ' + noteText;
+            var noteP = el('p', 'footer-note');
+            appendLinkified(noteP, noteText);
+            host.appendChild(noteP);
+        }
+
+        if (joined.indexOf(TERMS_URL) === -1 || joined.indexOf(CONTACT_EMAIL) === -1) {
+            var fallback = el('p', 'footer-note');
+            fallback.appendChild(document.createTextNode(
+                'ANSIR equipment and services are available to researchers from Australian and ' +
+                'international universities, publicly funded research organisations, and their ' +
+                'industry partners. Application terms: '));
+            var termsLink = document.createElement('a');
+            termsLink.href = TERMS_URL;
+            termsLink.rel = 'noopener';
+            termsLink.appendChild(document.createTextNode(TERMS_URL));
+            fallback.appendChild(termsLink);
+            fallback.appendChild(document.createTextNode('. To discuss instruments and availability, email '));
+            var mailLink = document.createElement('a');
+            mailLink.href = 'mailto:' + CONTACT_EMAIL;
+            mailLink.appendChild(document.createTextNode(CONTACT_EMAIL));
+            fallback.appendChild(mailLink);
+            fallback.appendChild(document.createTextNode('.'));
+            host.appendChild(fallback);
+        }
+
+        // The currency disclaimer. This has to survive any rearrangement of the
+        // page above it: it is the sentence that stops a stale figure being used
+        // as though it were live.
+        var asOfText = payload.availabilityAsOf ? formatIso(payload.availabilityAsOf, 'long') : null;
+        var currency = 'Availability figures on this page are as recorded in the ANSIR Seismic Fleet Status sheet';
+        if (asOfText) currency += ' as at ' + asOfText;
+        currency += '. Instrument availability changes; confirm with ANSIR before relying on it for an application.';
+        byId('footer-currency').textContent = currency;
+    }
+
+    function buildProvenanceHeader(payload) {
+        var asOf = text(payload.availabilityAsOf);
+        var currency = byId('data-currency');
+
+        byId('as-of-date').textContent = asOf ? formatIso(asOf, 'long') : 'a date not stated in the sheet';
+
+        var fetched = text(payload.fetched);
+        if (fetched) {
+            byId('synced-date').textContent = formatIso(fetched.slice(0, 10), 'long');
+            byId('synced-wrap').hidden = false;
+        }
+
+        var url = text(payload.sourceUrl) || FALLBACK_SOURCE_URL;
+        byId('source-link').href = url;
+        currency.hidden = false;
+    }
+
+    function buildWarnings(payload) {
+        var warnings = payload.warnings || [];
+        if (!warnings.length) return;
+
+        var list = byId('warnings-list');
+        clear(list);
+        for (var i = 0; i < warnings.length; i++) {
+            list.appendChild(el('li', null, text(warnings[i])));
+        }
+        byId('warnings-box').hidden = false;
+    }
+
+    /* ============================================ */
+    /* RENDER: ORCHESTRATION                        */
+    /* ============================================ */
+
+    function render(payload) {
+        var summary = summarise(payload);
+        var commitments = commitmentsByExperiment(payload);
+
+        // Index the experiments by name so an allocation row can show its dates.
+        experimentIndex = {};
+        var experiments = payload.experiments || [];
+        for (var i = 0; i < experiments.length; i++) {
+            experimentIndex[text(experiments[i].name)] = experiments[i];
+        }
+
+        buildProvenanceHeader(payload);
+        buildWarnings(payload);
+        buildHeadline(payload, summary);
+        buildCategories(payload);
+
+        prepareTimeline(payload, commitments);
+        buildTimelineLegend();
+        buildTimelineNames();
+        buildTimelineCaption();
+        buildTimelineTable();
+
+        buildExperiments(payload, commitments);
+        buildRapidResponse(payload);
+        buildFooter(payload);
+
+        byId('loading-state').hidden = true;
+        byId('error-state').hidden = true;
+        byId('schedule-root').hidden = false;
+
+        drawTimeline();
+
+        var tableViews = document.querySelectorAll('details.table-view');
+        for (var t = 0; t < tableViews.length; t++) {
+            tableViews[t].addEventListener('toggle', sendHeightToParent);
+        }
+
+        sendHeightToParent();
+    }
+
+    /* ============================================ */
+    /* REDRAW ON WIDTH CHANGE                       */
+    /* ============================================ */
+
+    var lastWidth = window.innerWidth;
+    var redrawTimer = null;
+
+    window.addEventListener('resize', function () {
+        // Only redraw on width changes - height changes come from our own draws.
+        if (window.innerWidth === lastWidth) return;
+        lastWidth = window.innerWidth;
+        if (redrawTimer) clearTimeout(redrawTimer);
+        redrawTimer = setTimeout(function () {
+            if (!byId('schedule-root').hidden) {
+                drawTimeline();
+                sendHeightToParent();
+            }
+        }, 120);
+    });
+
+    /* ============================================ */
+    /* IFRAME AUTO-RESIZE                           */
+    /* Matches the convention used by ../index.html */
+    /* and ../stats/index.html                      */
+    /* ============================================ */
+
+    var lastSentHeight = 0;
+
+    function sendHeightToParent() {
+        if (!IS_EMBEDDED) return;
+        try {
+            // Measure the body, not documentElement. Once the parent has sized the
+            // iframe to a tall page, documentElement.scrollHeight is pinned to that
+            // iframe height and can never report a smaller number, so a page whose
+            // content shrinks (collapsing a category here) would stay stuck at its
+            // tallest and leave a blank gap below. The body box is content-driven in
+            // both directions. documentElement is kept only as a last-resort floor.
+            var body = document.body;
+            var height = Math.max(
+                body.scrollHeight,
+                body.offsetHeight,
+                Math.ceil(body.getBoundingClientRect().height)
+            );
+            if (!height) height = document.documentElement.scrollHeight;
+            if (height !== lastSentHeight && height > 0) {
+                lastSentHeight = height;
+                window.parent.postMessage({
+                    type: 'ansir-resize',
+                    height: height
+                }, PARENT_ORIGIN);
+            }
+        } catch (e) {
+            // Silently fail if cross-origin restrictions prevent messaging
+        }
+    }
+
+    if (IS_EMBEDDED && typeof ResizeObserver !== 'undefined') {
+        var resizeObserver = new ResizeObserver(function () {
+            sendHeightToParent();
+        });
+        resizeObserver.observe(document.documentElement);
+        resizeObserver.observe(document.body);
+    }
+
+    if (IS_EMBEDDED) {
+        window.addEventListener('load', sendHeightToParent);
+        // Poll briefly after load to catch late-rendering content.
+        var pollCount = 0;
+        var heightPoll = setInterval(function () {
+            sendHeightToParent();
+            pollCount++;
+            if (pollCount >= 20) clearInterval(heightPoll); // 20 x 500ms = 10s
+        }, 500);
+    }
+
+    /* ============================================ */
+    /* FETCH + BOOT                                 */
+    /* ============================================ */
+
+    byId('fallback-source-link').href = FALLBACK_SOURCE_URL;
+
+    function showError(detail) {
+        byId('loading-state').hidden = true;
+        byId('schedule-root').hidden = true;
+        byId('warnings-box').hidden = true;
+        byId('error-state').hidden = false;
+        byId('error-detail').textContent = detail ? 'Technical detail: ' + detail : '';
+        sendHeightToParent();
+    }
+
+    function load() {
+        byId('error-state').hidden = true;
+        byId('loading-state').hidden = false;
+
+        fetch(DATA_URL, { cache: 'default' })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ' loading the fleet schedule');
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                if (!payload || !Array.isArray(payload.categories)) {
+                    throw new Error('The fleet schedule is not in the expected format');
+                }
+                if (!payload.categories.length) {
+                    throw new Error('The fleet schedule contains no instrument categories');
+                }
+                render(payload);
+            })
+            .catch(function (err) {
+                showError(err && err.message ? err.message : String(err));
+            });
+    }
+
+    byId('retry-button').addEventListener('click', load);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', load);
+    } else {
+        load();
+    }
+})();
+</script>
+
+</body>
+</html>
