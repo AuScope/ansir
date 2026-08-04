@@ -1596,9 +1596,6 @@
                             <label class="checkbox-item">
                                 <input type="checkbox" name="methods_field" value="Petrophysical" onchange="updateEquipmentVisibility()"> Petrophysical
                             </label>
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="methods_field" value="Drone-CRP" onchange="updateEquipmentVisibility()"> Drone-CRP
-                            </label>
                         </div>
                     </div>
 
@@ -1910,227 +1907,6 @@
                         </div>
                     </div>
 
-                    <!-- Drone-CRP: Drones -->
-                    <div class="equipment-category hidden" id="equip-drones" data-methods="Drone-CRP">
-                        <div class="equipment-header" onclick="toggleEquipment(this)">
-                            <h4>Drones</h4>
-                            <span class="toggle-icon">+</span>
-                        </div>
-                        <div class="equipment-content">
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">ARACE Angel</span>
-                                    <div class="equipment-specs">MTOW: 25kg | Endurance: 1.5hrs | Payload: 7kg</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="drone_arace_angel" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">ARACE Phoenix</span>
-                                    <div class="equipment-specs">MTOW: 25kg | Endurance: 3hrs | Payload: 6kg</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="drone_arace_phoenix" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Callisto 50</span>
-                                    <div class="equipment-specs">MTOW: 50kg | Endurance: 50min | Payload: 20kg</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="drone_callisto_50" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Acecore NOA</span>
-                                    <div class="equipment-specs">MTOW: 25kg | Endurance: 45min | Payload: 8kg</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="drone_acecore_noa" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">DJI Mavic 3M</span>
-                                    <div class="equipment-specs">MTOW: 1kg | Endurance: 40min | Payload: Onboard MS</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="drone_dji_mavic_3m" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Drone-CRP: Remote Sensing Sensors -->
-                    <div class="equipment-category hidden" id="equip-sensors-rs" data-methods="Drone-CRP">
-                        <div class="equipment-header" onclick="toggleEquipment(this)">
-                            <h4>Sensors - Remote Sensing</h4>
-                            <span class="toggle-icon">+</span>
-                        </div>
-                        <div class="equipment-content">
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">HySpex Mjolnir VS-620</span>
-                                    <div class="equipment-specs">Hyperspectral imaging sensor</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_hyspex_mjolnir" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">RIEGL VQ-840-GE</span>
-                                    <div class="equipment-specs">Bathymetric LiDAR</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_riegl_vq840" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">RIEGL VUX-120</span>
-                                    <div class="equipment-specs">Survey-grade LiDAR</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_riegl_vux120" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Elitescan W50</span>
-                                    <div class="equipment-specs">Lightweight LiDAR</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_elitescan_w50" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Sony ILX-LR1 Sextuple Lens</span>
-                                    <div class="equipment-specs">High-resolution multispectral camera</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_sony_ilxlr1" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">NaturaSpec Spectroradiometer</span>
-                                    <div class="equipment-specs">Ground-truth spectroradiometer</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_naturaspec" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Drone-CRP: Geophysics Sensors -->
-                    <div class="equipment-category hidden" id="equip-sensors-geo" data-methods="Drone-CRP">
-                        <div class="equipment-header" onclick="toggleEquipment(this)">
-                            <h4>Sensors - Geophysics</h4>
-                            <span class="toggle-icon">+</span>
-                        </div>
-                        <div class="equipment-content">
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Scintrex CS-VL Cesium Vapour Magnetometer</span>
-                                    <div class="equipment-specs">High-sensitivity magnetometer</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_cs_magnetometer" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Medusa MS-2000</span>
-                                    <div class="equipment-specs">Gamma-ray spectrometer</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_medusa_ms2000" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">GDS</span>
-                                    <div class="equipment-specs">Geomagnetic Depth Sounding</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_gds" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Drone-CRP: Direct Sampling Sensors -->
-                    <div class="equipment-category hidden" id="equip-sensors-sampling" data-methods="Drone-CRP">
-                        <div class="equipment-header" onclick="toggleEquipment(this)">
-                            <h4>Sensors - Direct Sampling</h4>
-                            <span class="toggle-icon">+</span>
-                        </div>
-                        <div class="equipment-content">
-                            <p class="form-hint" style="margin-bottom: 10px;">Categories: Emission, Particulate, Water, Temperature</p>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Emission Sampling System</span>
-                                    <div class="equipment-specs">Gas emission sampling</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_emission" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Particulate Sampling System</span>
-                                    <div class="equipment-specs">Atmospheric particulate collection</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_particulate" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Water Sampling System</span>
-                                    <div class="equipment-specs">Water quality/collection system</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_water" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                            <div class="equipment-item">
-                                <div>
-                                    <span class="equipment-name">Temperature Logging System</span>
-                                    <div class="equipment-specs">Thermal monitoring</div>
-                                </div>
-                                <div class="equipment-qty">
-                                    <label>Qty:</label>
-                                    <input type="number" name="sensor_temperature" min="0" max="5" value="0">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Petrophysical: Field Deployable Tools -->
                     <div class="equipment-category hidden" id="equip-petro" data-methods="Petrophysical">
                         <div class="equipment-header" onclick="toggleEquipment(this)">
@@ -2367,6 +2143,7 @@
                         <ul style="margin: 10px 0 10px 20px; font-size: 0.9rem; color: #495057;">
                             <li><strong>Raw packed time series data</strong> - original data from the instruments</li>
                             <li><strong>Higher-level data products</strong> - derived from the raw data (where applicable)</li>
+                            <li><strong>MT transfer functions</strong> - for magnetotelluric deployments, processed transfer functions are uploaded to the AusMT repository</li>
                             <li><strong>Required metadata</strong> - including:
                                 <ul style="margin: 5px 0 5px 20px;">
                                     <li>Station locations (coordinates, elevation)</li>
@@ -2378,7 +2155,6 @@
                                 </ul>
                             </li>
                         </ul>
-                        <p class="field-description" style="margin-bottom: 10px;">ANSIR can assist with preparing standardised metadata formats (e.g., StationXML for seismic, EDI for MT) if required.</p>
                         <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
                             <input type="checkbox" name="data_submission_confirmed" id="data_submission_confirmed" required style="margin-top: 4px;">
                             <span>I acknowledge that I will provide a copy of the raw packed time series data, appropriate higher-level data products derived from the raw data, and the required metadata as part of my data submission.</span>

@@ -1281,28 +1281,6 @@ function equipmentCatalogue_() {
     'inst_idas_24': 'Silixa iDAS 2.4',
     'inst_idas_25': 'Silixa iDAS 2.5',
     'inst_idas_25_nz': 'Silixa iDAS 2.5 (NZ)',
-    // Drones
-    'drone_arace_angel': 'ARACE Angel Drone',
-    'drone_arace_phoenix': 'ARACE Phoenix Drone',
-    'drone_callisto_50': 'Callisto 50 Drone',
-    'drone_acecore_noa': 'Acecore NOA Drone',
-    'drone_dji_mavic_3m': 'DJI Mavic 3M Drone',
-    // Remote sensing
-    'sensor_hyspex_mjolnir': 'HySpex Mjolnir VS-620',
-    'sensor_riegl_vq840': 'RIEGL VQ-840-GE',
-    'sensor_riegl_vux120': 'RIEGL VUX-120',
-    'sensor_elitescan_w50': 'Elitescan W50',
-    'sensor_sony_ilxlr1': 'Sony ILX-LR1 Sextuple Lens',
-    'sensor_naturaspec': 'NaturaSpec Spectroradiometer',
-    // Geophysics
-    'sensor_cs_magnetometer': 'Scintrex CS-VL Cesium Vapour Magnetometer',
-    'sensor_medusa_ms2000': 'Medusa MS-2000',
-    'sensor_gds': 'GDS (Geomagnetic Depth Sounding)',
-    // Direct sampling
-    'sensor_emission': 'Emission Sampling System',
-    'sensor_particulate': 'Particulate Sampling System',
-    'sensor_water': 'Water Sampling System',
-    'sensor_temperature': 'Temperature Logging System',
     // Petrophysical field-deployable tools
     'inst_petro_borehole_seismometer': 'Surface and borehole seismometer',
     'inst_petro_aftershock_seismometers': 'Broadband aftershock seismometers',
