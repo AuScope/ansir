@@ -21,12 +21,12 @@
         "@id": "https://creativecommons.org/licenses/by/4.0/"
       },
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "publisher": {
         "@id": "https://www.auscope.org.au"
       },
-      "url": "https://bvkay.github.io/ansir-data/",
+      "url": "https://auscope.github.io/ansir/",
       "hasPart": [
         {
           "@id": "#project-ANSIR-2025-001"
@@ -184,10 +184,10 @@
       ]
     },
     {
-      "@id": "https://ansir.org.au",
+      "@id": "https://www.auscope.org.au/ansir",
       "@type": "Organization",
       "name": "ANSIR Research Facilities for Earth Sounding (ANSIR)",
-      "url": "https://ansir.org.au",
+      "url": "https://www.auscope.org.au/ansir",
       "parentOrganization": {
         "@id": "https://www.auscope.org.au"
       }
@@ -319,7 +319,7 @@
       "name": "Southern Alps Monitoring of Weather-Influenced Seismicity and Erosion",
       "description": "Our project focuses on studying seismic activity in New Zealand's Southern Alps/Kā Tiritiri o te Moana by collecting and analyzing new seismic data. We will expand the current seismometer network, develop high-quality earthquake datasets, and investigate environmental signals like landslides and avalanches. By using advanced modeling techniques, we aim to understand how surface changes, such as glacial retreat, influence seismicity and crustal deformation.",
       "identifier": "ANSIR-2025-001",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2025-001",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2025-001",
       "creativeWorkStatus": "In Progress",
       "dateCreated": "2025-10-31",
       "temporalCoverage": "2025-10-31/2027-10-31",
@@ -365,7 +365,7 @@
       ],
       "conditionsOfAccess": "embargoes",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -497,7 +497,7 @@
       "name": "Monitoring Maunakea and Kilauea volcanos using DAS",
       "description": "ARC Centre of Excellence COMBS joint investigation with the W.M. Keck Observatory in Hawaii to run a distributed acoustic sensing experiment on Maunakea, which is located on the Big Island of Hawai'i. We aim to record small, previously undetected earthquakes on the dormant volcano and use these and ambient noise signals to image the volcano structure.",
       "identifier": "ANSIR-2025-003",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2025-003",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2025-003",
       "creativeWorkStatus": "Planning",
       "dateCreated": "2026-06-29",
       "temporalCoverage": "2026-06-29/2027-06-29",
@@ -553,7 +553,7 @@
       ],
       "conditionsOfAccess": "embargoes",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -665,7 +665,7 @@
       "name": "Ōkataina Caldera Seismic Imaging",
       "description": "A temporary network of seismic nodes focussed on Ōkataina caldera volcano in the North Island of Aotearoa New Zealand. We seek to image the volcano in detail and detect local earthquakes to improve our knowledge of the volcano's structure and processes and the hazard that it poses.",
       "identifier": "ANSIR-2025-004",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2025-004",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2025-004",
       "creativeWorkStatus": "In Progress",
       "dateCreated": "2025-09-22",
       "temporalCoverage": "2025-09-22/2026-03-30",
@@ -718,7 +718,7 @@
       "conditionsOfAccess": "embargoes",
       "ethicsPolicy": "We have been speaking with representatives of local Iwi (Indigenous Māori tribal groups) in whose rohe (region) Makatiti and Haroharo lies, including Ngāti Tarāwhai, Ngāti Pikiao, Ngāti Rangithi, Tūhourangi and Ngāti Ronogomai. We have had multiple meetings with representatives of Ngāti Tarāwhai, including the chair. They have expressed their support of the project and will be actively involved in the deployment and management of the network. The proposed project was taken to the board meeting of Te Mana O Ngāti Rangitihi Trust, and they have agreed to the proposed seismometer testing within the Ōkataina caldera: a cultural monitor will observe the work. We have met with the Taiao (environment) lead for Tūhourangi about the project. They have expressed verbal enthusiasm about the project, but it has not yet been confirmed. The chair of Rotoiti 15 trust (see below) is also the chair of Ngāti Pikiao. We continue to build relationships in the region with other people and representatives of other Iwi as recommended by our partners.\n\nThe land the seismometers are planned on is managed by three organisations: Rotoiti 15, Māori Investments Limited and the Department of Conservation (DOC). We have permission from each of these organisations to install the network, subject to access and health & safety conditions for the fieldwork. Rotoiti 15 is an Iwi trust that represents Ngāti Pikiao, Ngāti Tarāwhai and Ngāti Rongomai interests. They manage the land that 32 of the proposed sites are on, and road access leading to 11 of the sites on DOC managed land. We have met multiple times with the general manager of Rotoiti 15. Their Taiao board has expressed support for the project and representatives will be actively involved in the deployment of the network. We will present on the project to keep the committee updated on 17th July. Māori Investments Limited manages the land that 27 of the proposed stations are on. The operations manager has confirmed they are in support of us putting the stations in, subject to access, health and safety conditions to be discussed closer to the time. Department of Conservation (DOC) manages the land that 25 of the proposed stations are on. We have applied for permission with DOC, and they have granted us permission for the install.. All of the conversations around partnership, access and permissions above are ongoing. Parts of the network layout may change as discussions progress about permissions, access, and safety. There will be cultural induction before the work begins, and local guides and cultural observers from these communities coming with the physical science team during the fieldwork.",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -790,7 +790,7 @@
       "name": "Wairakei Earthquake and Tomography Array",
       "description": "The Wairakei (WETA) experiment consists of a short term (~30-60 day) nodal array targeting the Wairakei Geothermal Field. 45 SmartSolo IGU-BD3C-5 broadband nodes and 120 SmartSolo IGU-16HR 3C short period nodes were deployed in September 2023. All data recorded at 250 Hz. The aim of the project is to image the local seismic velocity structures in the top 5 km and detect and characterize local seismicity.",
       "identifier": "Placeholder-01",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-01",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-01",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2023-08-28",
       "temporalCoverage": "2023-08-28/2023-10-28",
@@ -830,7 +830,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -908,7 +908,7 @@
       "name": "Seismic Network Around Kangaroo Eyre Yorke",
       "description": "This deployment of 20 broadband seismometers is intended to fill a gap in seismic coverage in South Australia, along the south-eastern margin of the Galwer Craton. The aim is to better characterise the local seismicity, and to improve seismic imaging of the crust and upper mantle structure beneath this region.",
       "identifier": "SX-2023",
-      "url": "https://bvkay.github.io/ansir-data/?id=SX-2023",
+      "url": "https://auscope.github.io/ansir/?id=SX-2023",
       "creativeWorkStatus": "In Progress",
       "dateCreated": "2023-02-24",
       "temporalCoverage": "2023-02-24/2026-04-29",
@@ -949,7 +949,7 @@
       ],
       "conditionsOfAccess": "embargoes",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -1013,7 +1013,7 @@
       "name": "Lake George Seismic Nodal Array",
       "description": "The Lake George Seismic Nodal Array was a short-term seismic experiment conducted on a then dry lake bed located ~35 km northeast of the Australian capital city, Canberra. The array included 97 three-component SmartSolo sensors recording continuously with 250 Hz sampling rate, and was operated between December 2020 and January 2021 with an average inter-station spacing of 30-40 m.",
       "identifier": "ANU-2021",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANU-2021",
+      "url": "https://auscope.github.io/ansir/?id=ANU-2021",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2020-11-18",
       "temporalCoverage": "2020-11-18/2020-12-19",
@@ -1049,7 +1049,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -1139,7 +1139,7 @@
       "name": "South Island Seismology at the Speed of Light Experiment",
       "description": "SmartSolo IGU-16HR 3C 5Hz nodal deployment to target seismicity and structure of the Alpine Fault near Haast, New Zealand in conjunction with a distributed acoustic sensing (DAS) experiment using a Silixa iDAS interrogator along Haast Pass.",
       "identifier": "ANU-2023-001",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANU-2023-001",
+      "url": "https://auscope.github.io/ansir/?id=ANU-2023-001",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2023-01-26",
       "temporalCoverage": "2023-01-26/2023-10-26",
@@ -1187,7 +1187,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -1387,7 +1387,7 @@
       "name": "South West Australia Network",
       "description": "The new deployment of ~25 broadband seismometers will provide the opportunity to dramatically improve the rendering of 3-D seismic structure in the crust and mantle lithosphere. The objective of this work is to provide a compilation of 3-D models, which will be an effective characterisation of the structure of the craton and its margins. These data and models will provide improved information for enhanced assessment of seismic ground shaking from regional earthquakes and facilitate an improved understanding of mineral resource potential.",
       "identifier": "S01-2019",
-      "url": "https://bvkay.github.io/ansir-data/?id=S01-2019",
+      "url": "https://auscope.github.io/ansir/?id=S01-2019",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2020-07-26",
       "temporalCoverage": "2020-07-26/2023-08-26",
@@ -1470,7 +1470,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -1518,7 +1518,7 @@
       "name": "AKIMBA",
       "description": "Eight continuous broadband stations in the Kimberley region of northwest Australia. Designed to record both infrequent local events and earthquakes at the convergent margin to the north to image in the Australian lithosphere.",
       "identifier": "2018-S01",
-      "url": "https://bvkay.github.io/ansir-data/?id=2018-S01",
+      "url": "https://auscope.github.io/ansir/?id=2018-S01",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2019-11-27",
       "temporalCoverage": "2019-11-27/2020-04-27",
@@ -1562,7 +1562,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -1600,7 +1600,7 @@
       "name": "Fiordland Seismological Sounding of Landslides and Earthquakes",
       "description": "SmartSolo IGU-16HR 3C 5Hz nodal deployment to target seismicity along with avalanche and landslide detection along highway SH94 to Milford Sound in conjunction with a distributed acoustic sensing (DAS) experiment using a Silixa iDAS interrogator.",
       "identifier": "2024-S01",
-      "url": "https://bvkay.github.io/ansir-data/?id=2024-S01",
+      "url": "https://auscope.github.io/ansir/?id=2024-S01",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2024-08-27",
       "temporalCoverage": "2024-08-27/2024-09-26",
@@ -1640,7 +1640,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -1756,7 +1756,7 @@
       "name": "Morocco - Atlas Mountains MT Project",
       "description": "This ongoing joint project between ONHYM, the National Office of Hydrocarbons and Mines, Mohamed V University and the University of Adelaide is to map the geo-electrical structure of the High Atlas Mountains in Morocco.",
       "identifier": "ANSIR-2023-001",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2023-001",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2023-001",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2024-12-28",
       "temporalCoverage": "2024-12-28/2025-07-28",
@@ -1797,7 +1797,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -1851,7 +1851,7 @@
       "name": "Morocco - Nador MT Geothermal Array",
       "description": "",
       "identifier": "ANSIR-2023-002",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2023-002",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2023-002",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2023-10-27",
       "temporalCoverage": "2023-10-27/2023-12-27",
@@ -1895,7 +1895,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2018,7 +2018,7 @@
       "name": "Vulcan Magnetotelluric and Passive Seismic Array",
       "description": "FMG Resources Pty Ltd (FMG) was successful in securing Round 2 Accelerated Discovery Initiative (ADI) funding for its proposed Integrated Exploration Under Deep Cover: Geophysics, Geochronology, Geochemistry research collaboration project with the University of Adelaide (UoA), where new passive seismic and magnetotelluric data were collected across the Vulcan prospect in South Australia.",
       "identifier": "ANSIR-2022-001",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2022-001",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2022-001",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2022-02-04",
       "temporalCoverage": "2022-02-04/2022-02-19",
@@ -2100,7 +2100,7 @@
       ],
       "conditionsOfAccess": "open",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2162,7 +2162,7 @@
       "name": "Western Gawler Magnetotelluric and Passive Seismic Project",
       "description": "The discovery of magmatic Ni-Cu sulphide in the Western Gawler Craton, confirmed the presence of significant, intrusive-hosted magmatic Ni-Cu sulphide in the Fowler Domain. The primary aim of this proposal is to develop a 3D model the Fowler Domain crust from the near surface to the Moho to identify the regional structural controls on emplacement of Ni-Cu-PGE prospective mafic-ultramafic intrusions. This proposal is in a collaboration between Western Areas and the University of Adelaide to complete three regionally-spaced magnetotelluric (MT) and passive seismic transects across key areas of the Fowler Domain. Such new data sets, coupled with legacy MT data, will be used to generate detailed 2D and 3D resistivity models of the Fowler Domain, with resolution from the near surface to the Moho. Passive seismic data will also constrain the cover sequences that can be introduced into the resistivity inversion. The project will integrate and interpret all the new and legacy datasets simultaneously to develop a 3D model with both sections and 3D views as outputs",
       "identifier": "ANSIR-2022-002",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2022-002",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2022-002",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2022-03-27",
       "temporalCoverage": "2022-03-27/2022-03-27",
@@ -2231,7 +2231,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2298,7 +2298,7 @@
       "name": "Curnamona Downward Looking Telescope: Curnamona Cube MT Program",
       "description": "The Curnamona Cube project is deploying 200 broadband magnetotelluric (MT) stations across the Curnamona Province on a 20 km grid, forming part of a broader deep Earth imaging initiative covering 90,000 km² across South Australia and New South Wales. This work is led by the University of Adelaide, in partnership with ANU, the University of Melbourne, Geoscience Australia, the State Geological Surveys, and several industry collaborators. The survey aims to image the electrical resistivity structure of the crust and upper mantle to depths of 300 km, offering a high-resolution view of a geologically complex and underexplored province. Early deployments, completed via helicopter and 4WD from Arkaroola to the SA-NSW border, are already feeding into what will become one of the most comprehensive geophysical datasets in Australia.\n",
       "identifier": "MT02-2020",
-      "url": "https://bvkay.github.io/ansir-data/?id=MT02-2020",
+      "url": "https://auscope.github.io/ansir/?id=MT02-2020",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2021-05-28",
       "temporalCoverage": "2021-05-28/2022-12-28",
@@ -2355,7 +2355,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2419,7 +2419,7 @@
       "name": "Curnamona Downward Looking Telescope: Curnamona Cube Passive Seismic Program",
       "description": "Running alongside the MT deployments, the Curnamona Cube project is also installing 200 passive seismic stations across the same 20 km grid. These instruments are being used to record ambient seismic noise and teleseismic events, which will allow researchers to develop detailed models of seismic velocity variations throughout the crust and upper mantle. This dual approach enables a multi-parameter perspective on lithospheric structure, enhancing resolution and interpretability. Additionally, a pilot observatory known as the Curnamona SuperSite is being established near the Kalkaroo deposit. At this site, a smaller grid of seismometers, MT instruments, and heat-flow probes are co-located to allow long-term monitoring and advanced Earth imaging experiments.\n",
       "identifier": "S01-2020",
-      "url": "https://bvkay.github.io/ansir-data/?id=S01-2020",
+      "url": "https://auscope.github.io/ansir/?id=S01-2020",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2022-03-28",
       "temporalCoverage": "2022-03-28/2022-07-28",
@@ -2472,7 +2472,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2544,7 +2544,7 @@
       "name": "Eyre Peninsula Nodal Array",
       "description": "The Eyre Peninsula Nodal Array (EPNA) consists of a mixture of SmartSolo IGU-16HR 3C short period nodes and SmartSolo IGU-BD3C-5 broadband nodes. The experiment consists of short-term (~30 day) deployments along the eastern Eyre Peninsula in South Australia, starting in late 2023. The project will target the local seismic velocity structure across the Kalinjala Shear Zone, within the Gawler Craton.",
       "identifier": "S03-2023",
-      "url": "https://bvkay.github.io/ansir-data/?id=S03-2023",
+      "url": "https://auscope.github.io/ansir/?id=S03-2023",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2023-10-27",
       "temporalCoverage": "2023-10-27/2024-10-27",
@@ -2592,7 +2592,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2679,7 +2679,7 @@
       "name": "Eyre Peninsula Natural Hydrogen Magnetotelluric Study",
       "description": "The magnetotelluric component of the CRC-P \"Accelerating exploration and extraction of renewable natural hydrogen\" sought to characterise the crustal architecture of the study area on H2EX's PEL 691 license to identify potential sources, migration pathways and traps for hydrogen. There were multiple phases of deployment: (a) a 50-km feasibility transect in late 2023, (b) a regional-scale array covering 100 squared kilometres in early 2024, and (c) five infill transects, each spanning 25 - 60 km in late 2024.",
       "identifier": "ANSIR-2023-06",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2023-06",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2023-06",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2023-11-19",
       "temporalCoverage": "2023-11-19/2024-11-07",
@@ -2765,7 +2765,7 @@
       ],
       "conditionsOfAccess": "embargoes",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2821,7 +2821,7 @@
       "name": "Auckland-Hauraki Node Array",
       "description": "Short term (30 day) node array targeting the greater Auckland Volcanic Field and the Hauraki Rift to the east. 52 SmartSolo BD3C 5s nodes were deployed May-June 2023 which were supplemented by five additional Trillium Compact 120s stations (AKB*) which will remain installed for an extended period. All data recorded at 250 Hz.",
       "identifier": "ANU-2023-02",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANU-2023-02",
+      "url": "https://auscope.github.io/ansir/?id=ANU-2023-02",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2023-03-28",
       "temporalCoverage": "2023-03-28/..",
@@ -2855,7 +2855,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -2934,7 +2934,7 @@
       "name": "Jupiter Anomaly Magnetotelluric Study",
       "description": "The Jupiter MT Anomaly Definition Study is a collaborative research project between Havilah Resources and the University of Adelaide, with instrumentation and in-kind support provided by ANSIR and Geoscience Australia. The study focuses on the Kalkaroo region within the Curnamona Province, a geologically significant area concealed by thick sedimentary cover that hinders conventional mineral exploration. The project was co-funded through a $50,000 State Government ADI grant and matched by Havilah Resources, with additional logistical support provided in kind. New magnetotelluric (MT) data were acquired, with helicopter-supported field logistics enabling a dense array of observation sites.",
       "identifier": "MT03-2020",
-      "url": "https://bvkay.github.io/ansir-data/?id=MT03-2020",
+      "url": "https://auscope.github.io/ansir/?id=MT03-2020",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2021-04-27",
       "temporalCoverage": "2021-04-27/2121-04-27",
@@ -3000,7 +3000,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -3066,7 +3066,7 @@
       "name": "Burra MT Project",
       "description": "The Burra MT project aims to investigate the 3D crustal architecture of the Adelaide Rift Complex in South Australia using a scale-integrated magnetotelluric (MT) approach to better understand fluid pathways in post-subduction porphyry copper systems. The project will combine long-period AusLAMP MT data with a new dense grid of broadband MT observations to image the electrical resistivity structure of the crust and upper mantle beneath the Burra region, which is known to host both magmatic and sedimentary-hosted copper mineralisation. Plans include the deployment of 82 broadband MT sites across the Northern Mount Lofty Ranges using LEMI-423 instrumentation from ANSIR and the Geological Survey of South Australia, with an additional 42 sites to be acquired using Phoenix MTU-5C systems to increase resolution and coverage.",
       "identifier": "UA-2017-001",
-      "url": "https://bvkay.github.io/ansir-data/?id=UA-2017-001",
+      "url": "https://auscope.github.io/ansir/?id=UA-2017-001",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2018-07-27",
       "temporalCoverage": "2018-07-27/2021-02-24",
@@ -3126,7 +3126,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -3194,7 +3194,7 @@
       "name": "Central Delamerian broadband MT Transect",
       "description": "A new broadband magnetotelluric (MT) transect is planned across a ~100 km NW–SE profile within the Delamerian Orogen, targeting a region obscured by Murray Basin sediments. The survey will use a dense array of MT stations to investigate deep crustal and upper mantle structures along the eastern hinge of the Nackara Arc and into the Loch Lily-Kars Belt an area where surface geology offers limited insight. By extending existing AusLAMP coverage with higher-resolution broadband data, the survey will build on recent discoveries of deep conductive features, such as the Nackara Conductor, that appear linked to significant mineral systems across southeast Australia. Instrumentation will be sourced from the AuScope and GSSA pools, with deployment optimised for imaging through basin cover.",
       "identifier": "MT01-2020",
-      "url": "https://bvkay.github.io/ansir-data/?id=MT01-2020",
+      "url": "https://auscope.github.io/ansir/?id=MT01-2020",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2020-08-30",
       "temporalCoverage": "2020-08-30/2020-09-29",
@@ -3245,7 +3245,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -3328,7 +3328,7 @@
       "name": "Marine MT imaging of the Spencer Gulf, South Australia",
       "description": "A pilot marine magnetotelluric (MT) survey is set to expand the Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP) onto the continental shelf for the first time in South Australia. The survey focuses on the Spencer Gulf, targeting a key data gap along the eastern margin of the Gawler Craton. Twelve MT instruments are planned for deployment along a transect between Tumby Bay and the Yorke Peninsula, in shallow waters ranging from 17 to 40 metres. This collaborative effort, led by the University of Adelaide with partners at the Geological Survey of South Australia, Geoscience Australia, and the Scripps Institution of Oceanography, aims to test the performance of broadband to long-period MT responses in marine environments. The Spencer Gulf transect builds directly on adjacent land-based MT coverage, offering a seamless extension from land to sea across this geologically significant region.",
       "identifier": "MT04-2020",
-      "url": "https://bvkay.github.io/ansir-data/?id=MT04-2020",
+      "url": "https://auscope.github.io/ansir/?id=MT04-2020",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2020-10-29",
       "temporalCoverage": "2020-10-29/2020-10-29",
@@ -3406,7 +3406,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -3479,7 +3479,7 @@
       "name": "MT imaging near the Kapunda Mine, South Australia",
       "description": "A field trial is being conducted to assess the feasibility of using modern In-Situ Recovery (ISR) techniques at the historic Kapunda copper mine in South Australia. Located within a fractured rock aquifer in a semi-arid region, Kapunda is recognised as Australia’s first mining town and holds both historical and geological significance. Although the site has been inactive since the 19th century due to the low grade of remaining ore, recent advancements in ISR technology have prompted renewed interest in extracting copper from previously uneconomic deposits. The trial involves controlled injection and recovery of lixiviants, supported by integrated geophysical and hydrogeological monitoring, to evaluate both the technical performance and environmental impact of ISR in this setting.",
       "identifier": "MT05-2020",
-      "url": "https://bvkay.github.io/ansir-data/?id=MT05-2020",
+      "url": "https://auscope.github.io/ansir/?id=MT05-2020",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2019-02-25",
       "temporalCoverage": "2019-02-25/2020-06-27",
@@ -3539,7 +3539,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -3668,7 +3668,7 @@
       "name": "AusArray SA: 3D lithospheric arcitecture of the eastern-central Gawler Craton and metallogenic Olympic Cu-Au Province",
       "description": "The AusArray SA passive seismic array is designed to map the 3D seismic structure of the eastern-central Gawler Craton, a region largely obscured by cover and home to South Australia’s prospective iron oxide-copper-gold (IOCG) province. A total of 38 broadband stations will be deployed across the region, matching the spacing of the completed AusLAMP magnetotelluric array to enable integrated geophysical analysis. The array includes 28 Nanometrics Trillium Compact 120 s sensors and 10 Trillium Compact 20 s sensors, with instruments sourced from both the AuScope-ANSIR pool and Geoscience Australia. Stations will operate continuously for 18 months, capturing ambient noise and teleseismic earthquake data for high-resolution crust and mantle imaging. This deployment complements ongoing efforts by the Geological Survey of South Australia and ANU to delineate lithospheric features across the craton using passive seismic methods.",
       "identifier": "S02-2019",
-      "url": "https://bvkay.github.io/ansir-data/?id=S02-2019",
+      "url": "https://auscope.github.io/ansir/?id=S02-2019",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2020-09-28",
       "temporalCoverage": "2020-09-28/2022-05-29",
@@ -3736,7 +3736,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -3785,7 +3785,7 @@
       "name": "Vulcan Magnetotelluric Extension",
       "description": "A new magnetotelluric (MT) survey is planned over the Vulcan copper-gold prospect in South Australia to investigate the connection between deep crustal conductors and upper-crustal IOCG-style mineralisation. The work will target a previously mapped vertical conductive feature together with a recently identified natural-source induced polarisation (NSIP) anomaly.\n\nBy extending the survey to the northeast and re-occupying selected earlier stations for reference, the program will deliver higher resolution images of the subsurface. The integration of MT and NSIP analysis provides an innovative approach to detecting chargeable zones beneath thick cover, helping refine exploration tools while improving understanding of the geological controls on mineralisation in the region.",
       "identifier": "Placeholder-16",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-16",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-16",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2024-10-26",
       "temporalCoverage": "2024-10-26/2025-01-26",
@@ -3834,7 +3834,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -3980,7 +3980,7 @@
       "name": "Probing the Australian-Pacific plate boundary: Macquarie Ridge in 3-D",
       "description": "Imaging the 3D structure of the oceanic crust and underlying lithosphere along the Macquarie Ridge Complex is the central focus of this work. Located at the active boundary between the Australian and Pacific plates in the southwest Pacific Ocean, the region is geologically exceptional, being the only known example where typical oceanic crust is exposed above sea level within its original ocean basin. The study is linked to RV Investigator voyage IN2020-V02 and includes the deployment of a broadband ocean-bottom seismometer (OBS) array, along with land-based stations positioned on and around Macquarie Island. Despite the logistical and environmental challenges of operating in the Southern Ocean, data recovery and processing using QuakeMigrate software has enabled the development of a detailed microseismicity catalogue, even under noisy and variable conditions.",
       "identifier": "OB01-2019",
-      "url": "https://bvkay.github.io/ansir-data/?id=OB01-2019",
+      "url": "https://auscope.github.io/ansir/?id=OB01-2019",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2020-09-27",
       "temporalCoverage": "2020-09-27/2022-01-28",
@@ -4042,7 +4042,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -4099,7 +4099,7 @@
       "name": "Utilising Distributed Acoustic Sensing and Dark Fibres for Smart Water Asset Monitoring",
       "description": "A new approach is proposed to monitor the condition of underground water pipelines by repurposing existing telecommunication optical fibre cables as distributed acoustic sensors (DAS). These unused “dark fibres,” which are already widespread beneath urban infrastructure, offer a low-cost and scalable solution for detecting cracks, leaks, and structural faults in water distribution networks. Unlike traditional sensor deployments, which can be expensive and logistically challenging, DAS enables continuous monitoring across long distances with minimal disruption. The use of fibre optic cables transforms passive infrastructure into real-time sensing systems, providing a foundation for smarter, more responsive water asset management in Australia’s aging pipeline network.",
       "identifier": "S04-2023",
-      "url": "https://bvkay.github.io/ansir-data/?id=S04-2023",
+      "url": "https://auscope.github.io/ansir/?id=S04-2023",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2024-02-29",
       "temporalCoverage": "2024-02-29/2025-04-30",
@@ -4133,7 +4133,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -4260,7 +4260,7 @@
       "name": "Southland Otago Seismic Array",
       "description": "The Southland region of New Zealand lies at the peripheral edge of the Australian-Pacific plate boundary, and at the juxtaposition of multiple geologic terranes that were accreted onto the Gondwana margin during the Mesozoic. However, constraints on seismicity in this region, and the possible influence of its complex geologic history on modern day deformation processes, are limited by the sparse coverage of the permanent GeoNet network (station spacing ~100 km). To address this knowledge gap, we deployed 19x short period seismometers between October 2022-2023 as part of the Southland Otago Seismic Array (SOSA). Supplemented by GeoNet stations and a temporary deployment in neighbouring Fiordland (Fiord22), the reduced SOSA station spacing (10-30 km) has provided the first opportunity to study and characterise microseismicity in this region.",
       "identifier": "S01-2022",
-      "url": "https://bvkay.github.io/ansir-data/?id=S01-2022",
+      "url": "https://auscope.github.io/ansir/?id=S01-2022",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2020-09-29",
       "temporalCoverage": "2020-09-29/2023-09-29",
@@ -4310,7 +4310,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -4408,7 +4408,7 @@
       "name": "Lake Eyre Basin",
       "description": "This project focuses on investigating the recent surge in earthquake activity in central Australia, particularly around Kati Thanda - Lake Eyre. Despite being a stable continental interior, this region experiences frequent intra-plate earthquakes, the causes of which remain poorly understood. A new AuScope-funded deployment of 40 seismic stations, including broadband and short-period sensors, will expand seismic coverage across the Lake Eyre Basin and adjacent Gawler Craton. This network will fill a critical gap in the national seismic array, enabling high-resolution imaging of sub-surface crustal structures hidden beneath extensive sedimentary cover. The seismic stations will be strategically positioned in a challenging and remote environment, including across the Simpson Desert, to capture valuable data that would otherwise be inaccessible.",
       "identifier": "Placeholder-17",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-17",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-17",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2018-09-29",
       "temporalCoverage": "2018-09-29/2022-05-30",
@@ -4476,7 +4476,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -4666,7 +4666,7 @@
       "name": "WA-Cratons",
       "description": "A passive seismic investigation is planned across key tectonic domains of Western Australia to improve resolution of crustal and upper mantle structure in a region that remains poorly imaged compared to the rest of the continent. The survey will utilise broadband three-component seismic stations deployed along the WT and WV transects across the Yilgarn Craton, with additional WR and WP sites providing extended coverage. These arrays will record teleseismic events for receiver function analysis, enabling the mapping of seismic velocity variations, Moho depth, and discontinuity structure from the Pilbara Craton, across the Capricorn Orogen, into the Yilgarn Craton. By using closely spaced stations in targeted profiles alongside more widely spaced regional coverage, the survey design allows for both local-scale and broad lithospheric imaging.",
       "identifier": "Placeholder-23",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-23",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-23",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2000-06-29",
       "temporalCoverage": "2000-06-29/2004-01-30",
@@ -4740,7 +4740,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -4848,7 +4848,7 @@
       "name": "Australian Light Infrastructure Research Testbed",
       "description": "A 25 km segment of dark fiber from the Australian Light Infrastructure Research Testbed (ALIRT) in Melbourne is being repurposed to create a dense Distributed Acoustic Sensing (DAS) array for passive seismic imaging in an urban setting. The fiber, originally installed for research use between photonics labs at RMIT and Monash University, now supports over 6,000 DAS channels spaced at 4 metres. The array runs from Melbourne’s central business district out toward the eastern suburbs, closely following arterial roads, tram lines, and local infrastructure, including the Victoria Bridge. Physical channel locations were partially verified through field tap tests and maintenance access points, with the remainder interpolated to within about 20 metres accuracy. The dataset captures a complex urban environment with varied noise sources, road traffic, and structural coupling conditions, offering a unique opportunity to explore the use of DAS for passive imaging in highly developed areas.",
       "identifier": "Placeholder-24",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-24",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-24",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2021-11-28",
       "temporalCoverage": "2021-11-28/2023-09-28",
@@ -4902,7 +4902,7 @@
       ],
       "conditionsOfAccess": "open",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -4998,7 +4998,7 @@
       "name": "CAPRA",
       "description": "A passive seismic survey is proposed across the Pilbara Craton, Capricorn Orogen, and Paterson Orogen to investigate the deep crustal structure of this geologically significant region. Broadband seismic stations, spaced at approximately 40-45 km, will record teleseismic waveforms to enable receiver function analysis and seismic velocity modelling. These methods are well suited to identifying key features such as the Moho, mid-crustal discontinuities, and lateral variations in crustal thickness. The survey will target areas where subsurface structure remains poorly constrained and where deep geological boundaries are not well defined from existing surface mapping or geophysical datasets.",
       "identifier": "2006-S01",
-      "url": "https://bvkay.github.io/ansir-data/?id=2006-S01",
+      "url": "https://auscope.github.io/ansir/?id=2006-S01",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2006-05-28",
       "temporalCoverage": "2006-05-28/2007-04-27",
@@ -5060,7 +5060,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -5137,7 +5137,7 @@
       "name": "Linkage Project",
       "description": "A regional seismic monitoring program is planned for northwestern Australia to investigate the causes and characteristics of seismicity in one of the most tectonically complex and historically active parts of the continent. Despite hosting Australia’s largest recorded earthquakes, the current seismic record for this region is sparse. The geological framework includes multiple Archean and Proterozoic cratons, orogens, and large-scale fault systems, many of which remain poorly understood at depth. By deploying a dense array of broadband seismometers, the survey will enable high-precision earthquake detection and imaging of crustal structure across both onshore and offshore zones. This will support an improved understanding of neotectonics, basement reactivation, and the potential influence of natural resource extraction on local seismicity",
       "identifier": "2005-S01",
-      "url": "https://bvkay.github.io/ansir-data/?id=2005-S01",
+      "url": "https://auscope.github.io/ansir/?id=2005-S01",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2005-09-28",
       "temporalCoverage": "2005-09-28/2007-02-26",
@@ -5196,7 +5196,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -5313,7 +5313,7 @@
       "name": "Magnetotelluric investigation of the Vestfold Hills and Rauer Group, East Antarctica",
       "description": "The Prydz Bay MT project, located in East Antarctica is aimed at imaging a suspected suture zone beneath the Sørsdal Glacier. The survey area spans the Vestfold Hills and Rauer Group, two terranes with contrasting geological histories that are thought to have been juxtaposed during the assembly of East Gondwana. A series of MT stations will be deployed along three helicopter-supported transects extending inland from the Davis research station, covering approximately 200 line-kilometres. Due to the unique challenges of working in polar conditions, the survey will use MT systems with preamplifiers designed to overcome the high contact resistance of ice. Stainless steel electrodes will be arranged in 100 m dipoles with magnetic sensors capturing both fluxgate and induction coil data, optimised for data collection in a high-noise, cold-climate environment.",
       "identifier": "2008-M01",
-      "url": "https://bvkay.github.io/ansir-data/?id=2008-M01",
+      "url": "https://auscope.github.io/ansir/?id=2008-M01",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2008-10-29",
       "temporalCoverage": "2008-10-29/2009-01-29",
@@ -5384,7 +5384,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -5448,7 +5448,7 @@
       "name": "Tumby Bay MT Traverse",
       "description": "A high-resolution broadband magnetotelluric (MT) survey is proposed across the southern Eyre Peninsula to refine the structure, extent, and origin of one of Australia’s most prominent crustal conductivity anomalies, the Eyre Peninsula Anomaly (EPA). This feature, initially discovered in the 1980s through geomagnetic depth sounding (GDS), spans several hundred kilometres and has since become one of the most studied conductive zones in the country. While GDS and early MT data established the anomaly’s lateral scale, uncertainties remain regarding its depth, continuity, and geological source. The new survey will complement the legacy datasets with modern MT instrumentation and dense station spacing (~2 km), deployed along an 80 km east–west transect where two-dimensional responses are expected to be clearest. This approach aims to resolve the structure at crustal scale, from the surface to depths of at least 20 km, over an area known for significant graphite deposits, iron and base metal mineralisation, and structurally complex Paleoproterozoic rocks.",
       "identifier": "Placeholder-31",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-31",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-31",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2018-06-30",
       "temporalCoverage": "2018-06-30/2019-10-31",
@@ -5516,7 +5516,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -5587,7 +5587,7 @@
       "name": "Newer Volcanic Province MT Program",
       "description": "Deep crustal conductors observed in tectonically stable regions present an enduring puzzle in solid Earth geophysics. One area of particular interest lies beneath the Mt Gambier subprovince of the Newer Volcanics Province (NVP) in southeast Australia, where long period MT & GDS imaging has revealed a low-resistivity zone extending across the mid to lower crust. Interpreted as evidence of fluid-assisted alteration and potentially partial melt, this conductor offers a rare opportunity to explore links between electrical conductivity, fluid transport, and the deeper mechanisms driving intraplate volcanism. A new MT survey is proposed to increase resolution across this feature and investigate whether the anomaly reflects rehydrated deep crust, partial melt, or carbon-rich lithologies. The survey will expand on earlier datasets by infilling critical gaps, especially along the southern margin of the NVP, to build a more complete 3D resistivity model of this dynamic region.",
       "identifier": "Placeholder-32",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-32",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-32",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2019-07-31",
       "temporalCoverage": "2019-07-31/2019-08-31",
@@ -5650,7 +5650,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -5719,7 +5719,7 @@
       "name": "Ambient Noise Tomography of an Electrical Resistivity Anomaly, Mundi Mundi",
       "description": "The Mundi project investigated the eastern extent of the Curnamona conductivity anomaly beneath the Mundi Plain in far western New South Wales, a region prospective for iron oxide copper-gold (IOCG) and Broken Hill–type mineral systems. The area is largely covered by sediments with minimal basement exposure, making geophysical methods essential for understanding the underlying crustal structure. To complement earlier magnetotelluric (MT) and moving-loop electromagnetic (MLEM) surveys that identified conductive features potentially linked to mineralised systems, a 102-station ambient noise tomography (ANT) passive seismic array was deployed across the eastern portion of the conductor. The array recorded naturally occurring seismic noise to derive surface-wave velocity models of the crust, providing additional constraints on subsurface structure and physical properties. Integration of the ANT results with existing electromagnetic datasets improves imaging of the crustal architecture of the Curnamona Province and helps refine interpretations of the conductive structures thought to be associated with mineral system development.",
       "identifier": "2024-S02",
-      "url": "https://bvkay.github.io/ansir-data/?id=2024-S02",
+      "url": "https://auscope.github.io/ansir/?id=2024-S02",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2024-06-26",
       "temporalCoverage": "2024-06-26/2024-07-27",
@@ -5771,7 +5771,7 @@
       ],
       "conditionsOfAccess": "embargoes",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -5834,7 +5834,7 @@
       "name": "Seismic Investigations of Lithospheric Transitions between the Northern and Southern Australian Cratons",
       "description": "A broadband seismic array is planned to investigate lithospheric-scale transitions between major cratonic blocks in central Australia, focusing on the structural links between the Gawler Craton, Musgrave Block, Arunta Block, and Mt Isa Block. The deployment will target key intercratonic suture zones where previous studies have identified anomalously slow seismic velocities in the upper mantle, extending to depths of at least 75 km. By spanning multiple tectonic domains and connecting northern and southern Australian cratonic regions, the configuration is designed to characterise variations in seismic velocity, attenuation, and discontinuity structure that reflect the processes of continental assembly and intracratonic reworking",
       "identifier": "Placeholder-34",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-34",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-34",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2008-07-31",
       "temporalCoverage": "2008-07-31/2011-01-31",
@@ -5884,7 +5884,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -5941,7 +5941,7 @@
       "name": "Mount Isa Northern Queensland",
       "description": "A portable broadband seismic array is planned for deployment across the Mount Isa region and surrounding areas of northwestern Queensland to investigate crustal and upper mantle structure in one of Australia’s most significant mineral provinces. Instruments will be positioned on a grid with ~50 km spacing to record seismic waves from distant earthquakes, enabling high-resolution seismic velocity imaging to depths of 50-100 km. The study area contains the Gidyea Suture zone within the Mt Isa succession, an important but poorly understood crustal feature potentially linked to large-scale mineralisation. Previous geophysical surveys, including magnetics, gravity, magnetotellurics, and seismic refraction, have highlighted pronounced structural and conductivity anomalies, but the geometry, composition, and tectonic history of mid-crustal features remain unresolved.",
       "identifier": "Placeholder-35",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-35",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-35",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2009-05-31",
       "temporalCoverage": "2009-05-31/2011-02-28",
@@ -5982,7 +5982,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6039,7 +6039,7 @@
       "name": "Magnetotelluric broadband survey of Western Tasmania",
       "description": "Broadband MT surveys are planned across key geological boundaries in western and northwestern Tasmania to investigate the lithospheric structure and its relationship to mineralisation. The traverses will cross the contact between Precambrian Tyennan basement and the Cambrian-Devonian Dundas-Fossey Trough, a metalliferous terrane hosting significant volcanic-hosted massive sulfide deposits. Tasmania’s west presents both opportunities and challenges for MT acquisition, from complex tectonic history, rugged terrain, dense vegetation, and limited road access. MT measurements, made using broadband PR6-24 Earth Data Loggers paired with LEMI-120 magnetic coils, will capture high-resolution geoelectric data to depths of tens of kilometres, providing an essential link between AusLAMP long-period datasets and local-scale geological information.",
       "identifier": "Placeholder-36",
-      "url": "https://bvkay.github.io/ansir-data/?id=Placeholder-36",
+      "url": "https://auscope.github.io/ansir/?id=Placeholder-36",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2015-12-31",
       "temporalCoverage": "2015-12-31/2016-01-31",
@@ -6081,7 +6081,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6120,7 +6120,7 @@
       "name": "Ostler Fault Quakes Array, New Zealand                        ",
       "description": "The Ostler fault is one of the most active faults in the region east of the central Alpine fault, and underlies major New Zealand infrastructure. The Ostler quakes network will deploy 12 temporary seismographs to obtain accurate locations for very small magnitude earthquakes that are not observed by the sparse permanent network. This will enhance understanding of the deep Ostler fault and help identify other seismically active structures.",
       "identifier": "ANSIR-2025-005",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2025-005",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2025-005",
       "creativeWorkStatus": "In Progress",
       "dateCreated": "2025-09-30",
       "temporalCoverage": "2025-09-30/2026-09-30",
@@ -6149,7 +6149,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6195,7 +6195,7 @@
       "name": "Central Curnamona Magnetotelluric Traverse",
       "description": "",
       "identifier": "ANSIR-2017-001",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2017-001",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2017-001",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2016-04-27",
       "temporalCoverage": "2016-04-27/2016-05-28",
@@ -6241,7 +6241,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6301,7 +6301,7 @@
       "name": "Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP) Phase 1 Queensland",
       "description": "This project aims to create maps of how electricity moves through rocks deep beneath Australia. These maps help scientists better understand how the Australian continent formed and changed over time. The results can also help identify areas with potential mineral and energy resources, and improve understanding of how space weather can affect infrastructure on the ground.",
       "identifier": "ANSIR-2025-010",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2025-010",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2025-010",
       "creativeWorkStatus": "Complete",
       "dateCreated": "2025-09-15",
       "temporalCoverage": "2025-09-15/2025-11-29",
@@ -6345,7 +6345,7 @@
       ],
       "conditionsOfAccess": "embargoes",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6384,7 +6384,7 @@
       "name": "Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP) Phase 2 Queensland",
       "description": "This project aims to create maps of how electricity moves through rocks deep beneath Australia. These maps help scientists better understand how the Australian continent formed and changed over time. The results can also help identify areas with potential mineral and energy resources, and improve understanding of how space weather can affect infrastructure on the ground.",
       "identifier": "ANSIR-2026-001",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2026-001",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2026-001",
       "creativeWorkStatus": "In Progress",
       "dateCreated": "2026-02-27",
       "temporalCoverage": "2026-02-27/2026-04-27",
@@ -6428,7 +6428,7 @@
       ],
       "conditionsOfAccess": "restricted",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6506,7 +6506,7 @@
       "name": "Resistivity model of mineral and hydrogen systems in Yorke Peninsula",
       "description": "Discovery of natural hydrogen and helium on the Yorke Peninsula in 2023 increased public interest in hydrogen as a new green energy source. This project aims to develop a geophysical model of the region using newly collected as well as legacy geological, geophysical and geochemical datasets. A comprehensive geological interpretation will be done to examine: a) hydrogen sources, migration pathways and traps, b) fluid flow and basin traps, and c) relationships between H2 and different mineral and energy system.",
       "identifier": "ANSIR-2026-002",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2026-002",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2026-002",
       "creativeWorkStatus": "In Progress",
       "dateCreated": "2026-02-21",
       "temporalCoverage": "2026-02-21/2026-12-18",
@@ -6571,7 +6571,7 @@
       ],
       "conditionsOfAccess": "restricted",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6764,7 +6764,7 @@
       "name": "Multi-scale geophysical investigation of subduction to strike-slip transition, New Zealand",
       "description": "New Zealand’s plate boundary changes rapidly in the Cook Strait region, shifting from a subduction zone in the North Island to the strike‑slip faults of the South Island. This transition zone controls how large earthquakes begin, connect, and cascade, but its deep structure is still poorly understood. This project will use a dense array of seismic sensors to create a 3D image of the crust, providing critical information needed to better assess seismic hazard and strengthen the resilience of central New Zealand",
       "identifier": "ANSIR-2026-003",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2026-003",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2026-003",
       "creativeWorkStatus": "Planning",
       "dateCreated": "2027-01-30",
       "temporalCoverage": "2027-01-30/2027-03-22",
@@ -6829,7 +6829,7 @@
       ],
       "conditionsOfAccess": "restricted",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6877,7 +6877,7 @@
       "name": "Investigating the natural hydrogen potential of the Frome Embayment through resistivity and shear-wave velocity structure",
       "description": "This multi-geoscientific research explores the interplay between fault systems, hydrothermal activity, and potential natural hydrogen production related to the Paralana Fault Zone in South Australia’s Northern Flinders Ranges. The survey area represents an ideal natural laboratory for testing hypotheses on the roles of the essential geological processes in natural hydrogen production within the continental crust. Two geophysical methods - Magnetotellurics and Passive Seismics are used to constrain the sedimentary cover thickness, geometry of the major faults and to evaluate their potential role in natural hydrogen generation, transport and storage in continental settings.",
       "identifier": "ANSIR-2026-004",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2026-004",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2026-004",
       "creativeWorkStatus": "Planning",
       "dateCreated": "2026-04-19",
       "temporalCoverage": "2026-04-19/2026-06-09",
@@ -6919,7 +6919,7 @@
       ],
       "conditionsOfAccess": "embargoes",
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -6958,7 +6958,7 @@
       "name": "Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP) Phase 3 Queensland",
       "description": "This project aims to create maps of how electricity moves through rocks deep beneath Australia. These maps help scientists better understand how the Australian continent formed and changed over time. The results can also help identify areas with potential mineral and energy resources, and improve understanding of how space weather can affect infrastructure on the ground.",
       "identifier": "ANSIR-2026-005",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2026-005",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2026-005",
       "creativeWorkStatus": "Planning",
       "dateCreated": "2026-05-28",
       "temporalCoverage": "2026-05-28/2026-07-09",
@@ -7002,7 +7002,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -7041,7 +7041,7 @@
       "name": "Australian Lithospheric Architecture Magnetotelluric Project (AusLAMP) Phase 4 Queensland",
       "description": "This project aims to create maps of how electricity moves through rocks deep beneath Australia. These maps help scientists better understand how the Australian continent formed and changed over time. The results can also help identify areas with potential mineral and energy resources, and improve understanding of how space weather can affect infrastructure on the ground.",
       "identifier": "ANSIR-2026-006",
-      "url": "https://bvkay.github.io/ansir-data/?id=ANSIR-2026-006",
+      "url": "https://auscope.github.io/ansir/?id=ANSIR-2026-006",
       "creativeWorkStatus": "Planning",
       "dateCreated": "2026-08-12",
       "temporalCoverage": "2026-08-12/2026-09-30",
@@ -7085,7 +7085,7 @@
         }
       ],
       "provider": {
-        "@id": "https://ansir.org.au"
+        "@id": "https://www.auscope.org.au/ansir"
       },
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"

@@ -19,9 +19,12 @@ const path = require('path');
 const DATA_PATH = path.join(__dirname, '..', 'data', 'data.json');
 const OUTPUT_PATH = path.join(__dirname, '..', 'ro-crate-metadata.json');
 
-const ANSIR_URL = 'https://ansir.org.au';
+// The facility's page on the AuScope site. ansir.org.au does not exist
+// (NXDOMAIN) and must not be used as an identifier: RO-Crate @id values
+// are meant to resolve for harvesters that follow them.
+const ANSIR_URL = 'https://www.auscope.org.au/ansir';
 const AUSCOPE_URL = 'https://www.auscope.org.au';
-const GITHUB_PAGES_URL = 'https://bvkay.github.io/ansir-data/';
+const GITHUB_PAGES_URL = 'https://auscope.github.io/ansir/';
 
 /**
  * Generate a local @id for contextual entities

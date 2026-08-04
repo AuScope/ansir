@@ -365,7 +365,7 @@ researcher names paired with email addresses to any anonymous caller.
 Build the autofill client-side from the already-public data file instead:
 
 ```js
-var DATA_URL = 'https://bvkay.github.io/ansir-data/data/data.json';
+var DATA_URL = 'https://auscope.github.io/ansir/data/data.json';
 
 var contributorProfiles = new Map();
 
