@@ -24,7 +24,7 @@ is all it does. It exposes four web-callable functions and nothing else:
 |---|---|
 | `doGet` | Returns a short plain-text notice. The endpoint is not a page |
 | `doPost` | The transport the form uses. Dispatches on an `action` field |
-| `saveUploadedFile` | Accepts one supporting PDF, stages it in Drive, returns its file ID |
+| `saveUploadedFile` | Accepts one supporting PDF per call, stages it in Drive, returns its file ID |
 | `submitApplication` | Validates, allocates a reference, records the row, files the application in Drive, sends the emails |
 
 Every other function in the file ends in an underscore, which makes it
@@ -54,18 +54,20 @@ Script web app cannot set an HTTP status code.
 ```
 Researcher completes the 5-step form (GitHub Pages, source in apply/index.html)
       |
-      | 1. optional: upload one supporting PDF
+      | 1. optional: upload up to 5 supporting PDFs, ONE CALL EACH
       v
-saveUploadedFile  -->  PDF written to the STAGING folder in Drive
-      |                returns a Drive file ID
-      | 2. submit the application, carrying that file ID
+saveUploadedFile  -->  one PDF written to the STAGING folder in Drive
+      |                returns a Drive file ID. Called once per document,
+      |                sequentially, so a failure names the file that failed
+      | 2. submit the application, carrying those file IDs
       v
 submitApplication
       |
       +-- re-validates every required field, server-side
       +-- checks the submissions-per-hour cap
-      +-- fetches the PDF back out of Drive by ID, and confirms it is in the
-      |   staging folder. This runs BEFORE anything is moved
+      +-- fetches every PDF back out of Drive by ID, confirms EACH is in the
+      |   staging folder, and enforces the 5-document and 10 MB-total caps.
+      |   This runs BEFORE anything is moved and BEFORE a reference is issued
       |
       +-- [ SCRIPT LOCK ] ---------------------------------------+
       |     scans ANSIR_Projects_MasterList for existing codes   |
@@ -139,10 +141,20 @@ the tab sees these before any application content.
 | `review_status` | `New` on arrival; maintained by hand thereafter |
 | `reviewed_by` | Who assessed it |
 | `review_notes` | Free text for the assessment |
-| `supporting_document_file_id` | Drive file ID of the uploaded PDF |
-| `supporting_document_url` | Drive link to the uploaded PDF. Unaffected by filing, because a Drive link is built from the file ID and survives a move |
-| `supporting_document_name` | File name of the uploaded PDF |
+| `supporting_document_file_id` | Drive file IDs of the uploaded PDFs, semicolon-delimited |
+| `supporting_document_url` | Drive links to the uploaded PDFs, semicolon-delimited. Unaffected by filing, because a Drive link is built from the file ID and survives a move |
+| `supporting_document_name` | File names of the uploaded PDFs, semicolon-delimited |
 | `application_folder_url` | Drive link to the folder holding this application. Empty when filing is not configured, or when the folder could not be created |
+
+**The three `supporting_document_*` columns are lists, not single values.** An
+application may carry up to five documents, so each of those three cells holds a
+semicolon-delimited list in the same order: the Nth id, the Nth url and the Nth
+name describe one document. This is the multi-value convention the contributor
+columns already use, and it is why **no column was added** for a second
+document. The tab is still 94 columns wide and block 2 is still the contiguous
+72-column master range. Widening the tab for a second document would have shifted
+every column after it and broken promotion, which is the failure this layout
+exists to prevent.
 
 **Block 2 - the master list (columns 9 to 80).** Every column of
 `ANSIR_Projects_MasterList`, using the master list's exact header spellings and
@@ -250,27 +262,51 @@ is allocated at submission. The supporting document, though, is uploaded
 earlier, by a separate `saveUploadedFile` call, at a point where no reference
 exists and no folder could be named after one.
 
-So uploads land in the staging folder. At submission, once the reference has
-been allocated, the endpoint creates a folder named after it, moves the staged
-document into it, and writes a PDF copy of the application alongside:
+So uploads land in the staging folder under a neutral staged name. At
+submission, once the reference has been allocated, the endpoint creates a
+folder named after it, moves each staged document into it and renames it to
+the definitive scheme, and writes a PDF copy of the application alongside:
 
 ```
 ANSIR Applications/                    (APPLICATION_FOLDER_ID)
   ANSIR-2026-008/
     ANSIR-2026-008 Application.pdf     the PDF copy of the application
-    ANSIR_Application_<title>_<timestamp>.pdf   the applicant's document
+    ANSIR-2026-008 file_upload_1.pdf   document 1, in attachment order
+    ANSIR-2026-008 file_upload_2.pdf   document 2
 ```
+
+Each move is wrapped on its own, so a document that cannot be moved cannot stop
+the others being filed. It stays in the staging folder, is still attached to the
+emails, and its entry in `supporting_document_url` still opens it.
+
+### The stored file name is the reference plus an index
+
+A filed document is named `<reference> file_upload_<n>.pdf`, numbered in the
+order the applicant attached them. The reference does not exist when a file is
+uploaded, so staged files carry a short neutral name
+(`staged_<timestamp>.pdf`) and the definitive name is applied during filing.
+The applicant's original filename is deliberately not carried into the stored
+name - original names are often long, and inside a folder already named after
+the reference the index is what a reviewer needs. The original filenames are
+still visible in the emails' listing of what was submitted.
+
+The rename is wrapped separately from the move: a failed rename never undoes a
+successful move. Whatever name a file actually ends up with in Drive is the
+name recorded in the sheet, quoted in the emails and printed in the
+application PDF - the record never claims a name the file does not have.
 
 In steady state the staging folder is empty. What remains in it are uploads from
 sessions that were never submitted.
 
 ### The containment check, and why the order matters
 
-`submitApplication` confirms that the supplied file ID names a file inside the
-staging folder and refuses anything outside it. The ID arrives from the client
-and the file is about to be emailed to an address that also arrived from the
-client, so that check is what confines the attachment to files the intake itself
-created.
+`submitApplication` confirms that **every** supplied file ID names a file inside
+the staging folder and refuses the whole submission if any one of them is
+outside it. The IDs arrive from the client and the files are about to be emailed
+to an address that also arrived from the client, so that check is what confines
+the attachments to files the intake itself created. One unchecked ID in a list
+of five is exactly as dangerous as one unchecked ID on its own, so there is no
+partial acceptance and no fast path.
 
 It runs **before** the file is moved, and that position is part of the control
 rather than an accident of ordering. The check is only true while the document
@@ -283,10 +319,35 @@ a reference is no longer in the staging folder, so its file ID is refused by any
 later submission. One upload belongs to one application.
 
 Uploads are checked server-side after decoding, not on the client's word: the
-actual decoded byte length is measured against the 10 MB limit, and the leading
-bytes are inspected to confirm the file really is a PDF. No state is held
-between executions anywhere in the design; the upload call returns an ID and the
-submit call fetches the file back by that ID.
+actual decoded byte length of every file is measured against the 10 MB
+per-document limit, and the leading bytes of every file are inspected to confirm
+it really is a PDF. No state is held between executions anywhere in the design;
+each upload call returns an ID and the submit call fetches the files back by
+those IDs.
+
+### The document limits
+
+| Limit | Value | Where it is enforced |
+|---|---|---|
+| Documents per application | 5 | The form before an upload starts, and `getUploadedFiles_` at submission |
+| Size of one document | 10 MB | The form, then `validateFileData_` on the claimed size, then the decoded byte length in `handleUpload_` |
+| Total size of all documents | 10 MB | The form tracks a running total; `getUploadedFiles_` re-checks it at submission on the sizes Drive reports |
+| File type | PDF only | The form on the MIME type; the `%PDF-` magic number on the decoded bytes of every file, server-side |
+
+**The total cap is a mail limit and it is the important one.** Every supporting
+document is attached to all three notification emails alongside the generated
+application PDF. Gmail rejects a message over roughly 25 MB, so without a total
+cap an application carrying five 10 MB documents would produce three messages
+that never send: the applicant would hold a reference number and nobody would
+have been told. Ten megabytes of documents plus the application PDF leaves ample
+headroom.
+
+No upload call can enforce the total on its own, because each is a separate
+execution with no memory of the others. The form tracks the running total so the
+applicant is told at the moment they attach a file, and `getUploadedFiles_`
+checks it again at submission because a form is not a security boundary. Both
+caps are checked before any file is moved and before a reference is allocated,
+so a breach costs nothing: no row, no reference, no gap in the sequence.
 
 ### The PDF copy of the application
 
@@ -294,7 +355,7 @@ Named `<reference> Application.pdf`, and attached to all three notification
 emails as well as filed. It is a printable transcript of the whole application:
 the reference, the submission time, then every section in the order the form
 asks them, including all contributors and the itemised equipment request, and
-the supporting document's filename where one was attached.
+every attached document with its size.
 
 Its content comes from the same function that builds the body of the emails, so
 the filed PDF and the two notifications cannot disagree about what was
@@ -321,10 +382,11 @@ outage costs tidiness, never an application.
 ### What the row records
 
 `supporting_document_file_id`, `supporting_document_url`,
-`supporting_document_name` and `application_folder_url`. The URLs are ordinary
-Drive links, openable only by people with access to those folders. The document
-URL is unaffected by filing, because a Drive link is built from the file ID and
-survives a move.
+`supporting_document_name` and `application_folder_url`. The first three are
+semicolon-delimited lists in the same order, one entry per document. The URLs
+are ordinary Drive links, openable only by people with access to those folders.
+A document URL is unaffected by filing, because a Drive link is built from the
+file ID and survives a move.
 
 ---
 
@@ -334,13 +396,18 @@ Three notifications per submission, all plain text.
 
 | Recipient | Content | Attachments |
 |---|---|---|
-| The applicant (`lead_email`) | Acknowledgement, their ANSIR reference, next steps and a full transcript of the submission | The application PDF, and the uploaded document if there was one |
+| The applicant (`lead_email`) | Acknowledgement, their ANSIR reference, next steps and a full transcript of the submission | The application PDF, and every uploaded document |
 | `ADMIN_EMAILS` | The same full transcript, plus where the row was recorded and a note that the row is an application, not a project. Reply-to is the applicant | As above |
 | `FACILITY_ROUTES` | Identical to the administrator notification | As above |
 
-Either attachment can be absent: there may have been no supporting document, and
+Any attachment can be absent: there may have been no supporting documents, and
 PDF generation may have failed. The send goes ahead with whatever exists, because
-an email with one attachment is a smaller loss than no email at all.
+an email with one attachment is a smaller loss than no email at all. Every email
+body lists every attached document with its size, so a reviewer can see what
+should have arrived even if an attachment did not.
+
+Three messages each carrying the whole document set is exactly why the total
+size is capped at 10 MB. See "The document limits" above.
 
 Subjects are `ANSIR equipment loan application received - <code>` to the
 applicant and `New ANSIR equipment loan application - <code>` internally. Mail
@@ -519,12 +586,16 @@ input, so a person reads it before it crosses that boundary.
 | Upload returns a configuration message | `UPLOAD_FOLDER_ID` has not been set to a real folder. See `gas/README.md` |
 | The log says folder filing is not configured | `APPLICATION_FOLDER_ID` is still the placeholder. Nothing is wrong: the application is recorded and emailed, and the document stays in the staging folder. Set the folder ID and deploy a new version to switch filing on |
 | `application_folder_url` is empty on a row | Either filing is not configured, or the folder could not be created. The application is unaffected. Check the Executions log for a `createApplicationFolder_` error |
-| The supporting document is still in the staging folder | The move failed after the folder was created. The document is still attached to the emails and `supporting_document_url` still opens it. Move it by hand and check the log for a `moveStagedFile_` error |
+| A supporting document is still in the staging folder | Its move failed after the folder was created. Each document is moved separately, so the others will have been filed. It is still attached to the emails and its entry in `supporting_document_url` still opens it. Move it by hand and check the log for a `moveStagedFiles_` error naming that file ID |
 | No application PDF in the folder or on the emails | PDF generation or the write into the folder failed. The application, the row and the email bodies are unaffected, and the email bodies carry the same transcript the PDF would have. Check the log for `buildApplicationPdf_` or `fileApplicationPdf_` |
 | A previously used file ID is refused | The document has already been filed against another reference, so it is no longer in the staging folder. That is the intended behaviour. Upload it again |
+| One document failed to upload but the application arrived | The applicant was told which document failed and chose to submit with the ones that did upload. Those are recorded and attached as usual; the missing one is simply not listed. Ask the applicant to send it on |
 | Submission answered with "the service is busy" | The hourly cap was reached. It is global, not per person. Raise `MAX_SUBMISSIONS_PER_HOUR` and deploy a new version |
 | Reference allocation reports the service is busy | The script lock was not obtained within 30 seconds. No reference was issued and no row was written. Check the Executions log for lock timeouts |
-| Supporting document cannot be found at submission | The file ID does not name a file in the staging folder. The applicant is asked to upload again; no reference is consumed |
+| A supporting document cannot be found at submission | One of the file IDs does not name a file in the staging folder. The whole submission is refused before a reference is allocated, and the applicant is asked to upload again. No reference is consumed and no row is written |
+| Submission refused for too many documents | More than 5 IDs were submitted. The form refuses the sixth before it is uploaded, so this means the endpoint was posted to directly. Refused before a reference is allocated |
+| Submission refused because the documents are too large in total | The documents come to more than 10 MB between them. That cap keeps the three notification emails under the size a mail server will accept, so raising it means accepting that some applications generate emails that never send. Refused before a reference is allocated |
+| The applicant says a document was not attached to the email | Check the `supporting_document_name` cell: it lists every document that was accepted. If the document is listed, the attachment failed at send time, not at upload; check the log. If it is not listed, it was refused before submission and the applicant was told at the time |
 | Form submits but the console shows a CORS error | The request was not posted as `text/plain`. See `gas/README.md` |
 | Sheet cannot be opened | The script property `ANSIR_SHEET_ID` is not set. The endpoint reports the cause and writes nothing |
 | Submissions fail and the log reports a header mismatch | The `ANSIR_Applications` tab was created under a different column layout, or its headers were edited by hand. Nothing was written, deliberately. Rename the tab so a correctly headed one is created. See section 3 |

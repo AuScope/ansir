@@ -26,7 +26,7 @@ before advancing.
 | 1 | Project & People | Project title, acronym, project summary, scientific objectives, keywords (chips control writing to the hidden `project_keywords` field), the lead investigator block (title, given name, family name, email, ORCID, organisation, organisation ROR), and any number of additional team members |
 | 2 | Where & When | Proposed start and end dates, alternative dates and timing constraints, location/region, country, and a drawn study area boundary stored as GeoJSON in the hidden `location_polygon` field |
 | 3 | Equipment Request | Primary method(s), methods description, the equipment matrix, field team experience, training and technical assistance, and the equipment availability confirmation |
-| 4 | Data & Declarations | Data archiving requirements, FDSN network code, estimated data volume, data submission acknowledgement, intended data access level with its conditional embargo or restriction detail, cultural heritage and Indigenous engagement questions, project funding, an optional supporting PDF, and the terms declaration |
+| 4 | Data & Declarations | Data archiving requirements, FDSN network code, estimated data volume, data submission acknowledgement, intended data access level with its conditional embargo or restriction detail, cultural heritage and Indigenous engagement questions, project funding, up to five optional supporting PDFs, and the terms declaration |
 | 5 | Review & Submit | A read-only rendering of everything collected in steps 1 to 4, then submission |
 
 A sixth section is shown only after a successful submission and displays the
@@ -42,6 +42,28 @@ least one primary method and the equipment availability confirmation. Step 4
 requires an intended data access level, the Indigenous involvement answer, the
 application type, the funding status, the data submission acknowledgement and
 the terms declaration.
+
+### The supporting documents control
+
+Step 4 ends with a drag-and-drop zone over a `multiple` file input. Documents
+**accumulate**: choosing files a second time adds to the list rather than
+replacing it, and the input's value is cleared after every selection so that
+re-choosing the same file still registers and the input can never disagree with
+the list about what is attached. Each attached document is shown with its file
+name, its size and its own Remove control, above a running total.
+
+| Limit | Value | Why |
+| --- | --- | --- |
+| Documents per application | 5 | Enough for a proposal, a permit, a risk assessment, a site map and a letter of support, and still readable at a glance |
+| Size of one document | 10 MB | Unchanged |
+| Total across all documents | 10 MB | **A mail limit.** Every document is attached to all three ANSIR notification emails alongside the generated application PDF, and a message over roughly 25 MB is rejected outright. Without this cap an application with five 10 MB documents would produce three emails that never send: the applicant would have a reference number and nobody would be told |
+| File type | PDF only | Unchanged. The endpoint re-checks the `%PDF-` magic number on the decoded bytes of every file |
+
+A file that breaches any of these is refused with a message naming the limit,
+and the files in the same selection that do fit are still attached: refusing a
+whole selection because its last item was too large would be needlessly
+punishing. Every one of these checks is repeated server-side. The form is a
+courtesy, not a security boundary.
 
 ---
 
@@ -288,10 +310,11 @@ The draft is cleared on successful submission and nowhere else, so an applicatio
 that failed to submit is never lost. Drafts older than 30 days expire rather than
 being offered back.
 
-The attached PDF is deliberately not persisted: base64 file contents would exceed
-the `localStorage` quota, and a research document should not be left sitting in
-browser storage. The restore banner states that the document will need to be
-attached again.
+The attached PDFs are deliberately not persisted: base64 file contents would
+exceed the `localStorage` quota, and up to five of them makes that worse rather
+than better; a research document should not be left sitting in browser storage
+either way. The restore banner states that the documents will need to be
+attached again, and the message shown after a restore says so too.
 
 ---
 
@@ -343,6 +366,11 @@ How each kind of control is rendered:
   If nothing is requested, one row says so.
 - **Additional contributors** appear in full, each under its own "Team Member N"
   sub-heading so that repeated labels such as "Given Name" stay unambiguous.
+- **Supporting documents** appear under their own sub-heading: one summary row
+  carrying the count and the combined size, then one row per document with its
+  file name and size. The summary row is the one carrying
+  `data-field="supporting_document"`, so the check above still finds exactly one
+  row per named control however many documents are attached.
 - **The drawn map area** shows the coordinates summary, not raw GeoJSON.
 - **An attached file** shows its name and size.
 - **Anything empty** shows "Not provided" in muted italic. Nothing is omitted:
@@ -376,24 +404,42 @@ details are load-bearing and must not be tidied up:
   status code. It always replies 200 and reports the real outcome in the JSON
   body's `success` field, so the code checks `success`, not the status.
 
-### 6.1 Submission with an attachment
+### 6.1 Submission with attachments
 
-An application with a supporting PDF makes two calls, in order:
+An application carrying supporting PDFs makes one call per document and then one
+more:
 
-1. `saveUploadedFile` sends the base64 file contents and returns a Drive
-   **file ID**.
-2. `submitApplication` sends the application, carrying that value as
-   **`uploaded_file_id`**. The base64 contents are removed from this payload.
+1. `saveUploadedFile`, **once per document, sequentially**, each sending one
+   file's base64 contents and returning a Drive **file ID**.
+2. `submitApplication` sends the application, carrying those values as
+   **`uploaded_file_ids`**, an array. The base64 contents are removed from this
+   payload.
 
-The endpoint fetches the PDF back out of Drive by that ID, so no state is held
-between the two calls. The file lands in the Drive upload folder as
-`ANSIR_Application_<title>_<timestamp>.pdf`, is attached to both the applicant
-copy and the facility notification, and populates
+**One file per call, and not one large payload.** Base64 inflates a payload by
+about a third, so a single request carrying five documents would be large, slow
+and all-or-nothing: one unreadable file would fail the set. Per-file calls also
+mean a failure can be reported naming the file that failed. Sequential rather
+than concurrent, because five simultaneous base64 POSTs to one Apps Script
+deployment is how a rate limit gets tripped by one honest applicant.
+
+The endpoint fetches the PDFs back out of Drive by those IDs, so no state is
+held between the calls. Each file lands in the Drive staging folder under a
+neutral staged name; at submission each document is filed into the
+application's folder and renamed to `<reference> file_upload_<n>.pdf`, in
+attachment order. The applicant's original filenames still appear in the
+notification emails' listing of what was submitted. All documents are attached
+to all three notifications, and they populate
 `supporting_document_file_id`, `supporting_document_url` and
-`supporting_document_name` on the sheet row.
+`supporting_document_name` on the sheet row as semicolon-delimited lists in the
+same order, which is the same multi-value convention the contributor columns
+use. No column was added for the second document.
 
-If the upload call fails, the applicant is asked whether to submit without the
-attachment rather than losing the whole application.
+If an upload call fails, the chain stops there and the applicant is told which
+document failed and asked whether to submit with the ones that did upload,
+rather than losing the whole application. Documents already staged in Drive are
+kept: throwing them away would punish the applicant twice for one failure.
+Stopping rather than pressing on through the remaining documents is deliberate,
+so that a systematic failure asks the applicant one question rather than five.
 
 ### 6.2 Configuration
 
@@ -492,11 +538,16 @@ appears in the `ANSIR_Applications` tab of the ANSIR project sheet, no row
 appears in `ANSIR_Projects_MasterList`, the applicant address receives a copy and
 the facility address receives the internal notification.
 
-With an attachment, attach a small PDF and confirm the two POSTs described in
-section 6.1, that the `submitApplication` body carries `uploaded_file_id` and no
-base64 data, that the file appears in the Drive upload folder, that it is
-attached to both emails, and that the three `supporting_document_*` columns are
-populated.
+With attachments, attach three small PDFs and confirm all three are listed with
+their sizes and a running total, that removing one updates the list and the
+total, that choosing more files adds rather than replaces, and that the review
+step lists what remains. Then confirm the POSTs described in section 6.1: one
+`saveUploadedFile` per document in sequence, and a `submitApplication` body
+carrying `uploaded_file_ids` and no base64 data. Confirm the files appear in the
+Drive upload folder under names that include the applicant's own file names,
+that all of them are attached to the emails, and that the three
+`supporting_document_*` columns each carry a semicolon-delimited list in the
+same order.
 
 ### 8.3 Draft
 

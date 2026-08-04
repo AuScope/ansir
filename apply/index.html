@@ -1207,6 +1207,40 @@
             justify-content: space-between;
         }
 
+        .file-list {
+            margin-top: 4px;
+        }
+
+        .file-list .file-info {
+            border: 1px solid #dee2e6;
+        }
+
+        .file-total {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #495057;
+        }
+
+        .file-total[hidden],
+        .file-list[hidden],
+        .file-error[hidden] {
+            display: none;
+        }
+
+        .file-total-over {
+            color: #721c24;
+            font-weight: 600;
+        }
+
+        .file-error {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            background: #f8d7da;
+            color: #721c24;
+            font-size: 0.9rem;
+        }
+
         .file-info-name {
             font-weight: 500;
             color: #333;
@@ -2309,20 +2343,26 @@
                     </div>
                 </div>
 
-                <!-- Supporting document upload (drag and drop) -->
+                <!-- Supporting document upload (drag and drop, up to five PDFs).
+                     The total cap is 10 MB across all documents because every
+                     document is attached to the ANSIR notification emails
+                     alongside the generated application PDF, and an oversized
+                     message is rejected by the mail server outright. -->
                 <div class="subsection">
                     <h3>Supporting Documents (optional)</h3>
-                    <p class="field-description">Upload any additional supporting documents (PDF files only, max 10MB)</p>
+                    <p class="field-description">Upload any additional supporting documents. PDF files only, up to 5 documents, maximum 10MB each and 10MB in total.</p>
 
                     <div class="form-group">
                         <div class="file-drop-zone" id="fileDropZone" onclick="document.getElementById('supporting_document').click()">
                             <input type="file" id="supporting_document" name="supporting_document"
-                                   accept=".pdf,application/pdf">
+                                   accept=".pdf,application/pdf" multiple>
                             <div class="file-drop-icon">PDF</div>
-                            <div class="file-drop-text">Drag & drop a PDF file here, or click to browse</div>
-                            <div class="file-drop-hint">PDF only, maximum 10MB</div>
+                            <div class="file-drop-text">Drag & drop PDF files here, or click to browse</div>
+                            <div class="file-drop-hint">PDF only, up to 5 documents, 10MB each and 10MB in total</div>
                         </div>
-                        <div id="fileInfoDisplay" style="display: none;"></div>
+                        <div id="fileTotalDisplay" class="file-total" hidden></div>
+                        <div id="fileListDisplay" class="file-list" hidden></div>
+                        <div id="fileErrorDisplay" class="file-error" hidden></div>
                     </div>
                 </div>
 
@@ -4220,7 +4260,7 @@
             acceptTerms: 'Declaration accepted',
             project_keywords: 'Keywords',
             location_polygon: 'Study area boundary',
-            supporting_document: 'Supporting document'
+            supporting_document: 'Supporting documents'
         };
 
         /**
@@ -4321,11 +4361,11 @@
                 return row;
             }
 
+            // A file input is handled by collectReviewSections, which emits one
+            // row per attached document rather than the single row this
+            // function can return. This branch is the fallback if that changes.
             if (type === 'file') {
-                if (uploadedFileData && uploadedFileData.fileName) {
-                    var size = reviewFileSize(uploadedFileData.size);
-                    row.value = uploadedFileData.fileName + (size ? ' (' + size + ')' : '');
-                }
+                row.value = collectDocumentRows()[0].value;
                 return row;
             }
 
@@ -4352,6 +4392,45 @@
 
             row.value = reviewText(el.value);
             return row;
+        }
+
+        /**
+         * The attached supporting documents, as review rows.
+         *
+         * The first row always exists, whether or not anything is attached, and
+         * it is the one that carries data-field="supporting_document". The
+         * review step is checked mechanically against the form's named
+         * controls (see docs/FORM.md section 5), and that check needs one row
+         * per named control however many documents there happen to be.
+         */
+        function collectDocumentRows() {
+            var rows = [];
+
+            if (!uploadedFiles.length) {
+                rows.push({ name: 'supporting_document', label: 'Supporting documents', value: '' });
+                return rows;
+            }
+
+            var total = 0;
+            uploadedFiles.forEach(function (entry) {
+                total += entry.size;
+            });
+
+            rows.push({
+                name: 'supporting_document',
+                label: 'Supporting documents',
+                value: uploadedFiles.length + ' document' + (uploadedFiles.length === 1 ? '' : 's') +
+                    ', ' + reviewFileSize(total) + ' in total'
+            });
+
+            uploadedFiles.forEach(function (entry, index) {
+                rows.push({
+                    label: 'Document ' + (index + 1),
+                    value: entry.fileName + ' (' + reviewFileSize(entry.size) + ')'
+                });
+            });
+
+            return rows;
         }
 
         /** Requested equipment only, with its category, quantities above zero. */
@@ -4421,6 +4500,21 @@
                         }
                         equipmentRows.forEach(function (row) {
                             seenNames[row.name] = true;
+                            group.rows.push(row);
+                        });
+                        return;
+                    }
+
+                    // Supporting documents are listed one row per document,
+                    // with its size, so the applicant can see the whole set
+                    // before they submit rather than a count.
+                    if ((el.type || '').toLowerCase() === 'file') {
+                        seenNames[name] = true;
+                        if (currentBlock !== 'Supporting documents') {
+                            currentBlock = 'Supporting documents';
+                            group.rows.push({ subhead: 'Supporting documents' });
+                        }
+                        collectDocumentRows().forEach(function (row) {
                             group.rows.push(row);
                         });
                         return;
@@ -4500,22 +4594,52 @@
 
         // ─── FILE UPLOAD HANDLING (drag and drop) ──────────────────
 
-        // Store file data for submission
-        let uploadedFileData = null;
+        /*
+         * An application may carry up to MAX_FILES supporting documents.
+         *
+         * THE TOTAL CAP IS THE IMPORTANT ONE. Every attached document is sent
+         * out on all three ANSIR notification emails alongside the generated
+         * application PDF, and a mail server rejects a message over roughly
+         * 25 MB outright. Ten megabytes of documents keeps those emails
+         * deliverable. This running total is checked here so the applicant is
+         * told at the moment they attach a file rather than at submission; the
+         * endpoint checks it again independently, because a form is not a
+         * security boundary.
+         *
+         * Attaching is additive. Choosing files a second time adds to the list
+         * rather than replacing it, which is what people expect and what the
+         * bare file input does not do.
+         */
+        var MAX_FILES = 5;
+        var MAX_FILE_BYTES = 10 * 1024 * 1024;
+        var MAX_TOTAL_BYTES = 10 * 1024 * 1024;
+
+        // Every attached document, in the order they were attached. Each entry
+        // is { fileName, mimeType, data (base64), size }.
+        var uploadedFiles = [];
+
+        function totalAttachedBytes() {
+            var total = 0;
+            for (var i = 0; i < uploadedFiles.length; i++) {
+                total += uploadedFiles[i].size;
+            }
+            return total;
+        }
 
         function initFileUpload() {
             const dropZone = document.getElementById('fileDropZone');
             const fileInput = document.getElementById('supporting_document');
-            const fileInfo = document.getElementById('fileInfoDisplay');
 
             if (!dropZone || !fileInput) return;
 
-            // Handle file input change
-            fileInput.addEventListener('change', function() {
-                handleFileUpload(this.files[0]);
+            fileInput.addEventListener('change', function () {
+                addSelectedFiles(this.files);
+                // Cleared so that choosing the same file again still fires a
+                // change event, and so the input never disagrees with the list
+                // below it about what is attached.
+                this.value = '';
             });
 
-            // Drag and drop events
             dropZone.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -4532,102 +4656,211 @@
                 e.preventDefault();
                 e.stopPropagation();
                 dropZone.classList.remove('dragover');
-
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handleFileUpload(files[0]);
-                }
+                addSelectedFiles(e.dataTransfer ? e.dataTransfer.files : null);
             });
+
+            renderFileList();
         }
 
-        function handleFileUpload(file) {
-            const dropZone = document.getElementById('fileDropZone');
-            const fileInfo = document.getElementById('fileInfoDisplay');
-            const fileInput = document.getElementById('supporting_document');
+        /**
+         * Takes everything a selection or a drop offered and adds what is
+         * allowed, one file at a time, in order.
+         *
+         * Each file is checked against all three limits BEFORE it is read, so a
+         * file that would breach the total is refused with a message naming the
+         * limit rather than quietly dropped. The files that do fit are still
+         * added: refusing the whole selection because its last item was too big
+         * would be needlessly punishing.
+         */
+        function addSelectedFiles(fileList) {
+            if (!fileList || !fileList.length) return;
 
-            if (!file) {
-                clearFileUpload();
-                return;
-            }
+            var pending = Array.prototype.slice.call(fileList);
+            var refusals = [];
 
-            // Validate file type
-            if (file.type !== 'application/pdf') {
-                showFileError('Only PDF files are accepted.');
-                return;
-            }
+            function readNext() {
+                if (!pending.length) {
+                    renderFileList();
+                    if (refusals.length) {
+                        showFileError(refusals.join(' '));
+                    } else {
+                        hideFileError();
+                    }
+                    return;
+                }
 
-            // Validate file size (10MB max)
-            const maxSize = 10 * 1024 * 1024;
-            if (file.size > maxSize) {
-                showFileError('File size exceeds 10MB limit.');
-                return;
-            }
+                var file = pending.shift();
+                var refusal = fileRefusalReason(file);
+                if (refusal) {
+                    refusals.push(refusal);
+                    readNext();
+                    return;
+                }
 
-            // Read file as base64
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Data = e.target.result.split(',')[1];
-                uploadedFileData = {
-                    fileName: file.name,
-                    mimeType: file.type,
-                    data: base64Data,
-                    size: file.size
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    uploadedFiles.push({
+                        fileName: file.name,
+                        mimeType: file.type,
+                        data: String(e.target.result).split(',')[1],
+                        size: file.size
+                    });
+                    renderFileList();
+                    readNext();
                 };
+                reader.onerror = function () {
+                    refusals.push(file.name + ' could not be read.');
+                    readNext();
+                };
+                reader.readAsDataURL(file);
+            }
 
-                // Update UI
-                dropZone.classList.add('has-file');
-                dropZone.querySelector('.file-drop-icon').textContent = 'PDF';
-                dropZone.querySelector('.file-drop-text').textContent = 'File selected';
-                dropZone.querySelector('.file-drop-hint').textContent = '';
+            readNext();
+        }
 
-                fileInfo.style.display = 'block';
-                fileInfo.innerHTML = `
-                    <div class="file-info">
-                        <div>
-                            <span class="file-info-name">${file.name}</span>
-                            <span class="file-info-size">(${(file.size / 1024).toFixed(1)} KB)</span>
-                        </div>
-                        <button type="button" class="file-remove-btn" onclick="clearFileUpload()">Remove</button>
-                    </div>
-                `;
-            };
-            reader.onerror = function() {
-                showFileError('Failed to read file.');
-            };
-            reader.readAsDataURL(file);
+        /** The reason one file cannot be attached, or an empty string. */
+        function fileRefusalReason(file) {
+            if (!file) return '';
+
+            if (file.type !== 'application/pdf') {
+                return file.name + ' was not attached: only PDF files are accepted.';
+            }
+            if (file.size > MAX_FILE_BYTES) {
+                return file.name + ' was not attached: it is ' + formatFileSize(file.size) +
+                    ' and the limit is ' + formatFileSize(MAX_FILE_BYTES) + ' for one document.';
+            }
+            // Checked before the count, because re-choosing a file that is
+            // already attached is a common slip and "it is already attached" is
+            // a more useful answer than "you have five documents".
+            for (var i = 0; i < uploadedFiles.length; i++) {
+                if (uploadedFiles[i].fileName === file.name && uploadedFiles[i].size === file.size) {
+                    return file.name + ' is already attached.';
+                }
+            }
+            if (uploadedFiles.length >= MAX_FILES) {
+                return file.name + ' was not attached: an application may include at most ' +
+                    MAX_FILES + ' documents.';
+            }
+            if (totalAttachedBytes() + file.size > MAX_TOTAL_BYTES) {
+                return file.name + ' was not attached: it would take the total to ' +
+                    formatFileSize(totalAttachedBytes() + file.size) + ' and the limit is ' +
+                    formatFileSize(MAX_TOTAL_BYTES) + ' across all documents, because every ' +
+                    'document is attached to the ANSIR notification emails.';
+            }
+            return '';
+        }
+
+        function formatFileSize(bytes) {
+            var size = Number(bytes);
+            if (!isFinite(size) || size <= 0) return '0 KB';
+            if (size < 1024) return size + ' bytes';
+            var kb = size / 1024;
+            if (kb < 1024) return kb.toFixed(1) + ' KB';
+            return (kb / 1024).toFixed(1) + ' MB';
+        }
+
+        /**
+         * Draws the attached list and the running total.
+         *
+         * Built with DOM methods and text nodes throughout. A file name is
+         * something a person chose, and it is never handed back to the parser
+         * as markup.
+         */
+        function renderFileList() {
+            const dropZone = document.getElementById('fileDropZone');
+            const list = document.getElementById('fileListDisplay');
+            const totalEl = document.getElementById('fileTotalDisplay');
+            if (!list || !totalEl) return;
+
+            list.textContent = '';
+
+            uploadedFiles.forEach(function (entry, index) {
+                var row = document.createElement('div');
+                row.className = 'file-info';
+
+                var details = document.createElement('div');
+
+                var name = document.createElement('span');
+                name.className = 'file-info-name';
+                name.appendChild(document.createTextNode(entry.fileName));
+                details.appendChild(name);
+
+                var size = document.createElement('span');
+                size.className = 'file-info-size';
+                size.appendChild(document.createTextNode(' (' + formatFileSize(entry.size) + ')'));
+                details.appendChild(size);
+
+                row.appendChild(details);
+
+                var remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'file-remove-btn';
+                remove.setAttribute('aria-label', 'Remove ' + entry.fileName);
+                remove.appendChild(document.createTextNode('Remove'));
+                remove.addEventListener('click', function () {
+                    removeUploadedFile(index);
+                });
+                row.appendChild(remove);
+
+                list.appendChild(row);
+            });
+
+            list.hidden = uploadedFiles.length === 0;
+
+            if (uploadedFiles.length === 0) {
+                totalEl.hidden = true;
+                totalEl.textContent = '';
+            } else {
+                totalEl.hidden = false;
+                totalEl.className = 'file-total';
+                totalEl.textContent = uploadedFiles.length + ' of ' + MAX_FILES +
+                    ' documents attached, ' + formatFileSize(totalAttachedBytes()) + ' of ' +
+                    formatFileSize(MAX_TOTAL_BYTES) + ' used.';
+            }
+
+            if (dropZone) {
+                var hasFiles = uploadedFiles.length > 0;
+                dropZone.classList.toggle('has-file', hasFiles);
+                dropZone.querySelector('.file-drop-text').textContent = hasFiles
+                    ? 'Drag & drop another PDF here, or click to browse'
+                    : 'Drag & drop PDF files here, or click to browse';
+                dropZone.querySelector('.file-drop-hint').textContent = hasFiles
+                    ? formatFileSize(MAX_TOTAL_BYTES - totalAttachedBytes()) + ' of the total allowance remaining'
+                    : 'PDF only, up to 5 documents, 10MB each and 10MB in total';
+            }
+        }
+
+        function removeUploadedFile(index) {
+            if (index < 0 || index >= uploadedFiles.length) return;
+            uploadedFiles.splice(index, 1);
+            hideFileError();
+            renderFileList();
+        }
+
+        function clearFileUploads() {
+            uploadedFiles = [];
+            const fileInput = document.getElementById('supporting_document');
+            if (fileInput) fileInput.value = '';
+            hideFileError();
+            renderFileList();
         }
 
         function showFileError(message) {
-            const fileInfo = document.getElementById('fileInfoDisplay');
-            fileInfo.style.display = 'block';
-            fileInfo.innerHTML = `
-                <div style="padding: 10px; background: #f8d7da; color: #721c24; border-radius: 6px;">
-                    <strong>Error:</strong> ${message}
-                </div>
-            `;
-            clearFileUpload(true);
+            const errorEl = document.getElementById('fileErrorDisplay');
+            if (!errorEl) return;
+            errorEl.textContent = '';
+            var label = document.createElement('strong');
+            label.appendChild(document.createTextNode('Not attached: '));
+            errorEl.appendChild(label);
+            errorEl.appendChild(document.createTextNode(message));
+            errorEl.hidden = false;
         }
 
-        function clearFileUpload(keepError = false) {
-            const dropZone = document.getElementById('fileDropZone');
-            const fileInfo = document.getElementById('fileInfoDisplay');
-            const fileInput = document.getElementById('supporting_document');
-
-            uploadedFileData = null;
-
-            if (fileInput) fileInput.value = '';
-
-            if (dropZone) {
-                dropZone.classList.remove('has-file');
-                dropZone.querySelector('.file-drop-icon').textContent = 'PDF';
-                dropZone.querySelector('.file-drop-text').textContent = 'Drag & drop a PDF file here, or click to browse';
-                dropZone.querySelector('.file-drop-hint').textContent = 'PDF only, maximum 10MB';
-            }
-
-            if (!keepError && fileInfo) {
-                fileInfo.style.display = 'none';
-                fileInfo.innerHTML = '';
-            }
+        function hideFileError() {
+            const errorEl = document.getElementById('fileErrorDisplay');
+            if (!errorEl) return;
+            errorEl.hidden = true;
+            errorEl.textContent = '';
         }
 
         // ─── FORM SUBMISSION ───────────────────────────────────────
@@ -4643,20 +4876,27 @@
         /**
          * Submits the application.
          *
-         * Two-call sequence, matching gas/README.md section 6a:
+         * Sequence, matching gas/README.md section 6a:
          *
-         *   1. If a PDF was attached, POST it on its own with the
-         *      saveUploadedFile action. The endpoint writes it to Drive and
+         *   1. Every attached PDF is POSTed on its own, ONE AT A TIME, with the
+         *      saveUploadedFile action. Each call writes one file to Drive and
          *      returns a Drive FILE ID.
          *   2. POST the form data with the submitApplication action, carrying
-         *      that ID through as uploaded_file_id.
+         *      those IDs through as uploaded_file_ids.
          *
-         * The file ID is the whole mechanism. There is no cross-execution state
-         * on the server: the submit call fetches the PDF back out of Drive by
-         * the ID this call returned. The previous implementation passed a URL
-         * and relied on an Apps Script module-global to survive between
-         * executions, which it does not, so every uploaded PDF was accepted,
-         * acknowledged and then silently lost.
+         * ONE FILE PER CALL, SEQUENTIALLY, AND NOT ONE LARGE PAYLOAD. Base64
+         * inflates a payload by about a third, so a single request carrying
+         * five documents would be large, slow and all-or-nothing: one
+         * unreadable file would fail the set. Uploading one at a time means a
+         * failure can be reported naming the file that failed, and the
+         * documents that did upload are still usable.
+         *
+         * The file IDs are the whole mechanism. There is no cross-execution
+         * state on the server: the submit call fetches the PDFs back out of
+         * Drive by the IDs these calls returned. The previous implementation
+         * passed a URL and relied on an Apps Script module-global to survive
+         * between executions, which it does not, so every uploaded PDF was
+         * accepted, acknowledged and then silently lost.
          */
         function submitApplication() {
             const submitBtn = document.getElementById('submitBtn');
@@ -4672,41 +4912,70 @@
                 return;
             }
 
-            if (uploadedFileData && uploadedFileData.data) {
-                callEndpoint('saveUploadedFile', {
-                    fileData: uploadedFileData,
-                    projectTitle: document.getElementById('title_primary').value
-                }).then(function (fileResult) {
-                    if (fileResult && fileResult.success && fileResult.fileId) {
-                        proceedWithFormSubmission(fileResult.fileId, fileResult.fileName);
-                        return;
-                    }
-                    offerSubmissionWithoutDocument(
-                        fileResult && fileResult.message
-                            ? fileResult.message
-                            : 'The supporting document could not be uploaded.'
-                    );
-                }).catch(function (error) {
-                    offerSubmissionWithoutDocument(
-                        'The supporting document could not be uploaded: ' + (error.message || error)
-                    );
-                });
-            } else {
-                proceedWithFormSubmission(null, null);
+            if (!uploadedFiles.length) {
+                proceedWithFormSubmission([], []);
+                return;
             }
+
+            uploadDocumentsInTurn(0, [], []);
+        }
+
+        /**
+         * Uploads uploadedFiles[index], then the next, until they are done.
+         *
+         * Written as a chain rather than a Promise.all so that the uploads
+         * really are sequential: five concurrent base64 POSTs to the same Apps
+         * Script deployment is how a rate limit gets tripped by one honest
+         * applicant.
+         */
+        function uploadDocumentsInTurn(index, ids, names) {
+            if (index >= uploadedFiles.length) {
+                proceedWithFormSubmission(ids, names);
+                return;
+            }
+
+            var entry = uploadedFiles[index];
+
+            callEndpoint('saveUploadedFile', {
+                fileData: entry,
+                projectTitle: document.getElementById('title_primary').value
+            }).then(function (fileResult) {
+                if (fileResult && fileResult.success && fileResult.fileId) {
+                    ids.push(fileResult.fileId);
+                    names.push(fileResult.fileName || entry.fileName);
+                    uploadDocumentsInTurn(index + 1, ids, names);
+                    return;
+                }
+                offerSubmissionWithoutDocument(
+                    entry.fileName + ' could not be uploaded' +
+                    (fileResult && fileResult.message ? ': ' + fileResult.message : '.'),
+                    ids, names
+                );
+            }).catch(function (error) {
+                offerSubmissionWithoutDocument(
+                    entry.fileName + ' could not be uploaded: ' + (error.message || error),
+                    ids, names
+                );
+            });
         }
 
         /**
          * A failed upload must not cost the applicant their whole application,
-         * so they are asked whether to continue without the attachment.
+         * so they are asked whether to continue without it. The documents that
+         * did upload are kept: they are already staged in Drive, and throwing
+         * them away would punish the applicant twice for one failure.
          */
-        function offerSubmissionWithoutDocument(reason) {
+        function offerSubmissionWithoutDocument(reason, ids, names) {
             const submitBtn = document.getElementById('submitBtn');
-            const proceed = confirm(
-                reason + '\n\nDo you want to submit the application without the supporting document?'
-            );
+            const uploaded = ids || [];
+            const question = uploaded.length
+                ? 'Do you want to submit the application with the ' + uploaded.length +
+                  ' document' + (uploaded.length === 1 ? '' : 's') + ' that did upload?'
+                : 'Do you want to submit the application without the supporting documents?';
+
+            const proceed = confirm(reason + '\n\n' + question);
             if (proceed) {
-                proceedWithFormSubmission(null, null);
+                proceedWithFormSubmission(uploaded, names || []);
                 return;
             }
             hideSubmissionOverlay();
@@ -4716,19 +4985,24 @@
         }
 
         /**
-         * Sends the application itself. The base64 PDF is never included here:
-         * it has already been uploaded on its own, and only its Drive file ID
-         * travels with the form data.
+         * Sends the application itself. The base64 PDFs are never included
+         * here: they have already been uploaded on their own, and only their
+         * Drive file IDs travel with the form data.
          */
-        function proceedWithFormSubmission(uploadedFileId, uploadedFileName) {
+        function proceedWithFormSubmission(uploadedFileIds, uploadedFileNames) {
             const formData = collectFormData();
 
             delete formData.supporting_document;
 
-            if (uploadedFileId) {
-                // The field name the endpoint reads is uploaded_file_id.
-                formData.uploaded_file_id = uploadedFileId;
-                formData.uploaded_file_name = uploadedFileName || '';
+            const ids = uploadedFileIds || [];
+            if (ids.length) {
+                // The field name the endpoint reads is uploaded_file_ids, an
+                // array. The endpoint also still accepts the singular
+                // uploaded_file_id it took before multiple documents existed,
+                // so a browser holding an older cached copy of this page keeps
+                // working; this page always sends the array.
+                formData.uploaded_file_ids = ids;
+                formData.uploaded_file_names = uploadedFileNames || [];
             }
 
             callEndpoint('submitApplication', formData)
@@ -4810,9 +5084,9 @@
             formData.funding_agency_name = document.getElementById('funding_agency_name')?.value || '';
             formData.funding_identifier = document.getElementById('funding_identifier')?.value || '';
 
-            // The supporting document is handled separately in submitApplication():
-            // it is uploaded on its own and only its Drive file ID travels with
-            // this form data, as uploaded_file_id.
+            // Supporting documents are handled separately in
+            // submitApplication(): each is uploaded on its own and only their
+            // Drive file IDs travel with this form data, as uploaded_file_ids.
 
             // Metadata
             formData.submissionDate = new Date().toISOString();
@@ -4919,10 +5193,11 @@
          * browser's localStorage only. It is never sent anywhere, and it is
          * never applied without the applicant asking for it.
          *
-         * The attached PDF is deliberately NOT persisted. Base64 file contents
-         * would blow through the localStorage quota, and a research document
-         * should not be left sitting in browser storage. After a restore the
-         * applicant re-attaches the file, and the prompt says so.
+         * The attached PDFs are deliberately NOT persisted. Base64 file
+         * contents would blow through the localStorage quota, and up to five of
+         * them makes that worse rather than better; a research document should
+         * not be left sitting in browser storage either way. After a restore
+         * the applicant re-attaches the documents, and the prompt says so.
          */
 
         var draftSaveTimer = null;
@@ -5079,7 +5354,7 @@
             document.getElementById('draftRestoreBtn').onclick = function () {
                 applyDraft(draft);
                 prompt.hidden = true;
-                showStatus('Your saved draft has been restored. Please re-attach any supporting document.', 'success');
+                showStatus('Your saved draft has been restored. Please re-attach any supporting documents.', 'success');
             };
 
             document.getElementById('draftDiscardBtn').onclick = function () {

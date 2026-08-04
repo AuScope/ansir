@@ -15,7 +15,7 @@
  *
  *   doGet               - serves the form HTML (optional fallback transport)
  *   doPost              - JSON transport for a form served from GitHub Pages
- *   saveUploadedFile    - accepts one PDF, returns a Drive file ID
+ *   saveUploadedFile    - accepts ONE PDF per call, returns a Drive file ID
  *   submitApplication   - accepts the application, writes it, emails it
  *
  * EVERY other function in this file ends in an underscore and is unreachable
@@ -104,10 +104,11 @@ var APPLICATIONS_SHEET_NAME = 'ANSIR_Applications';
  * configuration error, which is the intended behaviour. It must never fail
  * quietly: the previous version silently discarded every PDF it was given.
  *
- * This folder must contain uploads and nothing else. getUploadedFile_ treats
- * membership of it as proof that the intake itself created the file, and that
- * is the only thing standing between a client-supplied file ID and an arbitrary
- * Drive file being emailed to a client-supplied address.
+ * This folder must contain uploads and nothing else. getUploadedFiles_ treats
+ * membership of it as proof that the intake itself created a file, applies that
+ * test to every document on a submission, and that is the only thing standing
+ * between a client-supplied file ID and an arbitrary Drive file being emailed to
+ * a client-supplied address.
  */
 var UPLOAD_FOLDER_ID = 'REPLACE_WITH_UPLOAD_FOLDER_ID';
 
@@ -212,6 +213,38 @@ var MAX_SUBMISSIONS_PER_HOUR = 20;
 /** Upload constraints, re-checked server-side. Never trust the client. */
 var MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 var ALLOWED_UPLOAD_MIME = 'application/pdf';
+
+/**
+ * How many supporting documents one application may carry.
+ *
+ * A reviewer reading an application should be able to take in the attachments
+ * at a glance, and five is enough for a proposal, a permit, a risk assessment,
+ * a site map and a letter of support. It is also a cap on the number of Drive
+ * round trips one submission can force this script to make.
+ */
+var MAX_UPLOAD_FILES = 5;
+
+/**
+ * The TOTAL size of all supporting documents in one application.
+ *
+ * THIS CAP EXISTS TO KEEP THE NOTIFICATION EMAILS DELIVERABLE, and that is the
+ * reason it is the same size as the single-file cap rather than five times it.
+ * Every supporting document is attached to all three notification emails
+ * (applicant, administrators, facility) ALONGSIDE the generated application
+ * PDF. Gmail refuses to send a message over roughly 25 MB including its
+ * attachments and their transport encoding, so an application carrying, say,
+ * five 10 MB documents would produce three emails that Gmail simply rejects.
+ * The applicant would have a reference number and nobody would be told. Ten
+ * megabytes of documents plus the application PDF leaves ample headroom under
+ * that limit.
+ *
+ * The client tracks the running total and refuses to start an upload that would
+ * breach this, so the applicant is told at the moment they attach the file
+ * rather than at submission. The client is not a security boundary, so the
+ * total is checked again, independently, in getUploadedFiles_ at submission,
+ * against the sizes Drive reports rather than any number the client supplied.
+ */
+var MAX_UPLOAD_TOTAL_BYTES = 10 * 1024 * 1024;
 
 /** Defensive caps on free text so a single request cannot be enormous. */
 var MAX_TEXT_FIELD_CHARS = 20000;
@@ -367,8 +400,20 @@ function doPost(e) {
  * saveUploadedFile - web-callable. Accepts ONE supporting PDF, writes it to the
  * configured Drive folder, and RETURNS ITS DRIVE FILE ID.
  *
- * The returned fileId is what the client passes back to submitApplication as
- * uploaded_file_id. There is no cross-execution state of any kind. The previous
+ * ONE FILE PER CALL, DELIBERATELY. An application may carry up to
+ * MAX_UPLOAD_FILES documents, and the client uploads them one at a time,
+ * sequentially, collecting the returned IDs. Base64 inflates a payload by about
+ * a third, so a single multi-file request would be large, slow and
+ * all-or-nothing: one unreadable file would fail the whole set. Per-file calls
+ * also mean a failure can be reported to the applicant naming the file that
+ * failed.
+ *
+ * This call cannot enforce the total-size cap, because there is no
+ * cross-execution state to accumulate a total in. The client tracks the running
+ * total, and getUploadedFiles_ re-checks it independently at submission.
+ *
+ * The returned fileId is what the client passes back to submitApplication in
+ * uploaded_file_ids. There is no cross-execution state of any kind. The previous
  * implementation stashed the blob in a module-global and read it back in a
  * later, separate execution; Apps Script globals do not survive between
  * executions, and the Drive write had been commented out, so every uploaded PDF
@@ -445,7 +490,7 @@ function handleUpload_(fileData, projectTitle) {
     return { success: false, message: 'Only PDF files are accepted.' };
   }
 
-  var name = buildUploadFileName_(projectTitle);
+  var name = buildUploadFileName_(projectTitle, fileData.fileName);
   var blob = Utilities.newBlob(decoded, ALLOWED_UPLOAD_MIME, name);
 
   var folder = DriveApp.getFolderById(UPLOAD_FOLDER_ID);
@@ -485,25 +530,34 @@ function handleSubmit_(formData) {
   var spreadsheet = SpreadsheetApp.openById(sheetId_());
   var applicationsSheet = getApplicationsSheet_(spreadsheet);
 
-  // Retrieve the supporting document, if one was uploaded, BEFORE allocating a
-  // code, so that a bad file ID fails before it consumes a reference number.
+  // Retrieve the supporting documents, if any were uploaded, BEFORE allocating
+  // a code, so that a bad file ID fails before it consumes a reference number.
   //
-  // THIS CALL MUST STAY HERE, BEFORE ANY FILING HAPPENS. getUploadedFile_
-  // proves the file is inside the staging folder, and that proof is what stops
-  // a caller naming an arbitrary Drive file and having it emailed to an address
-  // of their choosing. Filing MOVES the file out of the staging folder, so the
-  // check is only meaningful while the file is still there. Verify first, move
-  // afterwards; never the other way round.
-  var fileInfo = null;
-  var fileId = safeText_(formData.uploaded_file_id);
-  if (fileId) {
-    fileInfo = getUploadedFile_(fileId);
-    if (!fileInfo) {
-      return { success: false, message: 'The uploaded supporting document could not be found. Please upload it again.' };
+  // THIS CALL MUST STAY HERE, BEFORE ANY FILING HAPPENS. getUploadedFiles_
+  // proves that EVERY file is inside the staging folder, and that proof is what
+  // stops a caller naming an arbitrary Drive file and having it emailed to an
+  // address of their choosing. One unchecked ID in a list of five would be
+  // exactly as dangerous as one unchecked ID on its own, so the check is per
+  // file and the whole submission is refused if any file fails it. Filing MOVES
+  // the files out of the staging folder, so the check is only meaningful while
+  // they are still there. Verify first, move afterwards; never the other way
+  // round.
+  //
+  // The count cap and the total-size cap are enforced in the same place and at
+  // the same moment, on the sizes Drive reports rather than on anything the
+  // client said, and they refuse the whole submission before a reference is
+  // allocated.
+  var fileIds = normaliseFileIds_(formData);
+  var fileInfos = [];
+  if (fileIds.length) {
+    var retrieval = getUploadedFiles_(fileIds);
+    if (!retrieval.ok) {
+      return { success: false, message: retrieval.message };
     }
+    fileInfos = retrieval.files;
   }
 
-  var allocation = allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo);
+  var allocation = allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfos);
   if (!allocation) {
     return { success: false, message: 'The service is busy allocating a reference number. Please try again in a moment.' };
   }
@@ -517,18 +571,18 @@ function handleSubmit_(formData) {
   // application that has been recorded must never be lost or hidden by a Drive
   // or PDF failure. Each step logs and carries on.
 
-  // The staged supporting document, if there is one, joins its application in
-  // the per-application folder. Its Drive URL is unchanged by the move, so the
-  // link already written to the sheet stays correct either way.
-  moveStagedFile_(fileInfo, allocation.folder);
+  // The staged supporting documents, if there are any, join their application
+  // in the per-application folder. Their Drive URLs are unchanged by the move,
+  // so the links already written to the sheet stay correct either way. Each
+  // move is wrapped on its own, so one failure cannot strand the others.
 
   // The PDF is built whether or not filing is configured, because it is
   // attached to the emails regardless. A null blob simply means one fewer
   // attachment.
-  var applicationPdf = buildApplicationPdf_(formData, ansirCode, fileInfo);
+  var applicationPdf = buildApplicationPdf_(formData, ansirCode, fileInfos);
   fileApplicationPdf_(allocation.folder, applicationPdf);
 
-  var emailResult = sendNotifications_(formData, ansirCode, fileInfo, applicationPdf);
+  var emailResult = sendNotifications_(formData, ansirCode, fileInfos, applicationPdf);
 
   return {
     success: true,
@@ -569,7 +623,7 @@ function handleSubmit_(formData) {
  * @return {Object|null} { ansirCode, folder } where folder may be null, or null
  *     if the lock was not obtained.
  */
-function allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo) {
+function allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfos) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(LOCK_TIMEOUT_MS);
@@ -587,7 +641,14 @@ function allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo) 
     var folder = createApplicationFolder_(ansirCode);
     var folderUrl = folderUrl_(folder);
 
-    var record = buildApplicationRecord_(formData, ansirCode, fileInfo, folderUrl);
+    // Filing happens HERE, before the record is built, so the row records
+    // the documents' final names. Every step inside moveStagedFiles_ fails
+    // quietly, so a Drive problem cannot stop the row being written; it only
+    // means a document keeps its staged name, and the record then quotes
+    // that name, which is still the file's real name.
+    moveStagedFiles_(fileInfos, folder, ansirCode);
+
+    var record = buildApplicationRecord_(formData, ansirCode, fileInfos, folderUrl);
     var headers = applicationsHeaders_();
     var row = [];
     for (var i = 0; i < headers.length; i++) {
@@ -924,7 +985,7 @@ function applicationsHeaders_() {
  * application, so they are left empty for the same reason.
  * @private
  */
-function buildApplicationRecord_(formData, ansirCode, fileInfo, applicationFolderUrl) {
+function buildApplicationRecord_(formData, ansirCode, fileInfos, applicationFolderUrl) {
   var people = buildContributorColumns_(formData);
 
   return {
@@ -933,12 +994,18 @@ function buildApplicationRecord_(formData, ansirCode, fileInfo, applicationFolde
     'review_status': 'New',
     'reviewed_by': '',
     'review_notes': '',
-    'supporting_document_file_id': fileInfo ? fileInfo.id : '',
-    'supporting_document_url': fileInfo ? fileInfo.url : '',
-    'supporting_document_name': fileInfo ? fileInfo.name : '',
+    // An application may carry several supporting documents, so these three
+    // columns are semicolon-delimited lists, exactly as the contributor columns
+    // are, and in the same order in all three. No new column is added: the
+    // intake tab's column set is copied wholesale into the master list at
+    // promotion, and widening it for a second document would shift every column
+    // after it. The Nth id, the Nth url and the Nth name describe one document.
+    'supporting_document_file_id': fileInfoField_(fileInfos, 'id'),
+    'supporting_document_url': fileInfoField_(fileInfos, 'url'),
+    'supporting_document_name': fileInfoField_(fileInfos, 'name'),
     // Empty whenever filing is not configured, or when the folder could not be
-    // created. The supporting_document_url above is written either way, so the
-    // reviewer always has a link to the uploaded document.
+    // created. The supporting_document_url list above is written either way, so
+    // the reviewer always has a link to every uploaded document.
     'application_folder_url': safeText_(applicationFolderUrl),
 
     // ---- Block 2: the master list, in master order.
@@ -1013,7 +1080,7 @@ function buildApplicationRecord_(formData, ansirCode, fileInfo, applicationFolde
     'visbility': '',
     'project_approval': '',
     'project_approval_by': '',
-    'internal_notes': buildInternalNotes_(fileInfo),
+    'internal_notes': buildInternalNotes_(fileInfos),
 
     // ---- Block 3: intake-only answers with no master list column.
     'application_type': safeText_(formData.application_type),
@@ -1034,16 +1101,32 @@ function buildApplicationRecord_(formData, ansirCode, fileInfo, applicationFolde
 }
 
 /**
- * Ported from buildInternalNotes. Submission timestamp and attached PDF only.
+ * Ported from buildInternalNotes. Submission timestamp and attached PDFs only.
  * @private
  */
-function buildInternalNotes_(fileInfo) {
+function buildInternalNotes_(fileInfos) {
+  var files = fileInfos || [];
   var notes = [];
   notes.push('[Application submitted: ' + formatDateTime_(new Date()) + ']');
-  if (fileInfo) {
-    notes.push('[Attached: ' + fileInfo.name + ']');
+  for (var i = 0; i < files.length; i++) {
+    notes.push('[Attached: ' + files[i].name + ']');
   }
   return notes.join('\n');
+}
+
+/**
+ * One field of every fileInfo, joined with the semicolon convention the master
+ * list uses for multi-value columns. Empty string for no documents, so the cell
+ * is blank rather than carrying a stray separator.
+ * @private
+ */
+function fileInfoField_(fileInfos, key) {
+  var files = fileInfos || [];
+  var out = [];
+  for (var i = 0; i < files.length; i++) {
+    out.push(safeText_(files[i][key]));
+  }
+  return out.join('; ');
 }
 
 /**
@@ -1131,17 +1214,71 @@ function isUploadFolderConfigured_() {
 }
 
 /**
- * Retrieves a previously uploaded supporting document by its Drive file ID and
- * returns its blob plus metadata.
+ * The supporting document IDs on a submission, as an array.
  *
- * SECURITY: the file ID arrives from the client, and the file it names is about
- * to be emailed to an address that also arrived from the client. Without a
- * check, anybody could pass the ID of ANY file this script's owner can read and
- * have it mailed to themselves. So the file's parents are verified to include
- * UPLOAD_FOLDER_ID, and anything outside that folder is refused.
+ * THREE SHAPES ARE ACCEPTED, on purpose:
+ *   uploaded_file_ids as an array   - what the current form sends,
+ *   uploaded_file_ids as a string   - semicolon-delimited, the project's
+ *                                     multi-value convention, for any caller
+ *                                     that finds a flat field easier,
+ *   uploaded_file_id  as a string   - the single-document field this endpoint
+ *                                     took before multiple documents existed.
+ *
+ * The singular field is still read because a browser holding an older cached
+ * copy of the form will keep sending it, and an application must not fail
+ * because someone had not reloaded the page. Both are read and merged, so a
+ * caller sending both does not lose a document.
+ *
+ * Blanks are dropped and repeats are collapsed: the same ID twice would
+ * otherwise attach the same PDF to the emails twice and count twice against the
+ * caps.
+ * @private
+ * @return {Array} Drive file IDs, in the order given, without duplicates.
+ */
+function normaliseFileIds_(formData) {
+  var raw = [];
+  var plural = formData ? formData.uploaded_file_ids : null;
+
+  if (plural && typeof plural.length === 'number' && typeof plural !== 'string') {
+    for (var i = 0; i < plural.length; i++) {
+      raw.push(plural[i]);
+    }
+  } else if (typeof plural === 'string') {
+    raw = plural.split(';');
+  }
+
+  if (formData && formData.uploaded_file_id) {
+    raw.push(formData.uploaded_file_id);
+  }
+
+  var seen = {};
+  var ids = [];
+  for (var j = 0; j < raw.length; j++) {
+    var id = safeText_(raw[j]);
+    if (!id || seen[id]) {
+      continue;
+    }
+    seen[id] = true;
+    ids.push(id);
+  }
+  return ids;
+}
+
+/**
+ * Retrieves the previously uploaded supporting documents by their Drive file
+ * IDs and returns their blobs plus metadata.
+ *
+ * SECURITY: the file IDs arrive from the client, and the files they name are
+ * about to be emailed to an address that also arrived from the client. Without
+ * a check, anybody could pass the ID of ANY file this script's owner can read
+ * and have it mailed to themselves. So EVERY file's parents are verified to
+ * include UPLOAD_FOLDER_ID, and anything outside that folder is refused. One
+ * unchecked ID in a list is exactly as dangerous as one unchecked ID on its
+ * own, so there is no fast path and no partial acceptance: if a single file
+ * fails, the whole submission is refused.
  *
  * WHERE THIS RUNS MATTERS AS MUCH AS WHAT IT CHECKS. The containment check is
- * true only while the file is still in the staging folder. Filing moves it out,
+ * true only while a file is still in the staging folder. Filing moves it out,
  * into the per-application folder, so this function is called from
  * handleSubmit_ BEFORE any filing happens and must stay there. Moving it after
  * the move would turn the check into one that always fails, and "fixing" that
@@ -1151,14 +1288,84 @@ function isUploadFolderConfigured_() {
  * reference, its ID is no longer accepted by a later submission, because it is
  * no longer in the staging folder. One upload belongs to one application.
  *
+ * THE TWO CAPS ARE ENFORCED HERE, and here is the only place they can be
+ * enforced honestly. Each upload is a separate execution with no memory of the
+ * others, so no upload call can know the running total; this is the first
+ * moment the whole set is visible. The sizes are the ones Drive reports for the
+ * stored files, not the ones the client claimed, and the count and the total
+ * are checked before any file is moved and before a reference is allocated, so
+ * a breach costs nothing.
+ *
+ * @private
+ * @param {Array} ids Drive file IDs from normaliseFileIds_.
+ * @return {Object} { ok, files, message }. files is an array of
+ *     { id, name, url, size, blob }, in the order the IDs were given. On
+ *     refusal ok is false and message says what to tell the applicant; the
+ *     caller cannot use a bare null here because "not found", "too many" and
+ *     "too large in total" need different answers.
+ */
+function getUploadedFiles_(ids) {
+  var list = ids || [];
+
+  if (!isUploadFolderConfigured_()) {
+    logLine_('CONFIGURATION ERROR: UPLOAD_FOLDER_ID has not been set, so no ' +
+      'supporting document can be verified. See gas/README.md.');
+    return {
+      ok: false,
+      files: [],
+      message: 'The supporting documents could not be verified. Please contact ' + CONTACT_EMAIL + '.'
+    };
+  }
+
+  if (list.length > MAX_UPLOAD_FILES) {
+    logLine_('REFUSED: ' + list.length + ' supporting documents supplied, the limit is ' +
+      MAX_UPLOAD_FILES + '.');
+    return {
+      ok: false,
+      files: [],
+      message: 'An application may include at most ' + MAX_UPLOAD_FILES +
+        ' supporting documents. ' + list.length + ' were submitted.'
+    };
+  }
+
+  var files = [];
+  var total = 0;
+  for (var i = 0; i < list.length; i++) {
+    var fileInfo = getStagedFile_(list[i]);
+    if (!fileInfo) {
+      return {
+        ok: false,
+        files: [],
+        message: 'One of the uploaded supporting documents could not be found. Please upload it again.'
+      };
+    }
+    total += Number(fileInfo.size) || 0;
+    files.push(fileInfo);
+  }
+
+  if (total > MAX_UPLOAD_TOTAL_BYTES) {
+    logLine_('REFUSED: supporting documents total ' + total + ' bytes, the limit is ' +
+      MAX_UPLOAD_TOTAL_BYTES + '.');
+    return {
+      ok: false,
+      files: [],
+      message: 'The supporting documents come to ' + formatBytes_(total) +
+        ' in total. The limit is ' + formatBytes_(MAX_UPLOAD_TOTAL_BYTES) +
+        ' across all documents in one application, because every document is ' +
+        'attached to the notification emails. Please remove or reduce a document.'
+    };
+  }
+
+  return { ok: true, files: files, message: '' };
+}
+
+/**
+ * One staged file, verified. The containment check itself, applied to a single
+ * ID; getUploadedFiles_ applies it to every ID it is given.
  * @private
  * @return {Object|null} { id, name, url, size, blob } or null.
  */
-function getUploadedFile_(fileId) {
-  if (!isUploadFolderConfigured_()) {
-    return null;
-  }
-
+function getStagedFile_(fileId) {
   var file;
   try {
     file = DriveApp.getFileById(fileId);
@@ -1194,14 +1401,45 @@ function getUploadedFile_(fileId) {
   };
 }
 
-/** @private */
-function buildUploadFileName_(projectTitle) {
-  var safeTitle = safeText_(projectTitle).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
-  if (!safeTitle) {
-    safeTitle = 'Untitled';
-  }
-  var stamp = Utilities.formatDate(new Date(), TIMEZONE, 'yyyyMMdd_HHmmss');
-  return 'ANSIR_Application_' + safeTitle + '_' + stamp + '.pdf';
+/**
+ * The name a supporting document is stored under in Drive.
+ *
+ * THE APPLICANT'S OWN FILE NAME IS KEPT, and that is the point of this shape.
+ * With one document per application the stored name could be entirely
+ * generated, and it was. With up to five, a reviewer looking at a folder of
+ * ANSIR_Application_Deep_Crustal_Survey_20260804_143000.pdf repeated five times
+ * cannot tell the permit from the risk assessment without opening every one of
+ * them. So the name is built from four parts, in decreasing order of how much
+ * of the folder they organise:
+ *
+ *   ANSIR_Application_  provenance. This file was created by the intake, not
+ *                       dropped into the folder by a person.
+ *   <project title>_    groups the documents of one application together, and
+ *                       is still meaningful in the flat staging folder where
+ *                       documents from different applications sit side by side.
+ *   <timestamp>_        yyyyMMdd_HHmmss, so a lexical sort is a chronological
+ *                       sort, and so two applicants who upload files with the
+ *                       same name cannot collide.
+ *   <original name>     what the applicant called it. This is the part that
+ *                       tells a reviewer which document they are looking at.
+ *
+ * Both variable parts are reduced to letters, digits and underscores and capped
+ * in length. Drive tolerates far more than that, but a name that survives a
+ * download onto any filesystem, an email attachment and a paste into a
+ * spreadsheet is worth more than fidelity to the applicant's punctuation. The
+ * extension is always .pdf, because the content has been proved to be a PDF.
+ * @private
+ */
+function buildUploadFileName_(projectTitle, originalFileName) {
+  // A STAGING name only. The reference number does not exist yet when a file
+  // is uploaded, so the definitive name - "<reference> file_upload_<n>.pdf" -
+  // is applied by moveStagedFiles_ when the file is filed into its
+  // application folder. This name just has to be identifiable and orderly in
+  // the staging folder in the meantime; the applicant's own filename is
+  // deliberately not carried into it (they are often long, and the final
+  // scheme does not use them).
+  var stamp = Utilities.formatDate(new Date(), TIMEZONE, 'yyyyMMdd_HHmmss_SSS');
+  return 'staged_' + stamp + '.pdf';
 }
 
 /**
@@ -1286,27 +1524,53 @@ function folderUrl_(folder) {
 }
 
 /**
- * Moves the staged supporting document into the application's folder.
+ * Moves the staged supporting documents into the application's folder.
  *
- * Called only after getUploadedFile_ has already proved the file was in the
- * staging folder. See the comment on getUploadedFile_ for why that order is not
- * negotiable.
+ * Called only after getUploadedFiles_ has already proved every file was in the
+ * staging folder. See the comment on getUploadedFiles_ for why that order is
+ * not negotiable.
  *
- * If the move fails the document simply stays in the staging folder. It is
- * still attached to the emails, and supporting_document_url still points at it,
- * because a Drive URL is built from the file ID and survives a move. The only
- * loss is tidiness.
+ * EACH MOVE IS WRAPPED ON ITS OWN, so a document that cannot be moved cannot
+ * stop the ones after it from being filed. If a move fails the document simply
+ * stays in the staging folder. It is still attached to the emails, and its
+ * entry in supporting_document_url still points at it, because a Drive URL is
+ * built from the file ID and survives a move. The only loss is tidiness.
  * @private
  */
-function moveStagedFile_(fileInfo, folder) {
-  if (!fileInfo || !folder) {
+function moveStagedFiles_(fileInfos, folder, ansirCode) {
+  var files = fileInfos || [];
+  if (!files.length || !folder) {
     return;
   }
-  try {
-    DriveApp.getFileById(fileInfo.id).moveTo(folder);
-    logLine_('Moved supporting document ' + fileInfo.id + ' into ' + folder.getName() + '.');
-  } catch (err) {
-    logError_('moveStagedFile_', err);
+  for (var i = 0; i < files.length; i++) {
+    var file = null;
+    try {
+      file = DriveApp.getFileById(files[i].id);
+      file.moveTo(folder);
+      logLine_('Moved supporting document ' + files[i].id + ' into ' + folder.getName() + '.');
+    } catch (err) {
+      logError_('moveStagedFiles_ (move, ' + files[i].id + ')', err);
+      continue;
+    }
+
+    // Rename to the definitive scheme, in attachment order:
+    //   "<reference> file_upload_1.pdf", "file_upload_2", ...
+    // Wrapped separately: a failed rename must not undo a successful move.
+    // On success the in-memory record is updated too, so the sheet row, the
+    // emails and the application PDF all quote the name the file actually
+    // has in Drive; on failure they keep quoting the staged name, which is
+    // then still the real name. Never record a name the file does not have.
+    try {
+      var finalName = ansirCode + ' file_upload_' + (i + 1) + '.pdf';
+      file.setName(finalName);
+      files[i].name = finalName;
+      if (files[i].blob && files[i].blob.setName) {
+        files[i].blob.setName(finalName);
+      }
+      logLine_('Renamed ' + files[i].id + ' to "' + finalName + '".');
+    } catch (renameErr) {
+      logError_('moveStagedFiles_ (rename, ' + files[i].id + ')', renameErr);
+    }
   }
 }
 
@@ -1337,10 +1601,10 @@ function fileApplicationPdf_(folder, pdfBlob) {
  * @private
  * @return {Blob|null}
  */
-function buildApplicationPdf_(formData, ansirCode, fileInfo) {
+function buildApplicationPdf_(formData, ansirCode, fileInfos) {
   var name = ansirCode + ' Application.pdf';
   try {
-    var html = applicationPdfHtml_(formData, ansirCode, fileInfo);
+    var html = applicationPdfHtml_(formData, ansirCode, fileInfos);
     var pdf = Utilities.newBlob(html, MimeType.HTML, name).getAs(MimeType.PDF);
     pdf.setName(name);
     return pdf;
@@ -1370,7 +1634,7 @@ function buildApplicationPdf_(formData, ansirCode, fileInfo) {
  * attack, and it must render as itself rather than corrupt the document.
  * @private
  */
-function applicationPdfHtml_(formData, ansirCode, fileInfo) {
+function applicationPdfHtml_(formData, ansirCode, fileInfos) {
   var css = [
     'body { font-family: Helvetica, Arial, sans-serif; color: #000000; margin: 36px; }',
     'h1 { font-size: 16pt; margin: 0 0 2px 0; }',
@@ -1397,10 +1661,23 @@ function applicationPdfHtml_(formData, ansirCode, fileInfo) {
   parts.push(pdfMetaRow_('ANSIR reference', ansirCode));
   parts.push(pdfMetaRow_('Submitted', formatDateTime_(new Date())));
   parts.push(pdfMetaRow_('Project title', orNotProvided_(formData ? formData.title_primary : '')));
-  parts.push(pdfMetaRow_('Supporting document', fileInfo ? fileInfo.name : 'None uploaded'));
+  // Every attached document is listed, one meta row each, so the first page of
+  // the PDF says what came with the application without anyone scrolling to the
+  // transcript.
+  var documents = fileInfos || [];
+  if (!documents.length) {
+    parts.push(pdfMetaRow_('Supporting documents', 'None uploaded'));
+  } else {
+    for (var d = 0; d < documents.length; d++) {
+      parts.push(pdfMetaRow_(
+        'Supporting document ' + (d + 1) + ' of ' + documents.length,
+        documents[d].name + ' (' + formatBytes_(documents[d].size) + ')'
+      ));
+    }
+  }
   parts.push('</table>');
   parts.push('<pre class="transcript">');
-  parts.push(htmlEscape_(applicationTranscript_(formData, ansirCode, fileInfo).join('\n')));
+  parts.push(htmlEscape_(applicationTranscript_(formData, ansirCode, fileInfos).join('\n')));
   parts.push('</pre>');
   parts.push('</body>');
   parts.push('</html>');
@@ -1559,22 +1836,30 @@ function rateLimitOk_(bucket) {
  *      the selected methods (FACILITY_ROUTES).
  *
  * All three carry the same attachments: the PDF copy of the application, and
- * the applicant's supporting document if one was uploaded. Either may be
- * absent, and the send goes ahead with whatever is present. An email with one
+ * EVERY supporting document the applicant uploaded. Any of them may be absent,
+ * and the send goes ahead with whatever is present. An email with one
  * attachment is a smaller loss than no email at all.
+ *
+ * Attaching every document to all three messages is what MAX_UPLOAD_TOTAL_BYTES
+ * exists to keep survivable: three messages, each carrying the application PDF
+ * plus the whole document set, must stay under the roughly 25 MB Gmail will
+ * accept. See the comment on that constant.
  *
  * Every send is individually wrapped, because a failed email must never lose an
  * application that has already been written to the sheet.
  * @private
  */
-function sendNotifications_(formData, ansirCode, fileInfo, applicationPdf) {
+function sendNotifications_(formData, ansirCode, fileInfos, applicationPdf) {
   var sent = [];
+  var files = fileInfos || [];
   var attachments = [];
   if (applicationPdf) {
     attachments.push(applicationPdf);
   }
-  if (fileInfo) {
-    attachments.push(fileInfo.blob);
+  for (var f = 0; f < files.length; f++) {
+    if (files[f] && files[f].blob) {
+      attachments.push(files[f].blob);
+    }
   }
 
   var applicantAddress = safeText_(formData.lead_email);
@@ -1582,7 +1867,7 @@ function sendNotifications_(formData, ansirCode, fileInfo, applicationPdf) {
     sendMail_({
       to: applicantAddress,
       subject: 'ANSIR equipment loan application received - ' + ansirCode,
-      body: buildApplicantEmail_(formData, ansirCode, fileInfo),
+      body: buildApplicantEmail_(formData, ansirCode, files),
       name: MAIL_FROM_NAME,
       attachments: attachments
     });
@@ -1591,7 +1876,7 @@ function sendNotifications_(formData, ansirCode, fileInfo, applicationPdf) {
     logError_('sendNotifications_ (applicant)', err);
   }
 
-  var internalBody = buildInternalEmail_(formData, ansirCode, fileInfo);
+  var internalBody = buildInternalEmail_(formData, ansirCode, files);
   var internalSubject = 'New ANSIR equipment loan application - ' + ansirCode;
 
   if (ADMIN_EMAILS && ADMIN_EMAILS.length) {
@@ -1644,7 +1929,7 @@ function sendNotifications_(formData, ansirCode, fileInfo, applicationPdf) {
  * full transcript of what was submitted.
  * @private
  */
-function buildApplicantEmail_(formData, ansirCode, fileInfo) {
+function buildApplicantEmail_(formData, ansirCode, fileInfos) {
   var salutation = joinNonEmpty_(
     [formData.lead_title, formData.lead_given_name, formData.lead_family_name], ' '
   );
@@ -1672,14 +1957,14 @@ function buildApplicantEmail_(formData, ansirCode, fileInfo) {
   lines.push('An AuScope research facility funded under NCRIS');
   lines.push('');
 
-  return lines.concat(applicationTranscript_(formData, ansirCode, fileInfo)).join('\n');
+  return lines.concat(applicationTranscript_(formData, ansirCode, fileInfos)).join('\n');
 }
 
 /**
  * The internal notification sent to ADMIN_EMAILS and the routed facility addresses.
  * @private
  */
-function buildInternalEmail_(formData, ansirCode, fileInfo) {
+function buildInternalEmail_(formData, ansirCode, fileInfos) {
   var lines = [];
   lines.push('A new ANSIR equipment loan application has been submitted.');
   lines.push('');
@@ -1691,7 +1976,7 @@ function buildInternalEmail_(formData, ansirCode, fileInfo) {
   lines.push('reviewed and promoted. The promotion procedure is documented in docs/INTAKE.md.');
   lines.push('');
 
-  return lines.concat(applicationTranscript_(formData, ansirCode, fileInfo)).join('\n');
+  return lines.concat(applicationTranscript_(formData, ansirCode, fileInfos)).join('\n');
 }
 
 /**
@@ -1705,7 +1990,7 @@ function buildInternalEmail_(formData, ansirCode, fileInfo) {
  * rather than expecting any markup in it.
  * @private
  */
-function applicationTranscript_(formData, ansirCode, fileInfo) {
+function applicationTranscript_(formData, ansirCode, fileInfos) {
   var rule = '================================================================';
   var lines = [];
 
@@ -1813,14 +2098,22 @@ function applicationTranscript_(formData, ansirCode, fileInfo) {
   lines.push('Grant identifier: ' + orNotProvided_(formData.funding_identifier));
   lines.push('');
 
-  lines.push('SUPPORTING DOCUMENT');
-  lines.push('-------------------');
-  if (fileInfo) {
-    lines.push('File: ' + fileInfo.name);
-    lines.push('Size: ' + (fileInfo.size / 1024).toFixed(1) + ' KB');
+  lines.push('SUPPORTING DOCUMENTS');
+  lines.push('--------------------');
+  var documents = fileInfos || [];
+  if (documents.length) {
+    var totalBytes = 0;
+    for (var d = 0; d < documents.length; d++) {
+      totalBytes += Number(documents[d].size) || 0;
+      lines.push('  ' + (d + 1) + '. ' + documents[d].name +
+        ' (' + formatBytes_(documents[d].size) + ')');
+    }
+    lines.push('');
+    lines.push('Total: ' + documents.length + ' document' +
+      (documents.length === 1 ? '' : 's') + ', ' + formatBytes_(totalBytes) + '.');
     lines.push('Status: received, attached to the ANSIR notification emails, and held in Drive.');
   } else {
-    lines.push('No supporting document was uploaded.');
+    lines.push('No supporting documents were uploaded.');
   }
   lines.push('');
   lines.push(rule);
@@ -2037,6 +2330,27 @@ function joinNonEmpty_(parts, separator) {
 function orNotProvided_(value) {
   var text = safeText_(value);
   return text ? text : 'Not provided';
+}
+
+/**
+ * A byte count as something a person can read. Used in the transcript, in the
+ * PDF heading and in the message that refuses an oversized document set, so
+ * that all three quote a size the same way.
+ * @private
+ */
+function formatBytes_(bytes) {
+  var size = Number(bytes);
+  if (!isFinite(size) || size <= 0) {
+    return '0 KB';
+  }
+  if (size < 1024) {
+    return size + ' bytes';
+  }
+  var kb = size / 1024;
+  if (kb < 1024) {
+    return kb.toFixed(1) + ' KB';
+  }
+  return (kb / 1024).toFixed(1) + ' MB';
 }
 
 /** @private */
