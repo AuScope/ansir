@@ -18,6 +18,14 @@
  * The ORCID public API needs no authentication, so this runs in CI the same way
  * the DataCite enrichment does.
  *
+ * What "verified" means here
+ * -------------------------
+ * A pair, not an identifier. The shift copies one researcher's ORCID onto other
+ * researchers, and the identifier still belongs to the first of them, so this
+ * script publishes the claimants whose names the register's name matches rather
+ * than condemning the identifier wholesale. Withholding an ORCID from the person
+ * it genuinely belongs to punishes the victim of the data error.
+ *
  * Usage:
  *   node scripts/validate-contributors.js            # exits 1 on misattribution
  *   node scripts/validate-contributors.js --warn     # always exits 0
@@ -58,6 +66,28 @@ function normalise(name) {
 function familyName(name) {
   const parts = String(name || '').replace(/[^A-Za-z \-]/g, '').trim().split(/\s+/);
   return parts.length ? parts[parts.length - 1].toLowerCase() : '';
+}
+
+/**
+ * Does one claimed name refer to the person the register names?
+ *
+ * This is the existing rule, unchanged in substance and merely lifted out of
+ * main() so it can be asked about one claimant at a time: an exact match after
+ * normalisation, a shared family name, or one name being a prefix of the other.
+ * The last two are spelling variants of the same person ("Tom Ostersen" for
+ * "Thomas Ostersen", "Brian Kennet" for "Brian Kennett"), not a different
+ * researcher. Do not loosen it - every relaxation here hands somebody else's
+ * identifier to the application form.
+ */
+function nameMatches(claimed, registered) {
+  const a = normalise(claimed);
+  const b = normalise(registered);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const fa = familyName(claimed);
+  const fb = familyName(registered);
+  if (fa && fa === fb) return true;
+  return a.indexOf(b) === 0 || b.indexOf(a) === 0;
 }
 
 /** Pull a bare ORCID out of whatever shape the sheet supplied. */
@@ -173,6 +203,13 @@ async function main() {
   const shared = [];
   const badChecksum = [];
   const unresolved = [];
+  // Identifiers whose true owner is among the claimants, but which other
+  // claimants also carry. These are recoverable: the owner keeps the ORCID and
+  // only the other claimants lose it.
+  const wrongPerson = [];
+  // Per-orcid verdicts, keyed by orcid: who the register names, which claimants
+  // that name matches, and which claimants it does not.
+  const verdicts = new Map();
 
   const orcids = Array.from(claims.keys()).sort();
   for (let i = 0; i < orcids.length; i++) {
@@ -192,20 +229,26 @@ async function main() {
       unresolved.push({ orcid: orcid, names: names, reason: result.state });
     } else {
       const registered = result.name;
-      const exact = names.some(function (n) { return normalise(n) === normalise(registered); });
-      if (!exact) {
-        const sameFamily = names.some(function (n) {
-          return familyName(n) && familyName(n) === familyName(registered);
-        });
-        // A shared family name, or a registered name that is a prefix/suffix of
-        // ours, is a spelling variant rather than the wrong person.
-        const substring = names.some(function (n) {
-          const a = normalise(n), b = normalise(registered);
-          return a && b && (a.indexOf(b) === 0 || b.indexOf(a) === 0);
-        });
-        const record = { orcid: orcid, registered: registered, names: names, projects: Array.from(claim.projects) };
-        if (sameFamily || substring) variants.push(record);
-        else misattributed.push(record);
+      // The question is asked once per claimant, not once per identifier. An
+      // ORCID that several names carry belongs to exactly one of them; the
+      // register says which, and the others are simply wrong about it.
+      const matched = names.filter(function (n) { return nameMatches(n, registered); });
+      const unmatched = names.filter(function (n) { return !nameMatches(n, registered); });
+      const record = { orcid: orcid, registered: registered, names: names, projects: Array.from(claim.projects) };
+
+      verdicts.set(orcid, { registered: registered, matched: matched, unmatched: unmatched });
+
+      if (!matched.length) {
+        // Nobody it is attached to is the person it belongs to.
+        misattributed.push(record);
+      } else {
+        const exact = matched.some(function (n) { return normalise(n) === normalise(registered); });
+        // Matched only through the family-name or prefix rule: same person,
+        // spelled differently. Cosmetic, and reported as such.
+        if (!exact) variants.push({ orcid: orcid, registered: registered, names: matched, projects: record.projects });
+        if (unmatched.length) {
+          wrongPerson.push({ orcid: orcid, registered: registered, owner: matched, others: unmatched, projects: record.projects });
+        }
       }
     }
     if (i < orcids.length - 1) await sleep(REQUEST_GAP_MS);
@@ -218,36 +261,52 @@ async function main() {
   // here appear exactly once each, so they look perfectly consistent and would
   // be autofilled with a confident provenance line. Only an ORCID whose
   // registered name actually matches the person may be offered.
+  //
+  // Verification is per (identifier, person), not per identifier. An ORCID that
+  // the positional shift copied onto other people is still that one researcher's
+  // ORCID, and withholding it from its rightful owner punishes the victim of the
+  // data error. So "verified" carries the claimants the register's name matches
+  // and every other claimant of the same identifier is rejected for it.
   const verified = {};
   const rejected = {};
   const unknown = {};
   orcids.forEach(function (orcid) {
     const names = Array.from(claims.get(orcid).names);
-    const isMisattributed = misattributed.some(function (m) { return m.orcid === orcid; });
-    const isShared = names.length > 1;
     const wasUnresolved = unresolved.some(function (u) { return u.orcid === orcid; });
-    const variant = variants.find(function (v) { return v.orcid === orcid; });
+    const verdict = verdicts.get(orcid);
 
-    if (isMisattributed) {
-      rejected[orcid] = { reason: 'misattributed', names: names };
-    } else if (isShared) {
-      rejected[orcid] = { reason: 'shared-across-names', names: names };
-    } else if (wasUnresolved) {
+    if (wasUnresolved || !verdict) {
       unknown[orcid] = { reason: 'not-verified', names: names };
-    } else {
-      // Exact match, or a benign spelling variant of the same person.
-      verified[orcid] = { name: variant ? variant.registered : names[0] };
+      return;
+    }
+    if (!verdict.matched.length) {
+      // The register names somebody who is not among the claimants at all.
+      rejected[orcid] = { reason: 'misattributed', names: names };
+      return;
+    }
+    verified[orcid] = { name: verdict.registered, matchedClaimants: verdict.matched };
+    if (verdict.unmatched.length) {
+      rejected[orcid] = { reason: 'not-this-person', names: verdict.unmatched };
     }
   });
+
+  const verifiedPairs = Object.keys(verified).reduce(function (total, orcid) {
+    return total + verified[orcid].matchedClaimants.length;
+  }, 0);
+  const rejectedPairs = Object.keys(rejected).reduce(function (total, orcid) {
+    return total + rejected[orcid].names.length;
+  }, 0);
 
   const verificationPayload = {
     generatedBy: 'scripts/validate-contributors.js',
     source: 'https://pub.orcid.org/v3.0/',
-    note: 'Only ORCIDs listed under "verified" may be offered by application-form autofill. Verified means the public ORCID register returns a name matching the person it is attached to in ANSIR data.',
+    note: 'Verification is per (ORCID, person), not per ORCID. An ORCID may be offered by application-form autofill only to a contributor named in its "matchedClaimants" list, which holds the ANSIR names the public ORCID register\'s name for that identifier matches. Every other claimant of the same identifier is listed under "rejected" and must never be offered it. "misattributed" means the register names nobody the identifier is attached to, so it is offered to no one.',
     counts: {
       verified: Object.keys(verified).length,
       rejected: Object.keys(rejected).length,
-      unknown: Object.keys(unknown).length
+      unknown: Object.keys(unknown).length,
+      verifiedPairs: verifiedPairs,
+      rejectedPairs: rejectedPairs
     },
     verified: verified,
     rejected: rejected,
@@ -269,7 +328,8 @@ async function main() {
     fs.writeFileSync(VERIFICATION_FILE, JSON.stringify(verificationPayload, null, 2) + '\n');
     log('Wrote data/contributor-verification.json (' + verificationPayload.counts.verified +
         ' verified, ' + verificationPayload.counts.rejected + ' rejected, ' +
-        verificationPayload.counts.unknown + ' unknown).');
+        verificationPayload.counts.unknown + ' unknown; ' + verifiedPairs +
+        ' offerable person-ORCID pairs, ' + rejectedPairs + ' withheld).');
     log('');
   } else {
     log('data/contributor-verification.json unchanged.');
@@ -281,6 +341,7 @@ async function main() {
       checked: claims.size,
       misattributed: misattributed,
       variants: variants,
+      wrongPerson: wrongPerson,
       sharedAcrossNames: shared,
       malformed: malformed,
       badChecksum: badChecksum,
@@ -294,6 +355,16 @@ async function main() {
         log('      registered to: ' + m.registered);
         log('      attached to:   ' + m.names.join(', '));
         log('      on projects:   ' + m.projects.join(', '));
+      });
+      log('');
+    }
+    if (wrongPerson.length) {
+      log('WRONG PERSON - the owner is among the claimants, the others are not:');
+      wrongPerson.forEach(function (w) {
+        log('  ' + w.orcid);
+        log('      registered to: ' + w.registered);
+        log('      offered to:    ' + w.owner.join(', '));
+        log('      withheld from: ' + w.others.join(', '));
       });
       log('');
     }
@@ -327,7 +398,8 @@ async function main() {
       log('');
     }
 
-    log('Summary: ' + misattributed.length + ' misattributed, ' + shared.length + ' shared, ' +
+    log('Summary: ' + misattributed.length + ' misattributed, ' + shared.length + ' shared (' +
+        wrongPerson.length + ' of them recoverable for their owner), ' +
         variants.length + ' name variants, ' + malformed.length + ' malformed, ' +
         badChecksum.length + ' invalid, ' + unresolved.length + ' unverified.');
   }

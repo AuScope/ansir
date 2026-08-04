@@ -1,169 +1,381 @@
 {
   "generatedBy": "scripts/validate-contributors.js",
   "source": "https://pub.orcid.org/v3.0/",
-  "note": "Only ORCIDs listed under \"verified\" may be offered by application-form autofill. Verified means the public ORCID register returns a name matching the person it is attached to in ANSIR data.",
+  "note": "Verification is per (ORCID, person), not per ORCID. An ORCID may be offered by application-form autofill only to a contributor named in its \"matchedClaimants\" list, which holds the ANSIR names the public ORCID register's name for that identifier matches. Every other claimant of the same identifier is listed under \"rejected\" and must never be offered it. \"misattributed\" means the register names nobody the identifier is attached to, so it is offered to no one.",
   "counts": {
-    "verified": 50,
+    "verified": 60,
     "rejected": 16,
-    "unknown": 0
+    "unknown": 0,
+    "verifiedPairs": 61,
+    "rejectedPairs": 18
   },
   "verified": {
     "0000-0001-5055-0180": {
-      "name": "Christian Berndt"
+      "name": "Christian Berndt",
+      "matchedClaimants": [
+        "Christian Berndt"
+      ]
+    },
+    "0000-0001-5494-2296": {
+      "name": "Meghan Miller",
+      "matchedClaimants": [
+        "Meghan Miller"
+      ]
     },
     "0000-0001-5752-7717": {
-      "name": "Kate Selway"
+      "name": "Kate Selway",
+      "matchedClaimants": [
+        "Kate Selway"
+      ]
     },
     "0000-0001-6324-3470": {
-      "name": "Steven Constable"
+      "name": "Steven Constable",
+      "matchedClaimants": [
+        "Stevan Constable"
+      ]
     },
     "0000-0001-6351-0284": {
-      "name": "Dan Bassett"
+      "name": "Dan Bassett",
+      "matchedClaimants": [
+        "Dan Bassett"
+      ]
     },
     "0000-0001-6669-308X": {
-      "name": "Jack Williams"
+      "name": "Jack Williams",
+      "matchedClaimants": [
+        "Jack Williams"
+      ]
     },
     "0000-0001-7072-490X": {
-      "name": "Hrvoje Tkalčić"
+      "name": "Hrvoje Tkalčić",
+      "matchedClaimants": [
+        "Hrvoje Tkalčić"
+      ]
+    },
+    "0000-0001-7096-4153": {
+      "name": "Kate Brand",
+      "matchedClaimants": [
+        "Kate Brand"
+      ]
     },
     "0000-0001-7106-0789": {
-      "name": "Graham Heinson"
+      "name": "Graham Heinson",
+      "matchedClaimants": [
+        "Graham Heinson"
+      ]
     },
     "0000-0001-7180-3386": {
-      "name": "Khalid Amrouch"
+      "name": "Khalid Amrouch",
+      "matchedClaimants": [
+        "Khalid Amrouch"
+      ]
     },
     "0000-0001-7337-8790": {
-      "name": "Juan Camilo Herrera"
+      "name": "Juan Camilo Herrera",
+      "matchedClaimants": [
+        "Juan Camilo"
+      ]
     },
     "0000-0001-7565-0743": {
-      "name": "Colin Wilson"
+      "name": "Colin Wilson",
+      "matchedClaimants": [
+        "Colin Wilson"
+      ]
     },
     "0000-0001-7876-1131": {
-      "name": "Kelvin Tapuke"
+      "name": "Kelvin Tapuke",
+      "matchedClaimants": [
+        "Kelvin Tapuke"
+      ]
     },
     "0000-0001-7926-3599": {
-      "name": "Relly Margiono"
+      "name": "Relly Margiono",
+      "matchedClaimants": [
+        "Relly Margiono"
+      ]
+    },
+    "0000-0001-8272-6697": {
+      "name": "Martin Lambert",
+      "matchedClaimants": [
+        "Martin Lambert"
+      ]
     },
     "0000-0001-8826-3021": {
-      "name": "Phil Cummins"
+      "name": "Phil Cummins",
+      "matchedClaimants": [
+        "Phil Cummins"
+      ]
     },
     "0000-0001-9187-3138": {
-      "name": "Caroline Eakin"
+      "name": "Caroline Eakin",
+      "matchedClaimants": [
+        "Caroline Eakin"
+      ]
     },
     "0000-0001-9960-0038": {
-      "name": "Millard Coffin"
+      "name": "Millard Coffin",
+      "matchedClaimants": [
+        "Millard Coffin"
+      ]
     },
     "0000-0002-0738-0187": {
-      "name": "Voon Hui Lai"
+      "name": "Voon Hui Lai",
+      "matchedClaimants": [
+        "Voon Hui Lai"
+      ]
     },
     "0000-0002-2044-6582": {
-      "name": "Thomas Brakenrig"
+      "name": "Thomas Brakenrig",
+      "matchedClaimants": [
+        "Thomas Brakenrig"
+      ]
     },
     "0000-0002-2421-9213": {
-      "name": "Myra Keep"
+      "name": "Myra Keep",
+      "matchedClaimants": [
+        "Myra Keep"
+      ]
     },
     "0000-0002-2530-1606": {
-      "name": "Alexei Gorbatov"
+      "name": "Alexei Gorbatov",
+      "matchedClaimants": [
+        "Alexei Gorbatov"
+      ]
     },
     "0000-0002-2562-4675": {
-      "name": "Mark Stirling"
+      "name": "Mark Stirling",
+      "matchedClaimants": [
+        "Mark Stirling"
+      ]
+    },
+    "0000-0002-2925-1335": {
+      "name": "Eleanor R. H. Mestel",
+      "matchedClaimants": [
+        "Eleanor Mestel"
+      ]
     },
     "0000-0002-3408-5474": {
-      "name": "Alan Collins"
+      "name": "Alan Collins",
+      "matchedClaimants": [
+        "Alan Collins"
+      ]
     },
     "0000-0002-4374-8022": {
-      "name": "Brook Keats"
+      "name": "Brook Keats",
+      "matchedClaimants": [
+        "Brook Keats"
+      ]
     },
     "0000-0002-5125-898X": {
-      "name": "Sandra Bourguignon"
+      "name": "Sandra Bourguignon",
+      "matchedClaimants": [
+        "Sandra Bourguignon"
+      ]
     },
     "0000-0002-6596-7226": {
-      "name": "Bruce Goleby"
+      "name": "Bruce Goleby",
+      "matchedClaimants": [
+        "Bruce Goleby"
+      ]
     },
     "0000-0002-6692-0665": {
-      "name": "Gareth Crutchley"
+      "name": "Gareth Crutchley",
+      "matchedClaimants": [
+        "Gareth Crutchley"
+      ]
     },
     "0000-0002-6977-291X": {
-      "name": "Nicholas Rawlinson"
+      "name": "Nicholas Rawlinson",
+      "matchedClaimants": [
+        "Nicholas Rawlinson"
+      ]
     },
     "0000-0002-7017-620X": {
-      "name": "John Townend"
+      "name": "John Townend",
+      "matchedClaimants": [
+        "John Townend"
+      ]
     },
     "0000-0002-7114-033X": {
-      "name": "Finnigan Illsley-Kemp"
+      "name": "Finnigan Illsley-Kemp",
+      "matchedClaimants": [
+        "Finnigan Illsley-Kemp"
+      ]
     },
     "0000-0002-7164-5274": {
-      "name": "Stuart Henrys"
+      "name": "Stuart Henrys",
+      "matchedClaimants": [
+        "Stuart Henrys"
+      ]
     },
     "0000-0002-7419-8545": {
-      "name": "Michael Hatch"
+      "name": "Michael Hatch",
+      "matchedClaimants": [
+        "Michael Hatch"
+      ]
+    },
+    "0000-0002-7743-7812": {
+      "name": "Goran Boren",
+      "matchedClaimants": [
+        "Goran Boren"
+      ]
+    },
+    "0000-0002-8550-5256": {
+      "name": "Robert Pickle",
+      "matchedClaimants": [
+        "Robert Pickle"
+      ]
+    },
+    "0000-0002-8678-412X": {
+      "name": "Stephan Thiel",
+      "matchedClaimants": [
+        "Stephan Thiel"
+      ]
     },
     "0000-0002-8756-2457": {
-      "name": "Michelle Salmon"
+      "name": "Michelle Salmon",
+      "matchedClaimants": [
+        "Michelle Salmon"
+      ]
     },
     "0000-0002-8768-2782": {
-      "name": "Chengxin Jiang"
+      "name": "Chengxin Jiang",
+      "matchedClaimants": [
+        "Chengxin Jiang"
+      ]
     },
     "0000-0002-9316-7605": {
-      "name": "Anya Reading"
+      "name": "Anya Reading",
+      "matchedClaimants": [
+        "Anya Reading"
+      ]
+    },
+    "0000-0002-9738-7277": {
+      "name": "Ben Kay",
+      "matchedClaimants": [
+        "Ben Kay"
+      ]
     },
     "0000-0003-0043-0580": {
-      "name": "Brook Tozer"
+      "name": "Brook Tozer",
+      "matchedClaimants": [
+        "Brook Tozer"
+      ]
     },
     "0000-0003-0392-8659": {
-      "name": "Donna Eberhart-Phillips"
+      "name": "Donna Eberhart-Phillips",
+      "matchedClaimants": [
+        "Donna Eberhart-Phillips"
+      ]
     },
     "0000-0003-1425-7969": {
-      "name": "Helen Janiszewski"
+      "name": "Helen Janiszewski",
+      "matchedClaimants": [
+        "Helen Janiszewski"
+      ]
     },
     "0000-0003-1489-7958": {
-      "name": "Neesha Schnepf"
+      "name": "Neesha Schnepf",
+      "matchedClaimants": [
+        "Neesha Schnepf"
+      ]
+    },
+    "0000-0003-1524-2312": {
+      "name": "John Paul O'Donnell",
+      "matchedClaimants": [
+        "John Paul O'Donnell"
+      ]
+    },
+    "0000-0003-2206-5350": {
+      "name": "Brian Kennett",
+      "matchedClaimants": [
+        "Brian Kennet",
+        "Brian Kennett"
+      ]
     },
     "0000-0003-2308-799X": {
-      "name": "Benjamin Cazzolato"
+      "name": "Benjamin Cazzolato",
+      "matchedClaimants": [
+        "Benjamin Cazzolato"
+      ]
     },
     "0000-0003-2317-2609": {
-      "name": "Calum John Chamberlain"
+      "name": "Calum John Chamberlain",
+      "matchedClaimants": [
+        "Calum Chamberlain"
+      ]
     },
     "0000-0003-3011-6939": {
-      "name": "Konstantinos Michailos"
+      "name": "Konstantinos Michailos",
+      "matchedClaimants": [
+        "Konstantinos Michailos"
+      ]
     },
     "0000-0003-3420-547X": {
-      "name": "Trevor Allen"
+      "name": "Trevor Allen",
+      "matchedClaimants": [
+        "Trevor Allen"
+      ]
     },
     "0000-0003-3478-9831": {
-      "name": "Thomas Ostersen"
+      "name": "Thomas Ostersen",
+      "matchedClaimants": [
+        "Tom Ostersen"
+      ]
     },
     "0000-0003-3525-0432": {
-      "name": "Wei Zeng"
+      "name": "Wei Zeng",
+      "matchedClaimants": [
+        "Wei Zeng"
+      ]
     },
     "0000-0003-3685-174X": {
-      "name": "Louis-Noel Moresi"
+      "name": "Louis-Noel Moresi",
+      "matchedClaimants": [
+        "Louis Moresi"
+      ]
     },
     "0000-0003-3762-7336": {
-      "name": "Samuel Jennings"
+      "name": "Samuel Jennings",
+      "matchedClaimants": [
+        "Sam Jennings"
+      ]
     },
     "0000-0003-4816-7865": {
-      "name": "Joann Miriam Stock"
+      "name": "Joann Miriam Stock",
+      "matchedClaimants": [
+        "Joann Miriam Stock"
+      ]
     },
     "0009-0000-1208-692X": {
-      "name": "Anna"
+      "name": "Anna",
+      "matchedClaimants": [
+        "Anna Gubina"
+      ]
     },
     "0009-0001-4670-8843": {
-      "name": "Mutia Daruso"
+      "name": "Mutia Daruso",
+      "matchedClaimants": [
+        "Rumi Daruso"
+      ]
     },
     "0009-0007-4854-1227": {
-      "name": "Mohammed Boumehdi"
+      "name": "Mohammed BOUMEHDI",
+      "matchedClaimants": [
+        "Mohammed Boumehdi"
+      ]
     },
     "0009-0008-5611-8418": {
-      "name": "Hamid Bizhani"
+      "name": "Hamid Bizhani",
+      "matchedClaimants": [
+        "Hamid Bizhani"
+      ]
     }
   },
   "rejected": {
     "0000-0001-5494-2296": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Meghan Miller",
         "Khalid Amrouch",
         "Kimberley Berends"
       ]
@@ -175,16 +387,14 @@
       ]
     },
     "0000-0001-7096-4153": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Kate Brand",
         "Stephan Thiel"
       ]
     },
     "0000-0001-8272-6697": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Martin Lambert",
         "Jarred Peacock"
       ]
     },
@@ -195,9 +405,8 @@
       ]
     },
     "0000-0002-2925-1335": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Eleanor Mestel",
         "Finnigan Illsley-Kemp"
       ]
     },
@@ -220,47 +429,40 @@
       ]
     },
     "0000-0002-7743-7812": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Goran Boren",
         "Yi He"
       ]
     },
     "0000-0002-8550-5256": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Robert Pickle",
         "Brian Kennett"
       ]
     },
     "0000-0002-8678-412X": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Stephan Thiel",
         "Jake Perez"
       ]
     },
     "0000-0002-9738-7277": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Ben Kay",
         "Emily Lewis",
         "Kate Brand"
       ]
     },
     "0000-0003-1524-2312": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "John Paul O'Donnell",
         "Kate Brand"
       ]
     },
     "0000-0003-2206-5350": {
-      "reason": "shared-across-names",
+      "reason": "not-this-person",
       "names": [
-        "Huaiyu Yuan",
-        "Brian Kennet",
-        "Brian Kennett"
+        "Huaiyu Yuan"
       ]
     },
     "0000-0003-3512-7856": {
