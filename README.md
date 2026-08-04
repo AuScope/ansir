@@ -136,10 +136,18 @@ environment, matching the repository variable of the same name.
 - No credentials or internal identifiers in this repository. The intake
   endpoint reads its sheet ID from an Apps Script property; the workflows read
   the published sheet URL from a repository variable.
-- Detailed operator documentation - pipeline setup, spreadsheet layout
-  contracts, intake procedures and data-quality notes - is maintained by
-  AuScope outside this repository. Comments and error messages that reference
-  `docs/*.md` refer to those internal documents.
+
+## Documentation
+
+| Document | Covers |
+|---|---|
+| [`docs/PIPELINE.md`](docs/PIPELINE.md) | How project data is published: the sheet, its public view, the nightly sync, and how to run and check it |
+| [`docs/SCHEDULE_DATA.md`](docs/SCHEDULE_DATA.md) | The fleet spreadsheet layout the schedule parser depends on, and how to extend it |
+| [`docs/SCHEDULE_PAGE.md`](docs/SCHEDULE_PAGE.md) | How the schedule page derives availability, and how it is embedded |
+| [`docs/INTAKE.md`](docs/INTAKE.md) | What happens to an equipment loan application from submission to review |
+| [`docs/FORM.md`](docs/FORM.md) | The application form: its steps, autofill, drafts and transport |
+| [`docs/PIDINST.md`](docs/PIDINST.md) | The AuScope instrument register as a source of fleet totals |
+| [`gas/README.md`](gas/README.md) | Deploying the intake endpoint |
 
 ## Licence
 
