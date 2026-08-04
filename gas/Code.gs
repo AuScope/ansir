@@ -93,16 +93,45 @@ var APPLICATIONS_SHEET_NAME = 'ANSIR_Applications';
 /**
  * REQUIRED CONFIGURATION - YOU MUST SET THIS BEFORE THE ENDPOINT WILL WORK.
  *
- * The ID of the Google Drive folder that uploaded supporting PDFs are written
- * into. Create a folder in the Drive of the account that owns this script,
- * open it, and copy the ID out of the URL:
+ * The STAGING folder. Uploaded supporting PDFs are written here by
+ * saveUploadedFile, before any ANSIR reference exists for them.
+ *
+ * Create a folder in the Drive of the account that owns this script, open it,
+ * and copy the ID out of the URL:
  *   https://drive.google.com/drive/folders/<THIS_IS_THE_ID>
  *
  * Leave it as the placeholder and saveUploadedFile will fail loudly with a
  * configuration error, which is the intended behaviour. It must never fail
  * quietly: the previous version silently discarded every PDF it was given.
+ *
+ * This folder must contain uploads and nothing else. getUploadedFile_ treats
+ * membership of it as proof that the intake itself created the file, and that
+ * is the only thing standing between a client-supplied file ID and an arbitrary
+ * Drive file being emailed to a client-supplied address.
  */
 var UPLOAD_FOLDER_ID = 'REPLACE_WITH_UPLOAD_FOLDER_ID';
+
+/**
+ * OPTIONAL CONFIGURATION - filing is skipped, safely, until this is set.
+ *
+ * The PARENT folder that per-application folders are created inside. At
+ * submission, once the ANSIR reference has been allocated, a folder named after
+ * that reference (for example ANSIR-2026-008) is created here, the staged
+ * supporting document is moved into it, and a PDF copy of the application is
+ * written alongside.
+ *
+ * Get the ID the same way as UPLOAD_FOLDER_ID, from the folder's URL. It must
+ * be a DIFFERENT folder from the staging one: the staging folder is the
+ * containment check's whole basis and must hold uploads and nothing else.
+ *
+ * Left as the placeholder, the endpoint behaves exactly as it did before filing
+ * existed. The staged document stays in the staging folder, no per-application
+ * folder is created, application_folder_url is written empty, and one line is
+ * logged saying filing is not configured. The application is still recorded and
+ * still emailed. Filing is a convenience for the facility manager; it is never
+ * a reason to fail an application.
+ */
+var APPLICATION_FOLDER_ID = 'REPLACE_WITH_APPLICATION_FOLDER_ID';
 
 /** Who gets the internal notification. */
 var ADMIN_EMAILS = [
@@ -458,6 +487,13 @@ function handleSubmit_(formData) {
 
   // Retrieve the supporting document, if one was uploaded, BEFORE allocating a
   // code, so that a bad file ID fails before it consumes a reference number.
+  //
+  // THIS CALL MUST STAY HERE, BEFORE ANY FILING HAPPENS. getUploadedFile_
+  // proves the file is inside the staging folder, and that proof is what stops
+  // a caller naming an arbitrary Drive file and having it emailed to an address
+  // of their choosing. Filing MOVES the file out of the staging folder, so the
+  // check is only meaningful while the file is still there. Verify first, move
+  // afterwards; never the other way round.
   var fileInfo = null;
   var fileId = safeText_(formData.uploaded_file_id);
   if (fileId) {
@@ -467,15 +503,32 @@ function handleSubmit_(formData) {
     }
   }
 
-  var ansirCode = allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo);
-  if (!ansirCode) {
+  var allocation = allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo);
+  if (!allocation) {
     return { success: false, message: 'The service is busy allocating a reference number. Please try again in a moment.' };
   }
+  var ansirCode = allocation.ansirCode;
 
   // The row is already written by allocateAnsirCode_, inside the lock, so that
   // the code cannot be allocated without also being recorded.
+  //
+  // EVERYTHING FROM HERE ON IS BEST EFFORT. The application is on the sheet.
+  // Nothing below may throw its way out of this function, because an
+  // application that has been recorded must never be lost or hidden by a Drive
+  // or PDF failure. Each step logs and carries on.
 
-  var emailResult = sendNotifications_(formData, ansirCode, fileInfo);
+  // The staged supporting document, if there is one, joins its application in
+  // the per-application folder. Its Drive URL is unchanged by the move, so the
+  // link already written to the sheet stays correct either way.
+  moveStagedFile_(fileInfo, allocation.folder);
+
+  // The PDF is built whether or not filing is configured, because it is
+  // attached to the emails regardless. A null blob simply means one fewer
+  // attachment.
+  var applicationPdf = buildApplicationPdf_(formData, ansirCode, fileInfo);
+  fileApplicationPdf_(allocation.folder, applicationPdf);
+
+  var emailResult = sendNotifications_(formData, ansirCode, fileInfo, applicationPdf);
 
   return {
     success: true,
@@ -504,8 +557,17 @@ function handleSubmit_(formData) {
  * against real projects) AND the intake tab (so two pending applications can
  * never collide).
  *
+ * The per-application folder is created here too, and for one reason only: the
+ * folder is named after the reference, the reference does not exist until this
+ * function computes it, and the row records the folder's URL. Creating it here
+ * keeps the row a single complete write rather than a write followed by a patch
+ * that could itself fail. The call is wrapped, so a Drive failure costs an
+ * empty application_folder_url cell and nothing else; the move and the PDF, the
+ * slower Drive work, are done by the caller outside the lock.
+ *
  * @private
- * @return {string|null} The allocated code, or null if the lock was not obtained.
+ * @return {Object|null} { ansirCode, folder } where folder may be null, or null
+ *     if the lock was not obtained.
  */
 function allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo) {
   var lock = LockService.getScriptLock();
@@ -522,7 +584,10 @@ function allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo) 
 
     var ansirCode = nextAnsirCode_(codes, new Date().getFullYear());
 
-    var record = buildApplicationRecord_(formData, ansirCode, fileInfo);
+    var folder = createApplicationFolder_(ansirCode);
+    var folderUrl = folderUrl_(folder);
+
+    var record = buildApplicationRecord_(formData, ansirCode, fileInfo, folderUrl);
     var headers = applicationsHeaders_();
     var row = [];
     for (var i = 0; i < headers.length; i++) {
@@ -532,7 +597,7 @@ function allocateAnsirCode_(spreadsheet, applicationsSheet, formData, fileInfo) 
     SpreadsheetApp.flush();
 
     logLine_('Allocated ' + ansirCode + ' and wrote row ' + applicationsSheet.getLastRow() + '.');
-    return ansirCode;
+    return { ansirCode: ansirCode, folder: folder };
   } finally {
     lock.releaseLock();
   }
@@ -745,6 +810,7 @@ function applicationsHeaders_() {
     'supporting_document_file_id',
     'supporting_document_url',
     'supporting_document_name',
+    'application_folder_url',
 
     // ---- Block 2: the master list, in master order. Copy this range whole.
     'title_primary',
@@ -858,7 +924,7 @@ function applicationsHeaders_() {
  * application, so they are left empty for the same reason.
  * @private
  */
-function buildApplicationRecord_(formData, ansirCode, fileInfo) {
+function buildApplicationRecord_(formData, ansirCode, fileInfo, applicationFolderUrl) {
   var people = buildContributorColumns_(formData);
 
   return {
@@ -870,6 +936,10 @@ function buildApplicationRecord_(formData, ansirCode, fileInfo) {
     'supporting_document_file_id': fileInfo ? fileInfo.id : '',
     'supporting_document_url': fileInfo ? fileInfo.url : '',
     'supporting_document_name': fileInfo ? fileInfo.name : '',
+    // Empty whenever filing is not configured, or when the folder could not be
+    // created. The supporting_document_url above is written either way, so the
+    // reviewer always has a link to the uploaded document.
+    'application_folder_url': safeText_(applicationFolderUrl),
 
     // ---- Block 2: the master list, in master order.
     'title_primary': safeText_(formData.title_primary),
@@ -1070,6 +1140,17 @@ function isUploadFolderConfigured_() {
  * have it mailed to themselves. So the file's parents are verified to include
  * UPLOAD_FOLDER_ID, and anything outside that folder is refused.
  *
+ * WHERE THIS RUNS MATTERS AS MUCH AS WHAT IT CHECKS. The containment check is
+ * true only while the file is still in the staging folder. Filing moves it out,
+ * into the per-application folder, so this function is called from
+ * handleSubmit_ BEFORE any filing happens and must stay there. Moving it after
+ * the move would turn the check into one that always fails, and "fixing" that
+ * by widening the accepted parents would give away the whole control.
+ *
+ * A consequence, and a welcome one: once a document has been filed against a
+ * reference, its ID is no longer accepted by a later submission, because it is
+ * no longer in the staging folder. One upload belongs to one application.
+ *
  * @private
  * @return {Object|null} { id, name, url, size, blob } or null.
  */
@@ -1095,7 +1176,7 @@ function getUploadedFile_(fileId) {
     }
   }
   if (!inFolder) {
-    logLine_('REFUSED: file ' + fileId + ' is not in the configured upload folder.');
+    logLine_('REFUSED: file ' + fileId + ' is not in the configured staging folder.');
     return null;
   }
 
@@ -1133,6 +1214,228 @@ function looksLikePdf_(bytes) {
     return false;
   }
   return bytes[0] === 37 && bytes[1] === 80 && bytes[2] === 68 && bytes[3] === 70 && bytes[4] === 45;
+}
+
+
+// ---------------------------------------------------------------------------
+// Per-application filing
+// ---------------------------------------------------------------------------
+//
+// THE SEQUENCING PROBLEM THIS SECTION EXISTS TO SOLVE
+// ---------------------------------------------------
+// The folder is named after the ANSIR reference. The reference is allocated at
+// submission. The supporting document, though, is uploaded minutes earlier, by
+// a separate saveUploadedFile call, when no reference exists yet and no folder
+// could possibly be named. So UPLOAD_FOLDER_ID is a STAGING folder: uploads
+// land there, and at submission, once the reference exists, the document is
+// moved into the folder named after it and a PDF of the application is written
+// alongside it.
+//
+// EVERY FUNCTION IN THIS SECTION FAILS QUIETLY AND CARRIES ON. By the time any
+// of them runs, the application is already on the sheet and the applicant is
+// waiting for a reference number. Filing is bookkeeping. It must never be the
+// reason an application is lost, hidden or refused.
+
+/** @private */
+function isApplicationFolderConfigured_() {
+  return !!APPLICATION_FOLDER_ID && APPLICATION_FOLDER_ID !== 'REPLACE_WITH_APPLICATION_FOLDER_ID';
+}
+
+/**
+ * Creates the folder for one application, named after its ANSIR reference.
+ *
+ * Returns null, never throws, in all three of the ways this can not happen:
+ * filing is unconfigured, the parent folder is unreachable, or the create
+ * fails. The caller treats null as "no filing this time" and proceeds.
+ * @private
+ * @return {Folder|null}
+ */
+function createApplicationFolder_(ansirCode) {
+  if (!isApplicationFolderConfigured_()) {
+    logLine_('Folder filing is not configured: APPLICATION_FOLDER_ID is still the ' +
+      'placeholder, so no folder was created for ' + ansirCode + '. The application ' +
+      'is recorded and emailed as usual, and the supporting document stays in the ' +
+      'staging folder. See gas/README.md to switch filing on.');
+    return null;
+  }
+  try {
+    var parent = DriveApp.getFolderById(APPLICATION_FOLDER_ID);
+    var folder = parent.createFolder(ansirCode);
+    logLine_('Created application folder ' + ansirCode + ' (' + folder.getId() + ').');
+    return folder;
+  } catch (err) {
+    logError_('createApplicationFolder_', err);
+    return null;
+  }
+}
+
+/**
+ * A folder's URL, or an empty string for a missing folder or an unreadable one.
+ * @private
+ */
+function folderUrl_(folder) {
+  if (!folder) {
+    return '';
+  }
+  try {
+    return folder.getUrl();
+  } catch (err) {
+    logError_('folderUrl_', err);
+    return '';
+  }
+}
+
+/**
+ * Moves the staged supporting document into the application's folder.
+ *
+ * Called only after getUploadedFile_ has already proved the file was in the
+ * staging folder. See the comment on getUploadedFile_ for why that order is not
+ * negotiable.
+ *
+ * If the move fails the document simply stays in the staging folder. It is
+ * still attached to the emails, and supporting_document_url still points at it,
+ * because a Drive URL is built from the file ID and survives a move. The only
+ * loss is tidiness.
+ * @private
+ */
+function moveStagedFile_(fileInfo, folder) {
+  if (!fileInfo || !folder) {
+    return;
+  }
+  try {
+    DriveApp.getFileById(fileInfo.id).moveTo(folder);
+    logLine_('Moved supporting document ' + fileInfo.id + ' into ' + folder.getName() + '.');
+  } catch (err) {
+    logError_('moveStagedFile_', err);
+  }
+}
+
+/**
+ * Writes the application PDF into the application's folder.
+ * Does nothing, quietly, if either the folder or the PDF is missing.
+ * @private
+ */
+function fileApplicationPdf_(folder, pdfBlob) {
+  if (!folder || !pdfBlob) {
+    return;
+  }
+  try {
+    var file = folder.createFile(pdfBlob);
+    logLine_('Filed application PDF ' + file.getName() + ' (' + file.getId() + ').');
+  } catch (err) {
+    logError_('fileApplicationPdf_', err);
+  }
+}
+
+/**
+ * Builds a PDF copy of the application.
+ *
+ * Named "<reference> Application.pdf", so a folder listing reads as the
+ * reference twice over. Returns null rather than throwing if the conversion
+ * fails: the emails then go out with whatever attachments do exist, which is
+ * the supporting document, and the application is unaffected.
+ * @private
+ * @return {Blob|null}
+ */
+function buildApplicationPdf_(formData, ansirCode, fileInfo) {
+  var name = ansirCode + ' Application.pdf';
+  try {
+    var html = applicationPdfHtml_(formData, ansirCode, fileInfo);
+    var pdf = Utilities.newBlob(html, MimeType.HTML, name).getAs(MimeType.PDF);
+    pdf.setName(name);
+    return pdf;
+  } catch (err) {
+    logError_('buildApplicationPdf_', err);
+    return null;
+  }
+}
+
+/**
+ * The HTML the PDF is rendered from: a heading block, then the application
+ * transcript.
+ *
+ * THE CONTENT IS NOT WRITTEN HERE. It comes from applicationTranscript_, the
+ * same function that builds the body of the applicant's copy and of the
+ * internal notification, so the PDF and the two emails cannot disagree about
+ * what was submitted. Everything in this function is presentation. If a section
+ * needs to change, change applicationTranscript_ and all three change together.
+ *
+ * The transcript is laid out as fixed-width preformatted text on purpose. It is
+ * already aligned as text, and re-parsing it into headings and paragraphs would
+ * mean guessing at its structure from its punctuation, which would break the
+ * moment a section was reworded.
+ *
+ * EVERY interpolated value goes through htmlEscape_. A project title containing
+ * a less-than sign, an ampersand or a quote is ordinary research text, not an
+ * attack, and it must render as itself rather than corrupt the document.
+ * @private
+ */
+function applicationPdfHtml_(formData, ansirCode, fileInfo) {
+  var css = [
+    'body { font-family: Helvetica, Arial, sans-serif; color: #000000; margin: 36px; }',
+    'h1 { font-size: 16pt; margin: 0 0 2px 0; }',
+    'p.facility { font-size: 9pt; color: #444444; margin: 0 0 18px 0; }',
+    'table.meta { border-collapse: collapse; font-size: 10pt; margin: 0 0 18px 0; }',
+    'table.meta th { text-align: left; padding: 2px 18px 2px 0; vertical-align: top; }',
+    'table.meta td { padding: 2px 0; vertical-align: top; }',
+    'pre.transcript { font-family: Consolas, Monaco, monospace; font-size: 8.5pt; ',
+    'white-space: pre-wrap; word-wrap: break-word; margin: 0; }'
+  ].join('\n');
+
+  var parts = [];
+  parts.push('<html>');
+  parts.push('<head>');
+  parts.push('<meta charset="utf-8">');
+  parts.push('<title>' + htmlEscape_(ansirCode) + ' Application</title>');
+  parts.push('<style>' + css + '</style>');
+  parts.push('</head>');
+  parts.push('<body>');
+  parts.push('<h1>ANSIR equipment loan application</h1>');
+  parts.push('<p class="facility">ANSIR Research Facilities for Earth Sounding. ' +
+    'An AuScope research facility funded under NCRIS.</p>');
+  parts.push('<table class="meta">');
+  parts.push(pdfMetaRow_('ANSIR reference', ansirCode));
+  parts.push(pdfMetaRow_('Submitted', formatDateTime_(new Date())));
+  parts.push(pdfMetaRow_('Project title', orNotProvided_(formData ? formData.title_primary : '')));
+  parts.push(pdfMetaRow_('Supporting document', fileInfo ? fileInfo.name : 'None uploaded'));
+  parts.push('</table>');
+  parts.push('<pre class="transcript">');
+  parts.push(htmlEscape_(applicationTranscript_(formData, ansirCode, fileInfo).join('\n')));
+  parts.push('</pre>');
+  parts.push('</body>');
+  parts.push('</html>');
+  return parts.join('\n');
+}
+
+/**
+ * One label and value row of the PDF heading table.
+ * @private
+ */
+function pdfMetaRow_(label, value) {
+  return '<tr><th>' + htmlEscape_(label) + '</th><td>' + htmlEscape_(value) + '</td></tr>';
+}
+
+/**
+ * Escapes a value for inclusion in HTML text or in a double-quoted attribute.
+ *
+ * The ampersand MUST be replaced first. Replacing it after the others would
+ * re-escape the ampersands those replacements had just introduced, turning
+ * &lt; into &amp;lt; and printing the entity rather than the character.
+ *
+ * This is not primarily an injection defence, although it is that too. It is
+ * correctness: research titles contain ampersands, inequality signs and quotes,
+ * and every one of them has to survive into the PDF as the character the
+ * applicant typed.
+ * @private
+ */
+function htmlEscape_(value) {
+  var text = (value === null || value === undefined) ? '' : String(value);
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 
@@ -1255,13 +1558,24 @@ function rateLimitOk_(bucket) {
  *   3. the same internal notification to the facility addresses matching
  *      the selected methods (FACILITY_ROUTES).
  *
+ * All three carry the same attachments: the PDF copy of the application, and
+ * the applicant's supporting document if one was uploaded. Either may be
+ * absent, and the send goes ahead with whatever is present. An email with one
+ * attachment is a smaller loss than no email at all.
+ *
  * Every send is individually wrapped, because a failed email must never lose an
  * application that has already been written to the sheet.
  * @private
  */
-function sendNotifications_(formData, ansirCode, fileInfo) {
+function sendNotifications_(formData, ansirCode, fileInfo, applicationPdf) {
   var sent = [];
-  var attachments = fileInfo ? [fileInfo.blob] : [];
+  var attachments = [];
+  if (applicationPdf) {
+    attachments.push(applicationPdf);
+  }
+  if (fileInfo) {
+    attachments.push(fileInfo.blob);
+  }
 
   var applicantAddress = safeText_(formData.lead_email);
   try {
@@ -1381,7 +1695,14 @@ function buildInternalEmail_(formData, ansirCode, fileInfo) {
 }
 
 /**
- * The shared body of both emails: everything the applicant submitted.
+ * Everything the applicant submitted, in the order the form asks for it.
+ *
+ * THIS IS THE SINGLE SOURCE OF THE APPLICATION CONTENT. It is the body of the
+ * applicant's copy, the body of the internal notification, and the body of the
+ * filed PDF. Three readers, one text, so they cannot drift apart. It is
+ * therefore written as plain text with no assumption about where it will be
+ * displayed, and it must stay that way: applicationPdfHtml_ escapes it for HTML
+ * rather than expecting any markup in it.
  * @private
  */
 function applicationTranscript_(formData, ansirCode, fileInfo) {
@@ -1497,7 +1818,7 @@ function applicationTranscript_(formData, ansirCode, fileInfo) {
   if (fileInfo) {
     lines.push('File: ' + fileInfo.name);
     lines.push('Size: ' + (fileInfo.size / 1024).toFixed(1) + ' KB');
-    lines.push('Status: attached to this email and stored in the ANSIR applications folder.');
+    lines.push('Status: received, attached to the ANSIR notification emails, and held in Drive.');
   } else {
     lines.push('No supporting document was uploaded.');
   }

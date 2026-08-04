@@ -40,45 +40,65 @@ auditable proof.
 |---|---|---|---|
 | 1 | `doGet` | **YES** | Serves the form HTML (fallback transport) |
 | 2 | `doPost` | **YES** | JSON transport for a form served from GitHub Pages |
-| 3 | `saveUploadedFile` | **YES** | Accepts one PDF, returns a Drive file ID |
-| 4 | `submitApplication` | **YES** | Validates, records, allocates a reference, emails |
-| 5 | `handleUpload_` | no | Shared upload implementation |
-| 6 | `handleSubmit_` | no | Shared submit implementation |
-| 7 | `allocateAnsirCode_` | no | Lock, scan, allocate reference, append row |
-| 8 | `readCodeColumn_` | no | Reads the ANSIR code column from a sheet |
-| 9 | `nextAnsirCode_` | no | Pure sequencing logic (unit tested) |
-| 10 | `getApplicationsSheet_` | no | Returns or creates the intake tab |
-| 11 | `applicationsHeaders_` | no | The intake tab column order |
-| 12 | `buildApplicationRecord_` | no | Form data to sheet row |
-| 13 | `buildInternalNotes_` | no | Submission timestamp and attachment note |
-| 14 | `buildContributorColumns_` | no | Flattens contributors to sheet columns |
-| 15 | `isUploadFolderConfigured_` | no | Guards against the placeholder folder ID |
-| 16 | `getUploadedFile_` | no | Retrieves the PDF, verifies it is in the folder |
-| 17 | `buildUploadFileName_` | no | Builds a readable stored file name |
-| 18 | `looksLikePdf_` | no | Checks the `%PDF-` magic number |
-| 19 | `validateFileData_` | no | Server-side PDF constraint checks |
-| 20 | `validateSubmission_` | no | Server-side required-field checks |
-| 21 | `isEmailAddress_` | no | Email format check |
-| 22 | `rateLimitOk_` | no | Submissions-per-hour cap |
-| 23 | `sendNotifications_` | no | Sends the three emails |
-| 24 | `buildApplicantEmail_` | no | The applicant's copy |
-| 25 | `buildInternalEmail_` | no | The admin and facility notification |
-| 26 | `applicationTranscript_` | no | Shared email body |
-| 27 | `contributorLines_` | no | Team member lines for the emails |
-| 28 | `equipmentCatalogue_` | no | Equipment key to display name map |
-| 29 | `equipmentNames_` | no | Requested equipment, names only |
-| 30 | `equipmentLines_` | no | Requested equipment, name and quantity |
-| 31 | `formatPolygon_` | no | GeoJSON to plain lat, lon pairs |
-| 32 | `safeText_` | no | Coerce, trim, cap length |
-| 33 | `sheetSafe_` | no | Neutralises spreadsheet formula injection |
-| 34 | `joinNonEmpty_` | no | Join non-blank parts |
-| 35 | `orNotProvided_` | no | Display fallback |
-| 36 | `formatDateTime_` | no | Human-readable timestamp |
-| 37 | `jsonResponse_` | no | Builds the JSON `TextOutput` |
-| 38 | `logLine_` | no | Operator log line |
-| 39 | `logError_` | no | Operator error log |
+| 3 | `saveUploadedFile` | **YES** | Accepts one PDF, stages it, returns a Drive file ID |
+| 4 | `submitApplication` | **YES** | Validates, records, allocates a reference, files, emails |
+| 5 | `sheetId_` | no | Reads the sheet ID from script properties |
+| 6 | `facilityRecipients_` | no | Facility addresses for the selected methods |
+| 7 | `sendMail_` | no | Sends as the configured address when it is available |
+| 8 | `handleUpload_` | no | Shared upload implementation |
+| 9 | `handleSubmit_` | no | Shared submit implementation |
+| 10 | `allocateAnsirCode_` | no | Lock, scan, allocate reference, create folder, append row |
+| 11 | `readCodeColumn_` | no | Reads the ANSIR code column from a sheet |
+| 12 | `nextAnsirCode_` | no | Pure sequencing logic (unit tested) |
+| 13 | `getApplicationsSheet_` | no | Returns or creates the intake tab |
+| 14 | `writeApplicationsHeaderRow_` | no | Writes and formats the intake header row |
+| 15 | `headerMismatch_` | no | Describes the first differing column |
+| 16 | `applicationsHeaders_` | no | The intake tab column order |
+| 17 | `buildApplicationRecord_` | no | Form data to sheet row |
+| 18 | `buildInternalNotes_` | no | Submission timestamp and attachment note |
+| 19 | `buildContributorColumns_` | no | Flattens contributors to sheet columns |
+| 20 | `isUploadFolderConfigured_` | no | Guards against the placeholder staging folder ID |
+| 21 | `getUploadedFile_` | no | Retrieves the PDF, verifies it is in the staging folder |
+| 22 | `buildUploadFileName_` | no | Builds a readable stored file name |
+| 23 | `looksLikePdf_` | no | Checks the `%PDF-` magic number |
+| 24 | `isApplicationFolderConfigured_` | no | Guards against the placeholder parent folder ID |
+| 25 | `createApplicationFolder_` | no | Creates the folder named after the reference |
+| 26 | `folderUrl_` | no | A folder's URL, or empty |
+| 27 | `moveStagedFile_` | no | Moves the staged document into that folder |
+| 28 | `fileApplicationPdf_` | no | Writes the application PDF into that folder |
+| 29 | `buildApplicationPdf_` | no | Renders the application as a PDF blob |
+| 30 | `applicationPdfHtml_` | no | The HTML wrapper the PDF is rendered from |
+| 31 | `pdfMetaRow_` | no | One row of the PDF heading table |
+| 32 | `htmlEscape_` | no | Escapes a value into HTML |
+| 33 | `validateFileData_` | no | Server-side PDF constraint checks |
+| 34 | `validateSubmission_` | no | Server-side required-field checks |
+| 35 | `isEmailAddress_` | no | Email format check |
+| 36 | `rateLimitOk_` | no | Submissions-per-hour cap |
+| 37 | `sendNotifications_` | no | Sends the three emails |
+| 38 | `buildApplicantEmail_` | no | The applicant's copy |
+| 39 | `buildInternalEmail_` | no | The admin and facility notification |
+| 40 | `applicationTranscript_` | no | The application content, shared by both emails and the PDF |
+| 41 | `contributorLines_` | no | Team member lines for the transcript |
+| 42 | `equipmentCatalogue_` | no | Equipment key to display name map |
+| 43 | `equipmentNames_` | no | Requested equipment, names only |
+| 44 | `equipmentLines_` | no | Requested equipment, name and quantity |
+| 45 | `formatPolygon_` | no | GeoJSON to plain lat, lon pairs |
+| 46 | `safeText_` | no | Coerce, trim, cap length |
+| 47 | `sheetSafe_` | no | Neutralises spreadsheet formula injection |
+| 48 | `joinNonEmpty_` | no | Join non-blank parts |
+| 49 | `orNotProvided_` | no | Display fallback |
+| 50 | `formatDateTime_` | no | Human-readable timestamp |
+| 51 | `jsonResponse_` | no | Builds the JSON `TextOutput` |
+| 52 | `logLine_` | no | Operator log line |
+| 53 | `logError_` | no | Operator error log |
 
-**39 functions total. 4 web-callable. 35 private.**
+**53 functions total. 4 web-callable. 49 private.**
+
+Confirm the count as well as the names:
+
+```
+grep -c '^function ' gas/Code.gs
+```
 
 Verify this yourself at any time, without trusting the table:
 
@@ -97,7 +117,8 @@ whole internet can now call. Treat it as an incident.
 - A Google account that has edit access to the ANSIR project sheet.
 - The sheet's ID, which you will store as a script property rather than in
   code. It is the part of the sheet URL between `/d/` and `/edit`.
-- Somewhere in that same account's Drive to store uploaded PDFs.
+- Two folders in that same account's Drive: one to stage uploaded PDFs, and one
+  to file completed applications in. See section 3.
 
 Use an account whose daily email quota you are happy to spend. A consumer
 `@gmail.com` account gets roughly 100 `MailApp` recipients per day; a Google
@@ -113,7 +134,7 @@ changes. Apps Script cannot invent a sender, so this works in exactly two
 setups:
 
 1. **Deploy the script from the ansir@auscope.org.au account itself** (the
-   clean long-term arrangement: that account then also owns the upload folder
+   clean long-term arrangement: that account then also owns the Drive folders
    and the deployment), or
 2. **Deploy from a personal account that has ansir@auscope.org.au as a
    verified Gmail "Send mail as" alias** (Gmail Settings > Accounts > Send
@@ -130,15 +151,43 @@ That is expected.
 
 ---
 
-## 3. Create the Drive folder
+## 3. Create the Drive folders
 
-1. In the Drive of the account that will own the script, create a folder, for
-   example `ANSIR Application Uploads`.
+Two folders, with different jobs. Both live in the Drive of the account that
+will own the script.
+
+### 3a. The staging folder (required)
+
+1. Create a folder, for example `ANSIR Application Uploads`.
 2. Open it and copy the ID from the URL:
    `https://drive.google.com/drive/folders/`**`<THIS_IS_THE_ID>`**
-3. Do **not** share this folder publicly. Uploaded documents are private
-   research material. The endpoint attaches them to emails; it does not
-   publish them.
+3. This is where `saveUploadedFile` writes supporting documents, before an ANSIR
+   reference exists for them. At submission each document is moved out of it and
+   into its application's folder, so in normal running it holds only documents
+   from uploads that were never submitted.
+4. Keep uploads and nothing else in it. `getUploadedFile_` treats membership of
+   this folder as proof that the intake itself created a file, and that proof is
+   what stops a caller naming any other Drive file and having it emailed.
+
+### 3b. The application filing folder (optional)
+
+1. Create a second folder, for example `ANSIR Applications`.
+2. Copy its ID the same way.
+3. This is the parent that per-application folders are created inside. Each
+   submission gets a folder named after its reference, for example
+   `ANSIR-2026-008`, holding the supporting document and a PDF copy of the
+   application.
+4. It must be a **different** folder from the staging one, and it must not be
+   nested inside it, for the reason in step 3a.4.
+
+Do **not** share either folder publicly. Applications and supporting documents
+are private research material. The endpoint attaches them to emails and files
+them in Drive; it does not publish them.
+
+Leaving 3b unset is a supported configuration. Filing is then skipped, one line
+is logged saying so, and everything else behaves exactly as before: the document
+stays in the staging folder, the application is recorded, and the emails go out
+with the PDF attached.
 
 ---
 
@@ -162,16 +211,21 @@ That is expected.
    | (sheet ID) | **Not in the file.** Set the script property `ANSIR_SHEET_ID` - see step 5 below |
    | `MASTER_SHEET_NAME` | Already correct - `ANSIR_Projects_MasterList` |
    | `APPLICATIONS_SHEET_NAME` | Already correct - `ANSIR_Applications` |
-   | `UPLOAD_FOLDER_ID` | **Required.** The folder ID from step 3 |
+   | `UPLOAD_FOLDER_ID` | **Required.** The staging folder ID from step 3a |
+   | `APPLICATION_FOLDER_ID` | Optional. The parent folder ID from step 3b. Left as the placeholder, per-application folders are not created and nothing else changes |
    | `ADMIN_EMAILS` | Already `ben@auscope.org.au`; add others as needed |
    | `FACILITY_ROUTES` | Facility addresses per research method (Seismic/Nodal Seismic/DAS, Magnetotelluric, Petrophysical). Every route deliberately empty; fill in per method when the addresses are agreed |
    | `MAIL_FROM_ADDRESS` | Already `ansir@auscope.org.au` - see "Sender identity" below |
    | `MAX_SUBMISSIONS_PER_HOUR` | `20` is a sensible starting point |
 
-   If you leave `UPLOAD_FOLDER_ID` as the placeholder, uploads will fail with a
-   clear configuration error rather than silently succeeding. That is
-   intentional: the previous version discarded every PDF it was given and told
-   the applicant it had worked.
+   The two folder constants fail in deliberately opposite ways, because they
+   carry different consequences. If you leave `UPLOAD_FOLDER_ID` as the
+   placeholder, uploads fail with a clear configuration error rather than
+   silently succeeding: the previous version discarded every PDF it was given
+   and told the applicant it had worked. If you leave `APPLICATION_FOLDER_ID` as
+   the placeholder, nothing fails at all. Filing is convenience, so it is never
+   allowed to cost an application; the execution log records that filing is not
+   configured, and `application_folder_url` is written empty.
 
 6. Save.
 
@@ -420,15 +474,30 @@ Work through this in order. Do it on the real deployment, once.
    - `ben@auscope.org.au` receives the internal notification,
    - the execution log records that no facility addresses are configured for the selected methods (`FACILITY_ROUTES` empty by design).
 3. **Application with an attachment.** Attach a small PDF. Confirm:
-   - the file appears in the Drive upload folder with a name like
+   - during the upload step, and before you submit, the file appears in the
+     **staging** folder with a name like
      `ANSIR_Application_<title>_<timestamp>.pdf`,
-   - the PDF is attached to both the applicant copy and the internal
+   - after submitting, a folder named after the reference, for example
+     `ANSIR-2026-008`, exists inside the application filing folder, and holds
+     both that supporting document and `ANSIR-2026-008 Application.pdf`,
+   - the staging folder is now empty again,
+   - both PDFs are attached to the applicant copy and to the internal
      notification,
-   - `supporting_document_file_id`, `supporting_document_url` and
-     `supporting_document_name` are populated in the sheet row.
-4. **Sequencing.** Submit twice in a row. Confirm the two reference numbers are
+   - the application PDF opens and reads as the whole application: the
+     reference, the submission time, and every section in the order the form
+     asks them,
+   - `supporting_document_file_id`, `supporting_document_url`,
+     `supporting_document_name` and `application_folder_url` are populated in
+     the sheet row, and the folder URL opens the folder.
+4. **Filing switched off.** Set `APPLICATION_FOLDER_ID` back to the placeholder,
+   deploy a new version, and submit once more. Confirm the application is still
+   recorded and still emailed with its PDF attached, that
+   `application_folder_url` is empty, that the supporting document is still in
+   the staging folder, and that the execution log carries one line saying folder
+   filing is not configured. Then set the folder ID back and redeploy.
+5. **Sequencing.** Submit twice in a row. Confirm the two reference numbers are
    consecutive and neither collides with anything in the master list.
-5. **Server-side validation.** Post directly at the endpoint with `curl`,
+6. **Server-side validation.** Post directly at the endpoint with `curl`,
    bypassing the form entirely, and confirm it is rejected:
 
    ```
@@ -438,9 +507,9 @@ Work through this in order. Do it on the real deployment, once.
    ```
 
    Expect `{"success":false,"message":"The following required fields are missing: ..."}`.
-6. **Non-PDF upload.** Base64 a `.txt` file but claim `application/pdf` in the
+7. **Non-PDF upload.** Base64 a `.txt` file but claim `application/pdf` in the
    MIME type. The magic-number check should reject it.
-7. **Rate limit.** Optionally, drop `MAX_SUBMISSIONS_PER_HOUR` to `2`, submit
+8. **Rate limit.** Optionally, drop `MAX_SUBMISSIONS_PER_HOUR` to `2`, submit
    three times, confirm the third is refused politely, then set it back and
    redeploy.
 
@@ -466,7 +535,7 @@ evict under memory pressure. Eviction fails open - the counter restarts rather
 than locking everyone out. That is the right trade-off: a legitimate researcher
 must never be blocked from applying because a cache entry disappeared.
 
-**Emailed attachments are restricted to the upload folder.** `submitApplication`
+**Emailed attachments are restricted to the staging folder.** `submitApplication`
 receives a Drive file ID from the client and attaches that file to emails going
 to a client-supplied address. Without a check, anyone could pass the ID of any
 file the script owner can read and have it mailed to themselves.
@@ -474,6 +543,29 @@ file the script owner can read and have it mailed to themselves.
 `UPLOAD_FOLDER_ID` and refuses anything else. **Do not remove that check, and do
 not point `UPLOAD_FOLDER_ID` at a folder containing anything other than
 uploads.**
+
+**That check runs before the file is moved, and the order is not negotiable.**
+Filing moves the supporting document out of the staging folder, so the
+containment check is only true beforehand. `handleSubmit_` therefore verifies
+the file first and files it afterwards. If the check is ever moved after the
+move it will simply always fail, and widening the accepted parents to make it
+pass again would give the whole control away. A useful side effect of the
+current order: once a document has been filed against a reference, its ID is no
+longer accepted, because it is no longer in the staging folder. One upload
+belongs to one application.
+
+**Filing never costs an application.** Creating the folder, moving the document,
+building the PDF and writing it into the folder are each wrapped separately. Any
+of them can fail, and the row is already on the sheet by then, so the failure
+costs at most an empty `application_folder_url`, a document left in the staging
+folder, or one fewer email attachment. Failures are logged with the
+`[ANSIR INTAKE]` prefix, and the applicant still gets their reference number.
+
+**The application PDF is generated from the same text as the emails.**
+`applicationTranscript_` is the single source of the application content;
+`applicationPdfHtml_` only wraps it for print. A section added to the transcript
+appears in the applicant's copy, the internal notification and the filed PDF at
+once, so the three cannot disagree about what was submitted.
 
 **Sheet values are protected against formula injection.** A submitted value
 starting with `=`, `+`, `-` or `@` is prefixed with an apostrophe before being

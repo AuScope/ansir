@@ -24,8 +24,8 @@ is all it does. It exposes four web-callable functions and nothing else:
 |---|---|
 | `doGet` | Returns a short plain-text notice. The endpoint is not a page |
 | `doPost` | The transport the form uses. Dispatches on an `action` field |
-| `saveUploadedFile` | Accepts one supporting PDF, stores it, returns its Drive file ID |
-| `submitApplication` | Validates, allocates a reference, records the row, sends the emails |
+| `saveUploadedFile` | Accepts one supporting PDF, stages it in Drive, returns its file ID |
+| `submitApplication` | Validates, allocates a reference, records the row, files the application in Drive, sends the emails |
 
 Every other function in the file ends in an underscore, which makes it
 unreachable from the web.
@@ -56,7 +56,7 @@ Researcher completes the 5-step form (GitHub Pages, source in apply/index.html)
       |
       | 1. optional: upload one supporting PDF
       v
-saveUploadedFile  -->  PDF written to the ANSIR uploads folder in Drive
+saveUploadedFile  -->  PDF written to the STAGING folder in Drive
       |                returns a Drive file ID
       | 2. submit the application, carrying that file ID
       v
@@ -64,14 +64,22 @@ submitApplication
       |
       +-- re-validates every required field, server-side
       +-- checks the submissions-per-hour cap
-      +-- fetches the PDF back out of Drive by ID
+      +-- fetches the PDF back out of Drive by ID, and confirms it is in the
+      |   staging folder. This runs BEFORE anything is moved
       |
       +-- [ SCRIPT LOCK ] ---------------------------------------+
       |     scans ANSIR_Projects_MasterList for existing codes   |
       |     scans ANSIR_Applications for pending codes           |
       |     allocates the next ANSIR-<year>-NNN                  |
+      |     creates the folder named after it                    |
       |     appends one row to ANSIR_Applications                |
       +----------------------------------------------------------+
+      |
+      |   the application is now recorded. Everything below is best effort
+      |
+      +-- moves the staged supporting document into that folder
+      +-- renders the application as <reference> Application.pdf
+      +-- writes that PDF into that folder
       |
       +-- emails a copy of the application to the applicant
       +-- emails a notification to ADMIN_EMAILS
@@ -119,10 +127,10 @@ headers, a frozen first row and bold header text.
 
 ### The column layout
 
-The tab has 93 columns in three blocks. The order is what makes promotion a
+The tab has 94 columns in three blocks. The order is what makes promotion a
 copy rather than a re-typing exercise.
 
-**Block 1 - review workflow (columns 1 to 7).** Intake-only. A reviewer opening
+**Block 1 - review workflow (columns 1 to 8).** Intake-only. A reviewer opening
 the tab sees these before any application content.
 
 | Column | Meaning |
@@ -132,14 +140,15 @@ the tab sees these before any application content.
 | `reviewed_by` | Who assessed it |
 | `review_notes` | Free text for the assessment |
 | `supporting_document_file_id` | Drive file ID of the uploaded PDF |
-| `supporting_document_url` | Drive link to the uploaded PDF |
+| `supporting_document_url` | Drive link to the uploaded PDF. Unaffected by filing, because a Drive link is built from the file ID and survives a move |
 | `supporting_document_name` | File name of the uploaded PDF |
+| `application_folder_url` | Drive link to the folder holding this application. Empty when filing is not configured, or when the folder could not be created |
 
-**Block 2 - the master list (columns 8 to 79).** Every column of
+**Block 2 - the master list (columns 9 to 80).** Every column of
 `ANSIR_Projects_MasterList`, using the master list's exact header spellings and
 its exact order, starting at `title_primary` and ending at `internal_notes`.
 The allocated `alternative_identifier_ansir_code` sits at its master position,
-column 12.
+column 13.
 
 Block 2 contains **every** master column, including the many the form does not
 collect. Those are written empty. An empty column that lines up is what makes
@@ -189,7 +198,7 @@ and not the applicant's:
 edits to the master list, so they are meaningless for a row that has not
 reached it.
 
-**Block 3 - intake-only answers (columns 80 to 93).** Questions the form asks
+**Block 3 - intake-only answers (columns 81 to 94).** Questions the form asks
 that the master list has no column for:
 
 `application_type`, `application_type_other`, `timing_constraints`,
@@ -224,30 +233,98 @@ columns in the tab by hand.
 
 ---
 
-## 4. Where the supporting PDF is stored
+## 4. Where the application is filed
 
-In the Drive folder named by `UPLOAD_FOLDER_ID` in `gas/Code.gs`, owned by the
-account that owns the script. The folder is private: nothing in it is
-published, linked from a public page, or committed to git.
+Two Drive folders, both owned by the account that owns the script, both private:
+nothing in either is published, linked from a public page, or committed to git.
+
+| Folder | Constant | What is in it |
+|---|---|---|
+| Staging | `UPLOAD_FOLDER_ID` | Supporting documents that have been uploaded but not yet submitted. Required |
+| Application filing | `APPLICATION_FOLDER_ID` | One folder per application, named after its ANSIR reference. Optional |
+
+### Why staging exists
+
+The per-application folder is named after the ANSIR reference, and the reference
+is allocated at submission. The supporting document, though, is uploaded
+earlier, by a separate `saveUploadedFile` call, at a point where no reference
+exists and no folder could be named after one.
+
+So uploads land in the staging folder. At submission, once the reference has
+been allocated, the endpoint creates a folder named after it, moves the staged
+document into it, and writes a PDF copy of the application alongside:
+
+```
+ANSIR Applications/                    (APPLICATION_FOLDER_ID)
+  ANSIR-2026-008/
+    ANSIR-2026-008 Application.pdf     the PDF copy of the application
+    ANSIR_Application_<title>_<timestamp>.pdf   the applicant's document
+```
+
+In steady state the staging folder is empty. What remains in it are uploads from
+sessions that were never submitted.
+
+### The containment check, and why the order matters
+
+`submitApplication` confirms that the supplied file ID names a file inside the
+staging folder and refuses anything outside it. The ID arrives from the client
+and the file is about to be emailed to an address that also arrived from the
+client, so that check is what confines the attachment to files the intake itself
+created.
+
+It runs **before** the file is moved, and that position is part of the control
+rather than an accident of ordering. The check is only true while the document
+is still in the staging folder; filing moves it out. Verify first, move
+afterwards. It also runs **before** a reference number is allocated, so an
+unusable file ID fails without consuming a reference.
+
+One consequence is worth knowing: a document that has already been filed against
+a reference is no longer in the staging folder, so its file ID is refused by any
+later submission. One upload belongs to one application.
 
 Uploads are checked server-side after decoding, not on the client's word: the
 actual decoded byte length is measured against the 10 MB limit, and the leading
-bytes are inspected to confirm the file really is a PDF.
+bytes are inspected to confirm the file really is a PDF. No state is held
+between executions anywhere in the design; the upload call returns an ID and the
+submit call fetches the file back by that ID.
 
-`saveUploadedFile` writes the file and returns its Drive file ID. The client
-carries that ID into `submitApplication`, which fetches the blob back out of
-Drive by ID. No state is held between executions anywhere in the design.
+### The PDF copy of the application
 
-`submitApplication` confirms that the supplied file ID names a file inside the
-upload folder and refuses anything outside it. The ID arrives from the client
-and the file is about to be emailed to an address that also arrived from the
-client, so that check is what confines the attachment to files the intake
-itself created. The document is fetched **before** a reference number is
-allocated, so an unusable file ID fails without consuming a reference.
+Named `<reference> Application.pdf`, and attached to all three notification
+emails as well as filed. It is a printable transcript of the whole application:
+the reference, the submission time, then every section in the order the form
+asks them, including all contributors and the itemised equipment request, and
+the supporting document's filename where one was attached.
 
-The row records `supporting_document_file_id`, `supporting_document_url` and
-`supporting_document_name`. The URL is the ordinary Drive link, openable only
-by people with access to that folder.
+Its content comes from the same function that builds the body of the emails, so
+the filed PDF and the two notifications cannot disagree about what was
+submitted.
+
+### When filing is not configured
+
+`APPLICATION_FOLDER_ID` is optional. Left unset, the endpoint behaves as it did
+before filing existed:
+
+- no per-application folder is created,
+- the supporting document stays in the staging folder,
+- `application_folder_url` is written empty,
+- the application is recorded and the emails still go out, with the PDF copy
+  still attached,
+- one line is written to the execution log saying folder filing is not
+  configured.
+
+The same applies if a filing step fails rather than being unconfigured. Folder
+creation, the move, PDF generation and writing the PDF into the folder are
+wrapped separately, and all of them run after the row has been written. A Drive
+outage costs tidiness, never an application.
+
+### What the row records
+
+`supporting_document_file_id`, `supporting_document_url`,
+`supporting_document_name` and `application_folder_url`. The URLs are ordinary
+Drive links, openable only by people with access to those folders. The document
+URL is unaffected by filing, because a Drive link is built from the file ID and
+survives a move.
 
 ---
 
@@ -255,11 +332,15 @@ by people with access to that folder.
 
 Three notifications per submission, all plain text.
 
-| Recipient | Content | Attachment |
+| Recipient | Content | Attachments |
 |---|---|---|
-| The applicant (`lead_email`) | Acknowledgement, their ANSIR reference, next steps and a full transcript of the submission | The uploaded PDF |
-| `ADMIN_EMAILS` | The same full transcript, plus where the row was recorded and a note that the row is an application, not a project. Reply-to is the applicant | The uploaded PDF |
-| `FACILITY_ROUTES` | Identical to the administrator notification | The uploaded PDF |
+| The applicant (`lead_email`) | Acknowledgement, their ANSIR reference, next steps and a full transcript of the submission | The application PDF, and the uploaded document if there was one |
+| `ADMIN_EMAILS` | The same full transcript, plus where the row was recorded and a note that the row is an application, not a project. Reply-to is the applicant | As above |
+| `FACILITY_ROUTES` | Identical to the administrator notification | As above |
+
+Either attachment can be absent: there may have been no supporting document, and
+PDF generation may have failed. The send goes ahead with whatever exists, because
+an email with one attachment is a smaller loss than no email at all.
 
 Subjects are `ANSIR equipment loan application received - <code>` to the
 applicant and `New ANSIR equipment loan application - <code>` internally. Mail
@@ -364,8 +445,9 @@ public site, and an application arriving from an anonymous form is unverified
 input, so a person reads it before it crosses that boundary.
 
 1. **Assess.** Open the `ANSIR_Applications` tab, find the row by its ANSIR
-   reference, and read it alongside the emailed transcript and the attached
-   PDF.
+   reference, and read it alongside the emailed transcript. Follow
+   `application_folder_url` to the application's folder, which holds the PDF
+   copy of the application and the applicant's supporting document.
 2. **Record the assessment.** Fill in `review_status`, `reviewed_by` and
    `review_notes`. Use `Under Review`, then `Approved` or `Declined`.
 3. **If declined:** set `review_status` to `Declined`, note the reason, and
@@ -374,7 +456,7 @@ input, so a person reads it before it crosses that boundary.
    the reviewer owns.
 
    **Step 1 - copy the master-aligned range.** In `ANSIR_Applications`, select
-   columns 8 to 79 of the application's row, from `title_primary` to
+   columns 9 to 80 of the application's row, from `title_primary` to
    `internal_notes`. That range is the master list's full column set, in the
    master list's order. Copy it, then paste it into a new row in
    `ANSIR_Projects_MasterList` starting at the first column. Every value lands
@@ -418,8 +500,11 @@ input, so a person reads it before it crosses that boundary.
 5. **Close the loop on the intake row.** Set `review_status` to `Promoted` and
    record the master list row number in `review_notes`. Keep the intake row: it
    is the record of what was submitted, as submitted.
-6. **File the supporting PDF** where approved project documents are kept, and
-   update the master list if you hold a document reference there.
+6. **Move the application's folder** to wherever approved project documents are
+   kept, and update the master list if you hold a document reference there. The
+   folder already holds both the application PDF and the supporting document, so
+   it moves as one item, and `application_folder_url` keeps working afterwards
+   because a Drive link survives a move.
 7. **Publish when ready.** Set `visible` to `TRUE` and let the GitHub Action
    publish. Confirm what appeared on the public site: the pipeline filters
    fields, and that filter is the last line of defence.
@@ -432,9 +517,14 @@ input, so a person reads it before it crosses that boundary.
 |---|---|
 | Applicant reports applying, no email arrived | The row is written before any email is sent, so the application is in the `ANSIR_Applications` tab. Check there first |
 | Upload returns a configuration message | `UPLOAD_FOLDER_ID` has not been set to a real folder. See `gas/README.md` |
+| The log says folder filing is not configured | `APPLICATION_FOLDER_ID` is still the placeholder. Nothing is wrong: the application is recorded and emailed, and the document stays in the staging folder. Set the folder ID and deploy a new version to switch filing on |
+| `application_folder_url` is empty on a row | Either filing is not configured, or the folder could not be created. The application is unaffected. Check the Executions log for a `createApplicationFolder_` error |
+| The supporting document is still in the staging folder | The move failed after the folder was created. The document is still attached to the emails and `supporting_document_url` still opens it. Move it by hand and check the log for a `moveStagedFile_` error |
+| No application PDF in the folder or on the emails | PDF generation or the write into the folder failed. The application, the row and the email bodies are unaffected, and the email bodies carry the same transcript the PDF would have. Check the log for `buildApplicationPdf_` or `fileApplicationPdf_` |
+| A previously used file ID is refused | The document has already been filed against another reference, so it is no longer in the staging folder. That is the intended behaviour. Upload it again |
 | Submission answered with "the service is busy" | The hourly cap was reached. It is global, not per person. Raise `MAX_SUBMISSIONS_PER_HOUR` and deploy a new version |
 | Reference allocation reports the service is busy | The script lock was not obtained within 30 seconds. No reference was issued and no row was written. Check the Executions log for lock timeouts |
-| Supporting document cannot be found at submission | The file ID does not name a file in the upload folder. The applicant is asked to upload again; no reference is consumed |
+| Supporting document cannot be found at submission | The file ID does not name a file in the staging folder. The applicant is asked to upload again; no reference is consumed |
 | Form submits but the console shows a CORS error | The request was not posted as `text/plain`. See `gas/README.md` |
 | Sheet cannot be opened | The script property `ANSIR_SHEET_ID` is not set. The endpoint reports the cause and writes nothing |
 | Submissions fail and the log reports a header mismatch | The `ANSIR_Applications` tab was created under a different column layout, or its headers were edited by hand. Nothing was written, deliberately. Rename the tab so a correctly headed one is created. See section 3 |
