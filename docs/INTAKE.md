@@ -129,7 +129,7 @@ headers, a frozen first row and bold header text.
 
 ### The column layout
 
-The tab has 94 columns in three blocks. The order is what makes promotion a
+The tab has 103 columns in three blocks. The order is what makes promotion a
 copy rather than a re-typing exercise.
 
 **Block 1 - review workflow (columns 1 to 8).** Intake-only. A reviewer opening
@@ -151,7 +151,7 @@ application may carry up to five documents, so each of those three cells holds a
 semicolon-delimited list in the same order: the Nth id, the Nth url and the Nth
 name describe one document. This is the multi-value convention the contributor
 columns already use, and it is why **no column was added** for a second
-document. The tab is still 94 columns wide and block 2 is still the contiguous
+document. Block 2 is still the contiguous
 72-column master range. Widening the tab for a second document would have shifted
 every column after it and broken promotion, which is the failure this layout
 exists to prevent.
@@ -210,23 +210,35 @@ and not the applicant's:
 edits to the master list, so they are meaningless for a row that has not
 reached it.
 
-**Block 3 - intake-only answers (columns 81 to 94).** Questions the form asks
+**Block 3 - intake-only answers (columns 81 to 103).** Questions the form asks
 that the master list has no column for:
 
 `application_type`, `application_type_other`, `timing_constraints`,
 `equipment_availability_confirmed`, `field_team_experience`,
 `training_required`, `fdsn_network_code`, `estimated_data_volume`,
 `data_submission_confirmed`, `embargo_duration`, `embargo_reason`,
-`restricted_reason`, `cultural_heritage_check` and `funding_status`.
+`restricted_reason`, `cultural_heritage_check`, `funding_status`,
+`expected_outputs`, `expected_outputs_other`, `expected_outputs_detail`,
+`environmental_noise`, `ancillary_equipment`, `fdsn_status`,
+`institutional_support_confirmed`, `equipment_care_confirmed` and
+`cost_insurance_confirmed`.
+
+The last nine (columns 95 to 103) restore fields the earlier ANSIR application
+collected: the expected scientific outputs and their detail, the environmental
+noise assessment, the ancillary field kit, the FDSN code status, and the three
+undertakings the applicant confirms (institutional support; equipment care and
+return; and cost, mobilisation and insurance). `equipment_care_confirmed`
+records five separate undertakings as one semicolon-delimited list.
 
 These are review-supporting answers. They are not published and they are not
 copied at promotion, but several of them carry the review decision: the embargo
 answers say how long the applicant expects data to be withheld and why,
 `cultural_heritage_check` and `restricted_reason` bear on whether the work can
-proceed as described, and `equipment_availability_confirmed`,
+proceed as described, `equipment_availability_confirmed`,
 `field_team_experience` and `training_required` bear on whether the loan is
-practical. Read them before approving. They sit after block 2 so that block 2
-stays a single unbroken range.
+practical, and the three confirmed undertakings bear on whether the borrowing
+institution has accepted its obligations. Read them before approving. They sit
+after block 2 so that block 2 stays a single unbroken range.
 
 ### Changing the columns
 

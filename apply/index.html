@@ -1374,6 +1374,41 @@
                                   placeholder="Briefly describe your research project (2-3 sentences)" required></textarea>
                     </div>
 
+                    <!-- Type of application. This classifies the application as
+                         a whole, so it is asked here with the project identity
+                         rather than beside the funding questions in Step 4.
+                         The Other radio sits INSIDE the .radio-group with its
+                         free text box below the group: every radio in the group
+                         shares one container, which is what selectRadio() and
+                         any future group-scoped code expect. -->
+                    <div class="form-group">
+                        <label class="form-label required">Type of Application</label>
+                        <div class="radio-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
+                                <input type="radio" name="application_type" value="Standard" required>
+                                <span class="radio-label">Standard Research</span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
+                                <input type="radio" name="application_type" value="Student-led">
+                                <span class="radio-label">Student-led</span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
+                                <input type="radio" name="application_type" value="Pilot">
+                                <span class="radio-label">Pilot Study</span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
+                                <input type="radio" name="application_type" value="Commercial">
+                                <span class="radio-label">Commercial</span>
+                            </label>
+                            <label class="radio-item" style="grid-column: 1 / -1;" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
+                                <input type="radio" name="application_type" value="Other">
+                                <span class="radio-label">Other</span>
+                            </label>
+                        </div>
+                        <input type="text" id="application_type_other" name="application_type_other" class="form-input"
+                               style="margin-top: 8px; display: none;" placeholder="Please specify...">
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label required" for="description_objectives">Scientific Objectives</label>
                         <p class="field-description">Describe the scientific goals of the project. What key research questions are being addressed, and how will ANSIR equipment help answer them? This section may include technical terms and will be reviewed by the Access Committee.</p>
@@ -1533,6 +1568,111 @@
                             <strong>Coordinates:</strong> <span id="coordsText"></span>
                         </div>
                         <input type="hidden" id="location_polygon" name="location_polygon">
+                    </div>
+
+                    <!-- Environmental noise. This sits with the other site
+                         questions because it is a property of the proposed
+                         locations rather than of the equipment: anthropogenic
+                         and environmental noise at a site bears directly on
+                         data quality and on where instruments can usefully be
+                         deployed. -->
+                    <div class="form-group">
+                        <label class="form-label">Environmental Noise Considerations</label>
+                        <p class="field-description">Have you considered anthropogenic or environmental noise (for example traffic, wind, industry, or ocean microseism) at your proposed sites? Noise levels can affect data quality and site selection.</p>
+                        <div class="radio-group">
+                            <label class="radio-item" onclick="selectRadio(this, 'environmental_noise')">
+                                <input type="radio" name="environmental_noise" value="Assessed - low noise expected">
+                                <span><span class="radio-label">Assessed - low noise expected</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'environmental_noise')">
+                                <input type="radio" name="environmental_noise" value="Assessed - significant noise expected">
+                                <span><span class="radio-label">Assessed - significant noise expected</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'environmental_noise')">
+                                <input type="radio" name="environmental_noise" value="Not yet assessed">
+                                <span><span class="radio-label">Not yet assessed</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'environmental_noise')">
+                                <input type="radio" name="environmental_noise" value="Would like ANSIR advice">
+                                <span><span class="radio-label">Would like ANSIR advice</span></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cultural Heritage & Indigenous Engagement. These questions
+                     are about the proposed sites, so they sit with the location
+                     content rather than with the data and funding questions in
+                     Step 4. Field names and stored values are unchanged. -->
+                <div class="subsection">
+                    <h3>Cultural Heritage & Indigenous Engagement</h3>
+                    <p class="field-description">Some field locations may require cultural heritage assessments or other clearances before fieldwork can commence.</p>
+
+                    <div class="form-group">
+                        <label class="form-label">Have you identified any cultural heritage considerations for your field sites?</label>
+                        <div class="radio-group">
+                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
+                                <input type="radio" name="cultural_heritage_check" value="Yes - cleared">
+                                <span><span class="radio-label">Yes - Clearances Obtained</span><span class="radio-desc">Cultural heritage checks completed and clearances obtained</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
+                                <input type="radio" name="cultural_heritage_check" value="Yes - in progress">
+                                <span><span class="radio-label">Yes - In Progress</span><span class="radio-desc">Cultural heritage assessment currently underway</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
+                                <input type="radio" name="cultural_heritage_check" value="No - not required">
+                                <span><span class="radio-label">Not Required</span><span class="radio-desc">Field sites do not require cultural heritage clearance</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
+                                <input type="radio" name="cultural_heritage_check" value="Unknown">
+                                <span><span class="radio-label">Unknown / To Be Determined</span><span class="radio-desc">I haven't yet determined cultural heritage requirements</span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Indigenous Involvement -->
+                    <div class="form-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #dee2e6;">
+                        <label class="form-label required">Does this project involve Indigenous lands, communities, or knowledge?</label>
+                        <div class="radio-group" style="flex-direction: row; flex-wrap: wrap;">
+                            <label class="radio-item" style="flex: 0 0 auto;" onclick="selectRadio(this, 'indigenous_involvement_flag'); toggleIndigenousFields()">
+                                <input type="radio" name="indigenous_involvement_flag" value="Yes" required>
+                                <span class="radio-label">Yes</span>
+                            </label>
+                            <label class="radio-item" style="flex: 0 0 auto;" onclick="selectRadio(this, 'indigenous_involvement_flag'); toggleIndigenousFields()">
+                                <input type="radio" name="indigenous_involvement_flag" value="No">
+                                <span class="radio-label">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Conditional: Indigenous engagement details -->
+                    <div class="conditional-field" id="indigenousDetails">
+                        <div class="form-group">
+                            <label class="form-label" for="description_indigenous_engagement_summary">Indigenous Engagement Summary</label>
+                            <textarea id="description_indigenous_engagement_summary" name="description_indigenous_engagement_summary"
+                                      class="form-textarea short"
+                                      placeholder="Describe your engagement with Traditional Owners or Indigenous communities"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="description_indigenous_data_governance">Data Governance Arrangements</label>
+                            <textarea id="description_indigenous_data_governance" name="description_indigenous_data_governance"
+                                      class="form-textarea short"
+                                      placeholder="Describe any data governance arrangements or protocols in place"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="description_indigenous_acknowledgement">Indigenous Acknowledgement</label>
+                            <textarea id="description_indigenous_acknowledgement" name="description_indigenous_acknowledgement"
+                                      class="form-textarea short"
+                                      placeholder="Describe any acknowledgements of Traditional Owners or Indigenous communities"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Is any data culturally sensitive?</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="indigenous_data_sensitivity_flag" id="indigenous_data_sensitivity_flag" value="Yes"> Yes, some data may be culturally sensitive
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1996,6 +2136,19 @@
                     <strong>Note:</strong> Users are expected to provide their own perishable accessories such as SD cards, USB drives, or batteries unless otherwise arranged with the equipment provider.
                 </div>
 
+                <!-- Ancillary equipment. The matrix above captures the primary
+                     instruments only; this free-text field records the rest of
+                     the field kit so a reviewer can assess the full request. -->
+                <div class="subsection" style="margin-top: 20px;">
+                    <h3>Ancillary Equipment and Kit</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="ancillary_equipment">Additional Equipment or Quantities</label>
+                        <p class="field-description">Outline any ancillary equipment or quantities the matrix above does not capture, for example solar panels, GPS units, cabling, enclosures, or field laptops.</p>
+                        <textarea id="ancillary_equipment" name="ancillary_equipment" class="form-textarea short"
+                                  placeholder="e.g. 10 solar panels, 10 GPS units, cabling and enclosures, 2 field laptops"></textarea>
+                    </div>
+                </div>
+
                 <!-- Field Team Experience -->
                 <div class="subsection" style="margin-top: 20px;">
                     <h3>Field Team Experience</h3>
@@ -2099,12 +2252,43 @@
                         <p class="field-description" style="margin-top: 8px; font-style: italic;">Note: You may also retain copies of your data in your own institutional repositories.</p>
                     </div>
 
-                    <!-- FDSN Network Code (for seismic) -->
-                    <div class="form-group">
-                        <label class="form-label" for="fdsn_network_code">FDSN Network Code (seismic deployments only)</label>
-                        <p class="field-description">If you have an existing FDSN network code for this or related deployments, please provide it. If you need a new network code, ANSIR can assist with registration.</p>
-                        <input type="text" id="fdsn_network_code" name="fdsn_network_code" class="form-input"
-                               placeholder="e.g., 7G, S1 (leave blank if not applicable or need new code)">
+                    <!-- FDSN status and network code (for seismic). The radio
+                         makes the applicant's intent explicit; the existing
+                         free-text code box is revealed only for the
+                         existing-code case.
+
+                         The whole block is shown only when a Seismic, Nodal
+                         Seismic or DAS method was selected in Step 3. An
+                         application that asks for none of those never sees a
+                         question that cannot apply to it, and fdsn_status is
+                         set to "Not applicable" on its behalf. -->
+                    <div class="form-group" id="fdsnStatusBlock">
+                        <label class="form-label">FDSN Network Code Status (seismic deployments only)</label>
+                        <p class="field-description">Seismic deployments require an FDSN network code. Indicate whether you already have one or need a new code registered. ANSIR can assist with registration.</p>
+                        <div class="radio-group">
+                            <label class="radio-item" onclick="selectRadio(this, 'fdsn_status'); toggleFdsnCode()">
+                                <input type="radio" name="fdsn_status" value="I have an existing FDSN code">
+                                <span><span class="radio-label">I have an existing FDSN code</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'fdsn_status'); toggleFdsnCode()">
+                                <input type="radio" name="fdsn_status" value="I need a new code registered via ANSIR">
+                                <span><span class="radio-label">I need a new code registered via ANSIR</span></span>
+                            </label>
+                            <label class="radio-item" onclick="selectRadio(this, 'fdsn_status'); toggleFdsnCode()">
+                                <input type="radio" name="fdsn_status" value="Not applicable">
+                                <span><span class="radio-label">Not applicable</span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Conditional: existing FDSN network code -->
+                    <div class="conditional-field" id="fdsnCodeDetail">
+                        <div class="form-group">
+                            <label class="form-label" for="fdsn_network_code">Existing FDSN Network Code</label>
+                            <p class="field-description">Provide your existing FDSN network code for this or related deployments.</p>
+                            <input type="text" id="fdsn_network_code" name="fdsn_network_code" class="form-input"
+                                   placeholder="e.g., 7G, S1">
+                        </div>
                     </div>
 
                     <!-- Estimated Data Volume -->
@@ -2194,113 +2378,15 @@
                     </div>
                 </div>
 
-                <!-- Cultural Heritage & Indigenous Engagement -->
-                <div class="subsection">
-                    <h3>Cultural Heritage & Indigenous Engagement</h3>
-                    <p class="field-description">Some field locations may require cultural heritage assessments or other clearances before fieldwork can commence.</p>
-
-                    <div class="form-group">
-                        <label class="form-label">Have you identified any cultural heritage considerations for your field sites?</label>
-                        <div class="radio-group">
-                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
-                                <input type="radio" name="cultural_heritage_check" value="Yes - cleared">
-                                <span><span class="radio-label">Yes - Clearances Obtained</span><span class="radio-desc">Cultural heritage checks completed and clearances obtained</span></span>
-                            </label>
-                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
-                                <input type="radio" name="cultural_heritage_check" value="Yes - in progress">
-                                <span><span class="radio-label">Yes - In Progress</span><span class="radio-desc">Cultural heritage assessment currently underway</span></span>
-                            </label>
-                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
-                                <input type="radio" name="cultural_heritage_check" value="No - not required">
-                                <span><span class="radio-label">Not Required</span><span class="radio-desc">Field sites do not require cultural heritage clearance</span></span>
-                            </label>
-                            <label class="radio-item" onclick="selectRadio(this, 'cultural_heritage_check')">
-                                <input type="radio" name="cultural_heritage_check" value="Unknown">
-                                <span><span class="radio-label">Unknown / To Be Determined</span><span class="radio-desc">I haven't yet determined cultural heritage requirements</span></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Indigenous Involvement -->
-                    <div class="form-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #dee2e6;">
-                        <label class="form-label required">Does this project involve Indigenous lands, communities, or knowledge?</label>
-                        <div class="radio-group" style="flex-direction: row; flex-wrap: wrap;">
-                            <label class="radio-item" style="flex: 0 0 auto;" onclick="selectRadio(this, 'indigenous_involvement_flag'); toggleIndigenousFields()">
-                                <input type="radio" name="indigenous_involvement_flag" value="Yes" required>
-                                <span class="radio-label">Yes</span>
-                            </label>
-                            <label class="radio-item" style="flex: 0 0 auto;" onclick="selectRadio(this, 'indigenous_involvement_flag'); toggleIndigenousFields()">
-                                <input type="radio" name="indigenous_involvement_flag" value="No">
-                                <span class="radio-label">No</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Conditional: Indigenous engagement details -->
-                    <div class="conditional-field" id="indigenousDetails">
-                        <div class="form-group">
-                            <label class="form-label" for="description_indigenous_engagement_summary">Indigenous Engagement Summary</label>
-                            <textarea id="description_indigenous_engagement_summary" name="description_indigenous_engagement_summary"
-                                      class="form-textarea short"
-                                      placeholder="Describe your engagement with Traditional Owners or Indigenous communities"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="description_indigenous_data_governance">Data Governance Arrangements</label>
-                            <textarea id="description_indigenous_data_governance" name="description_indigenous_data_governance"
-                                      class="form-textarea short"
-                                      placeholder="Describe any data governance arrangements or protocols in place"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="description_indigenous_acknowledgement">Indigenous Acknowledgement</label>
-                            <textarea id="description_indigenous_acknowledgement" name="description_indigenous_acknowledgement"
-                                      class="form-textarea short"
-                                      placeholder="Describe any acknowledgements of Traditional Owners or Indigenous communities"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Is any data culturally sensitive?</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="indigenous_data_sensitivity_flag" id="indigenous_data_sensitivity_flag" value="Yes"> Yes, some data may be culturally sensitive
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Cultural Heritage & Indigenous Engagement now sits in
+                     Step 2 with the location questions it describes. -->
 
                 <!-- Project Funding -->
                 <div class="subsection">
                     <h3>Project Funding</h3>
 
-                    <!-- Type of Application -->
-                    <div class="form-group">
-                        <label class="form-label required">Type of Application</label>
-                        <div class="radio-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
-                                <input type="radio" name="application_type" value="Standard" required>
-                                <span class="radio-label">Standard Research</span>
-                            </label>
-                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
-                                <input type="radio" name="application_type" value="Student-led">
-                                <span class="radio-label">Student-led</span>
-                            </label>
-                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
-                                <input type="radio" name="application_type" value="Pilot">
-                                <span class="radio-label">Pilot Study</span>
-                            </label>
-                            <label class="radio-item" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
-                                <input type="radio" name="application_type" value="Commercial">
-                                <span class="radio-label">Commercial</span>
-                            </label>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                            <label class="radio-item" style="flex: 0 0 auto;" onclick="selectRadio(this, 'application_type'); toggleApplicationTypeOther()">
-                                <input type="radio" name="application_type" value="Other">
-                                <span class="radio-label">Other</span>
-                            </label>
-                            <input type="text" id="application_type_other" name="application_type_other" class="form-input"
-                                   style="flex: 1; display: none;" placeholder="Please specify...">
-                        </div>
-                    </div>
+                    <!-- Type of Application now sits in Step 1, with the
+                         project identity fields. -->
 
                     <!-- Funding Status -->
                     <div class="form-group">
@@ -2343,6 +2429,106 @@
                     </div>
                 </div>
 
+                <!-- Expected scientific outputs -->
+                <div class="subsection">
+                    <h3>Expected Scientific Outputs</h3>
+                    <div class="form-group">
+                        <label class="form-label">Anticipated Outputs</label>
+                        <p class="field-description">Select the outputs you expect this project to produce. This helps ANSIR report on the research supported by its equipment.</p>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="expected_outputs" value="Journal article(s)"> Journal article(s)
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="expected_outputs" value="Conference presentation(s)"> Conference presentation(s)
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="expected_outputs" value="Technical report"> Technical report
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="expected_outputs" value="Student thesis"> Student thesis
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="expected_outputs" value="Dataset with DOI"> Dataset with DOI
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="expected_outputs" value="Other" onchange="toggleExpectedOutputsOther()"> Other
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Conditional: Other output free text -->
+                    <div class="conditional-field" id="expectedOutputsOtherDetail">
+                        <div class="form-group">
+                            <label class="form-label" for="expected_outputs_other">Other Output</label>
+                            <input type="text" id="expected_outputs_other" name="expected_outputs_other" class="form-input"
+                                   placeholder="Please specify the other expected output">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="expected_outputs_detail">Further Detail (optional)</label>
+                        <textarea id="expected_outputs_detail" name="expected_outputs_detail" class="form-textarea short"
+                                  placeholder="Add any further detail on your expected outputs, timelines, or intended audiences"></textarea>
+                    </div>
+                </div>
+
+                <!-- Declarations and undertakings. These sit with the terms
+                     declaration below and are each a required checkbox enforced
+                     by the per-step validation. -->
+                <div class="subsection">
+                    <h3>Declarations and Undertakings</h3>
+
+                    <!-- Institutional support. "ANSIR's Project Agreement" is
+                         deliberately not linked: no public URL for that document
+                         is known, and the equipment loan terms page is not it.
+                         Link it here once the facility manager supplies one. -->
+                    <div class="form-group">
+                        <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
+                            <input type="checkbox" name="institutional_support_confirmed" id="institutional_support_confirmed" required style="margin-top: 4px;">
+                            <span>I confirm that my institution is aware of and supports this application, and agrees in principle to ANSIR's Project Agreement.</span>
+                        </label>
+                    </div>
+
+                    <!-- Cost, mobilisation and insurance -->
+                    <div class="form-group">
+                        <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
+                            <input type="checkbox" name="cost_insurance_confirmed" id="cost_insurance_confirmed" required style="margin-top: 4px;">
+                            <span>I confirm that I accept responsibility for all project costs, including equipment mobilisation and transport, and for insurance of the equipment while it is on loan.</span>
+                        </label>
+                    </div>
+
+                    <!-- Equipment care and return: five separate undertakings,
+                         each a required checkbox sharing one field name so the
+                         confirmed undertakings are stored as one list. -->
+                    <div class="form-group">
+                        <label class="form-label required">Equipment Care and Return</label>
+                        <p class="field-description">The borrowing institution and I undertake that:</p>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
+                                <input type="checkbox" name="equipment_care_confirmed" value="Return equipment clean, dry and repacked in its original containers" required style="margin-top: 4px;">
+                                <span>Equipment will be returned clean, dry, and repacked in its original containers.</span>
+                            </label>
+                            <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
+                                <input type="checkbox" name="equipment_care_confirmed" value="Report any loss or damage promptly" required style="margin-top: 4px;">
+                                <span>Any loss of or damage to equipment will be reported to ANSIR promptly.</span>
+                            </label>
+                            <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
+                                <input type="checkbox" name="equipment_care_confirmed" value="Borrowing institution accepts responsibility for loss or damage in the field" required style="margin-top: 4px;">
+                                <span>The borrowing institution accepts responsibility for loss or damage to the equipment in the field.</span>
+                            </label>
+                            <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
+                                <input type="checkbox" name="equipment_care_confirmed" value="Equipment is not modified without ANSIR agreement" required style="margin-top: 4px;">
+                                <span>Equipment will not be modified without ANSIR's prior agreement.</span>
+                            </label>
+                            <label class="checkbox-item" style="display: flex; align-items: flex-start; gap: 10px;">
+                                <input type="checkbox" name="equipment_care_confirmed" value="Equipment is not transferred to a third party without ANSIR agreement" required style="margin-top: 4px;">
+                                <span>Equipment will not be transferred to a third party without ANSIR's prior agreement.</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Supporting document upload (drag and drop, up to five PDFs).
                      The total cap is 10 MB across all documents because every
                      document is attached to the ANSIR notification emails
@@ -2351,6 +2537,14 @@
                 <div class="subsection">
                     <h3>Supporting Documents (optional)</h3>
                     <p class="field-description">Upload any additional supporting documents. PDF files only, up to 5 documents, maximum 10MB each and 10MB in total.</p>
+
+                    <!-- Experimental design document guidance. No second
+                         uploader is added: the multi-document control below
+                         accepts it. The upload stays optional at the field
+                         level, but the expectation is stated plainly. -->
+                    <div class="form-hint" style="margin-bottom: 12px; padding: 12px; background: #eef4fb; border-radius: 6px; border-left: 4px solid #282572;">
+                        <strong>Experimental design document.</strong> Applications are strongest when they attach an experimental design document. It should set out: a site map or coordinates; the instrumentation with quantities; the target depth of investigation; the sample rate; the deployment duration; and any site access notes. Attach it as one of the PDFs below.
+                    </div>
 
                     <div class="form-group">
                         <div class="file-drop-zone" id="fileDropZone" onclick="document.getElementById('supporting_document').click()">
@@ -2373,7 +2567,7 @@
                         <strong>I confirm that:</strong>
                         <ul style="margin-top: 6px; margin-left: 18px;">
                             <li>The information provided is accurate to the best of my knowledge</li>
-                            <li>I agree to ANSIR's equipment loan terms and conditions</li>
+                            <li>I agree to <a href="https://www.auscope.org.au/ansir-terms" target="_blank" rel="noopener">ANSIR's equipment loan terms and conditions</a></li>
                             <li>I will acknowledge ANSIR support in any resulting publications</li>
                             <li>I will return equipment in good condition by the agreed date</li>
                         </ul>
@@ -3918,11 +4112,57 @@
 
         // ─── VALIDATION ────────────────────────────────────────────
 
+        /**
+         * True when a quantity has been entered against any equipment category
+         * the applicant can currently see.
+         *
+         * Hidden categories are excluded deliberately: they are zeroed when
+         * they are hidden, and a quantity left in one would not be submitted
+         * anyway.
+         */
+        function anyVisibleEquipmentRequested() {
+            var inputs = document.querySelectorAll(
+                '.form-section[data-step="3"] .equipment-category:not(.hidden) .equipment-content input[type="number"]'
+            );
+            for (var i = 0; i < inputs.length; i++) {
+                if ((parseInt(inputs[i].value, 10) || 0) > 0) return true;
+            }
+            return false;
+        }
+
+        /**
+         * The label a validation message can name a field by, so that a step
+         * that fails on one field says which one.
+         */
+        function validationFieldLabel(field) {
+            var label = null;
+            if (field.id) {
+                label = document.querySelector('label[for="' + field.id + '"]');
+            }
+            if (!label) {
+                var group = field.closest ? field.closest('.form-group') : null;
+                if (group) label = group.querySelector('.form-label');
+            }
+            if (!label) return '';
+            return tidyLabel(label.textContent);
+        }
+
+        /*
+         * Validates the visible step.
+         *
+         * The most specific failure wins. A step that fails because the dates
+         * are the wrong way round, because no method is ticked, or because no
+         * equipment was asked for says exactly that; a step that fails on a
+         * single required field names it; only a step failing on several
+         * fields at once falls back to the generic message.
+         */
         function validateCurrentStep() {
             const currentSection = document.querySelector(`.form-section[data-step="${currentStep}"]`);
             const requiredFields = currentSection.querySelectorAll('[required]');
             let isValid = true;
             let firstError = null;
+            let missingCount = 0;
+            let specificMessage = '';
 
             requiredFields.forEach(field => {
                 field.classList.remove('error');
@@ -3932,16 +4172,19 @@
                     const isChecked = Array.from(radioGroup).some(r => r.checked);
                     if (!isChecked) {
                         isValid = false;
+                        missingCount++;
                         if (!firstError) firstError = field;
                     }
                 }
                 else if (field.type === 'checkbox' && !field.checked) {
                     isValid = false;
+                    missingCount++;
                     if (!firstError) firstError = field;
                 }
                 else if (!field.value.trim() && field.type !== 'radio' && field.type !== 'checkbox') {
                     field.classList.add('error');
                     isValid = false;
+                    missingCount++;
                     if (!firstError) firstError = field;
                 }
             });
@@ -3955,6 +4198,7 @@
                     dateError.textContent = 'End date must be after start date';
                     dateError.style.display = 'block';
                     isValid = false;
+                    specificMessage = 'The end date must be after the start date.';
                 } else {
                     dateError.style.display = 'none';
                 }
@@ -3963,13 +4207,32 @@
             if (currentStep === 3) {
                 const methodsChecked = document.querySelectorAll('input[name="methods_field"]:checked');
                 if (methodsChecked.length === 0) {
-                    showStatus('Please select at least one research method.', 'error');
                     isValid = false;
+                    specificMessage = 'Please select at least one research method.';
+                } else {
+                    // An equipment loan application with no equipment on it is
+                    // not submittable, so this is a hard block rather than a
+                    // confirmation. Ancillary equipment counts: a request can
+                    // legitimately be for kit the matrix does not list.
+                    const ancillary = document.getElementById('ancillary_equipment');
+                    const ancillaryText = ancillary ? ancillary.value.trim() : '';
+                    if (!anyVisibleEquipmentRequested() && !ancillaryText) {
+                        isValid = false;
+                        specificMessage = 'You have not requested any equipment. Enter at least one ' +
+                            'quantity, or describe what you need under Ancillary Equipment.';
+                        if (!firstError && ancillary) firstError = ancillary;
+                    }
                 }
             }
 
             if (!isValid) {
-                showStatus('Please complete all required fields.', 'error');
+                if (!specificMessage && missingCount === 1 && firstError) {
+                    const fieldLabel = validationFieldLabel(firstError);
+                    if (fieldLabel) {
+                        specificMessage = 'Please complete the required field: ' + fieldLabel + '.';
+                    }
+                }
+                showStatus(specificMessage || 'Please complete all required fields.', 'error');
                 if (firstError) {
                     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
@@ -4151,6 +4414,17 @@
 
         // ─── EQUIPMENT VISIBILITY (method-dependent) ──────────────
 
+        /*
+         * Shows the equipment categories that belong to the selected methods
+         * and hides the rest.
+         *
+         * A CATEGORY THAT IS HIDDEN IS ALSO ZEROED. Without that, someone who
+         * ticked Seismic, asked for ten seismometers and then changed their
+         * mind to Magnetotelluric submitted an order for ten seismometers they
+         * could no longer see. The collectors below independently ignore hidden
+         * categories, so the phantom quantity cannot come back by another
+         * route.
+         */
         function updateEquipmentVisibility() {
             const checkedMethods = Array.from(document.querySelectorAll('input[name="methods_field"]:checked'))
                 .map(cb => cb.value);
@@ -4173,8 +4447,73 @@
                     category.classList.remove('hidden');
                 } else {
                     category.classList.add('hidden');
+                    category.querySelectorAll('input[type="number"]').forEach(input => {
+                        input.value = '0';
+                    });
                 }
             });
+
+            updateFdsnVisibility();
+        }
+
+        /*
+         * The FDSN network code question applies only to the methods that
+         * produce seismic waveform data. For anything else the question is
+         * noise, so the block is hidden and answered as "Not applicable" on the
+         * applicant's behalf: the intake column is still populated, and the
+         * value is the truthful one.
+         */
+        var FDSN_METHODS = ['Seismic', 'Nodal Seismic', 'DAS'];
+
+        /*
+         * True while the "Not applicable" answer is the form's own, rather than
+         * the applicant's. It is taken back the moment the question starts to
+         * apply, so that a deployment which does need a network code has to
+         * answer the question rather than inheriting an answer nobody gave.
+         */
+        var fdsnStatusAutoSet = false;
+
+        function fdsnApplies() {
+            var checked = document.querySelectorAll('input[name="methods_field"]:checked');
+            for (var i = 0; i < checked.length; i++) {
+                if (FDSN_METHODS.indexOf(checked[i].value) !== -1) return true;
+            }
+            return false;
+        }
+
+        function updateFdsnVisibility() {
+            var block = document.getElementById('fdsnStatusBlock');
+            if (!block) return;
+
+            var applies = fdsnApplies();
+            var radios = document.querySelectorAll('input[name="fdsn_status"]');
+            var firstRadio = radios.length ? radios[0] : null;
+
+            block.style.display = applies ? '' : 'none';
+
+            if (applies) {
+                if (firstRadio) firstRadio.required = true;
+                if (fdsnStatusAutoSet) {
+                    fdsnStatusAutoSet = false;
+                    Array.prototype.forEach.call(radios, function (radio) {
+                        radio.checked = false;
+                    });
+                }
+            } else {
+                if (firstRadio) firstRadio.required = false;
+                var notApplicable = document.querySelector('input[name="fdsn_status"][value="Not applicable"]');
+                if (notApplicable && !notApplicable.checked) {
+                    notApplicable.checked = true;
+                    fdsnStatusAutoSet = true;
+                }
+            }
+
+            Array.prototype.forEach.call(radios, function (radio) {
+                var item = radio.closest ? radio.closest('.radio-item') : null;
+                if (item) item.classList.toggle('selected', radio.checked);
+            });
+
+            toggleFdsnCode();
         }
 
         function toggleEquipment(header) {
@@ -4187,24 +4526,118 @@
 
         // ─── RADIO & CONDITIONAL FIELDS ────────────────────────────
 
+        /**
+         * Marks the clicked radio card as the selected one in its group.
+         *
+         * THE GROUP IS RESOLVED BY THE INPUT'S NAME, not by walking up to a
+         * container. A radio that sat outside the .radio-group div used to
+         * throw here on the first click, taking the rest of the click handler
+         * with it, so the panel that click was meant to reveal never appeared.
+         * Resolving by name cannot be broken by how the markup is laid out.
+         */
         function selectRadio(item, groupName) {
-            const group = item.closest('.radio-group');
-            group.querySelectorAll('.radio-item').forEach(i => i.classList.remove('selected'));
+            if (!item) return;
+
+            var input = item.querySelector('input[type="radio"]');
+            var name = groupName || (input ? input.getAttribute('name') : '');
+            if (!name) return;
+
+            var scope = item.closest('.form-section') || document;
+            var siblings = scope.querySelectorAll('input[type="radio"][name="' + name + '"]');
+            Array.prototype.forEach.call(siblings, function (radio) {
+                var card = radio.closest ? radio.closest('.radio-item') : null;
+                if (card) card.classList.remove('selected');
+            });
             item.classList.add('selected');
 
-            if (groupName === 'data_access') {
-                const embargoDetails = document.getElementById('embargoDetails');
-                const restrictedDetails = document.getElementById('restrictedDetails');
-                const value = item.querySelector('input').value;
-                embargoDetails.classList.toggle('active', value === 'Embargo');
-                restrictedDetails.classList.toggle('active', value === 'Restricted');
+            if (name === 'data_access') {
+                syncDataAccessPanels();
+            }
+        }
+
+        /*
+         * ─── CONDITIONAL PANELS ────────────────────────────────────
+         *
+         * Two rules apply to every panel below.
+         *
+         * A DEACTIVATED PANEL IS CLEARED. A duration typed against an embargo
+         * that was later changed to Public is not an answer to any question the
+         * form is still asking, and leaving it in place meant it turned up on
+         * the review step and in the submitted payload.
+         *
+         * AN ACTIVE PANEL'S FIELDS ARE REQUIRED. Asking a follow-up question
+         * and then accepting no answer to it is not a question. The per-step
+         * validation already walks [required], so setting the attribute is the
+         * whole of the change.
+         */
+
+        function setConditionalRequired(el, isRequired) {
+            if (!el) return;
+            if (isRequired) {
+                el.required = true;
+            } else {
+                el.required = false;
+            }
+        }
+
+        function clearConditionalValue(el) {
+            if (!el) return;
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.checked = false;
+                var card = el.closest ? el.closest('.checkbox-item') : null;
+                if (card) card.classList.remove('checked');
+                return;
+            }
+            el.value = '';
+            el.classList.remove('error');
+        }
+
+        function syncDataAccessPanels() {
+            var chosen = document.querySelector('input[name="data_access"]:checked');
+            var value = chosen ? chosen.value : '';
+
+            var embargoDetails = document.getElementById('embargoDetails');
+            var restrictedDetails = document.getElementById('restrictedDetails');
+            var duration = document.getElementById('embargo_duration');
+            var embargoReason = document.getElementById('embargo_reason');
+            var restrictedReason = document.getElementById('restricted_reason');
+
+            var embargoActive = value === 'Embargo';
+            var restrictedActive = value === 'Restricted';
+
+            if (embargoDetails) embargoDetails.classList.toggle('active', embargoActive);
+            if (restrictedDetails) restrictedDetails.classList.toggle('active', restrictedActive);
+
+            setConditionalRequired(duration, embargoActive);
+            setConditionalRequired(embargoReason, embargoActive);
+            setConditionalRequired(restrictedReason, restrictedActive);
+
+            if (!embargoActive) {
+                clearConditionalValue(duration);
+                clearConditionalValue(embargoReason);
+            }
+            if (!restrictedActive) {
+                clearConditionalValue(restrictedReason);
             }
         }
 
         function toggleIndigenousFields() {
             const indigenousDetails = document.getElementById('indigenousDetails');
             const yesRadio = document.querySelector('input[name="indigenous_involvement_flag"][value="Yes"]');
-            indigenousDetails.classList.toggle('active', yesRadio && yesRadio.checked);
+            const active = !!(yesRadio && yesRadio.checked);
+            if (!indigenousDetails) return;
+
+            indigenousDetails.classList.toggle('active', active);
+
+            // The engagement narrative belongs to the Yes answer alone. These
+            // fields stay optional when active: a project can be at the start
+            // of its engagement and have nothing to describe yet.
+            if (!active) {
+                clearConditionalValue(document.getElementById('description_indigenous_engagement_summary'));
+                clearConditionalValue(document.getElementById('description_indigenous_data_governance'));
+                clearConditionalValue(document.getElementById('description_indigenous_acknowledgement'));
+                clearConditionalValue(document.getElementById('indigenous_data_sensitivity_flag'));
+            }
         }
 
         function toggleApplicationTypeOther() {
@@ -4212,9 +4645,40 @@
             const otherRadio = document.querySelector('input[name="application_type"][value="Other"]');
             if (otherInput && otherRadio) {
                 otherInput.style.display = otherRadio.checked ? 'block' : 'none';
+                setConditionalRequired(otherInput, otherRadio.checked);
                 if (!otherRadio.checked) {
-                    otherInput.value = '';
+                    clearConditionalValue(otherInput);
                 }
+            }
+        }
+
+        function toggleExpectedOutputsOther() {
+            const detail = document.getElementById('expectedOutputsOtherDetail');
+            const otherBox = document.querySelector('input[name="expected_outputs"][value="Other"]');
+            const field = document.getElementById('expected_outputs_other');
+            const active = !!(otherBox && otherBox.checked);
+            if (detail) {
+                detail.classList.toggle('active', active);
+            }
+            setConditionalRequired(field, active);
+            if (!active) {
+                clearConditionalValue(field);
+            }
+        }
+
+        function toggleFdsnCode() {
+            const detail = document.getElementById('fdsnCodeDetail');
+            const existing = document.querySelector('input[name="fdsn_status"][value="I have an existing FDSN code"]');
+            const field = document.getElementById('fdsn_network_code');
+            // The code box follows the existing-code answer, and that answer is
+            // only reachable while the FDSN block itself applies.
+            const active = !!(existing && existing.checked) && fdsnApplies();
+            if (detail) {
+                detail.classList.toggle('active', active);
+            }
+            setConditionalRequired(field, active);
+            if (!active) {
+                clearConditionalValue(field);
             }
         }
 
@@ -4260,7 +4724,12 @@
             acceptTerms: 'Declaration accepted',
             project_keywords: 'Keywords',
             location_polygon: 'Study area boundary',
-            supporting_document: 'Supporting documents'
+            supporting_document: 'Supporting documents',
+            expected_outputs: 'Expected scientific outputs',
+            expected_outputs_other: 'Expected outputs, other',
+            institutional_support_confirmed: 'Institutional support confirmed',
+            cost_insurance_confirmed: 'Cost, mobilisation and insurance confirmed',
+            equipment_care_confirmed: 'Equipment care and return undertakings'
         };
 
         /**
@@ -4348,6 +4817,16 @@
                     Array.prototype.forEach.call(boxes, function (box) {
                         if (box.checked) picked.push(reviewText(box.value));
                     });
+                    // The equipment care undertakings are five mandatory
+                    // sentences, each of which contains commas. Joining them
+                    // produced one unreadable paragraph that said nothing a
+                    // count does not say better.
+                    if (name === 'equipment_care_confirmed') {
+                        row.value = picked.length
+                            ? picked.length + ' of ' + boxes.length + ' confirmed'
+                            : '';
+                        return row;
+                    }
                     row.value = picked.join(', ');
                     return row;
                 }
@@ -4433,10 +4912,17 @@
             return rows;
         }
 
-        /** Requested equipment only, with its category, quantities above zero. */
+        /**
+         * Requested equipment only, with its category, quantities above zero.
+         *
+         * Hidden categories are skipped. A category is hidden because its
+         * method is not selected, and a quantity under an unselected method is
+         * not part of the request. It is also zeroed when it is hidden; this
+         * filter is the second of the two independent guards.
+         */
         function collectEquipmentRows() {
             var rows = [];
-            var categories = document.querySelectorAll('.form-section[data-step="3"] .equipment-category');
+            var categories = document.querySelectorAll('.form-section[data-step="3"] .equipment-category:not(.hidden)');
 
             Array.prototype.forEach.call(categories, function (category) {
                 var heading = category.querySelector('.equipment-header h4');
@@ -4457,6 +4943,28 @@
                 });
             });
             return rows;
+        }
+
+        /**
+         * True for a field belonging to a branch the applicant did not take.
+         *
+         * "Not provided" is the right thing to show for a question that is
+         * still open. It is the wrong thing to show for one the form has
+         * already ruled out: an embargo duration under Public access, or an
+         * FDSN code under Not applicable, reads as a gap the applicant should
+         * go back and fill when there is nothing there to fill.
+         *
+         * Both tests are read off the live DOM rather than from a list of
+         * field names, so a conditional panel added later is covered without
+         * anyone remembering to come back here.
+         */
+        function reviewFieldIsDormant(el) {
+            var panel = el.closest ? el.closest('.conditional-field') : null;
+            if (panel && !panel.classList.contains('active')) return true;
+            // The Other application type box is revealed inline rather than in
+            // a panel of its own.
+            if (el.style && el.style.display === 'none') return true;
+            return false;
         }
 
         /**
@@ -4483,6 +4991,13 @@
                 Array.prototype.forEach.call(fields, function (el) {
                     var name = el.getAttribute('name');
                     if (!name || seenNames[name]) return;
+
+                    // A branch the form ruled out is not shown at all, rather
+                    // than shown as missing.
+                    if (reviewFieldIsDormant(el)) {
+                        seenNames[name] = true;
+                        return;
+                    }
 
                     // Instrument quantities are shown together, in place, and
                     // only where something was actually asked for.
@@ -4722,11 +5237,13 @@
         function fileRefusalReason(file) {
             if (!file) return '';
 
+            // Each reason is phrased to read after the "Not attached: " prefix
+            // the error line already carries, so it is not said twice.
             if (file.type !== 'application/pdf') {
-                return file.name + ' was not attached: only PDF files are accepted.';
+                return file.name + ' - only PDF files are accepted.';
             }
             if (file.size > MAX_FILE_BYTES) {
-                return file.name + ' was not attached: it is ' + formatFileSize(file.size) +
+                return file.name + ' - it is ' + formatFileSize(file.size) +
                     ' and the limit is ' + formatFileSize(MAX_FILE_BYTES) + ' for one document.';
             }
             // Checked before the count, because re-choosing a file that is
@@ -4738,11 +5255,11 @@
                 }
             }
             if (uploadedFiles.length >= MAX_FILES) {
-                return file.name + ' was not attached: an application may include at most ' +
+                return file.name + ' - an application may include at most ' +
                     MAX_FILES + ' documents.';
             }
             if (totalAttachedBytes() + file.size > MAX_TOTAL_BYTES) {
-                return file.name + ' was not attached: it would take the total to ' +
+                return file.name + ' - it would take the total to ' +
                     formatFileSize(totalAttachedBytes() + file.size) + ' and the limit is ' +
                     formatFileSize(MAX_TOTAL_BYTES) + ' across all documents, because every ' +
                     'document is attached to the ANSIR notification emails.';
@@ -5040,6 +5557,7 @@
             formData.location_region = document.getElementById('location_region').value;
             formData.location_country = document.getElementById('location_country').value;
             formData.location_polygon = document.getElementById('location_polygon')?.value || '';
+            formData.environmental_noise = document.querySelector('input[name="environmental_noise"]:checked')?.value || '';
 
             // Methods
             formData.methods_field = Array.from(document.querySelectorAll('input[name="methods_field"]:checked'))
@@ -5048,6 +5566,7 @@
 
             // Equipment
             formData.instrumentation_request = collectEquipmentRequest();
+            formData.ancillary_equipment = document.getElementById('ancillary_equipment')?.value || '';
             formData.equipment_availability_confirmed = document.getElementById('equipment_availability_confirmed').checked ? 'Yes' : 'No';
 
             // Field team experience
@@ -5055,6 +5574,7 @@
             formData.training_required = document.querySelector('input[name="training_required"]:checked')?.value || '';
 
             // Data management
+            formData.fdsn_status = document.querySelector('input[name="fdsn_status"]:checked')?.value || '';
             formData.fdsn_network_code = document.getElementById('fdsn_network_code')?.value || '';
             formData.estimated_data_volume = document.getElementById('estimated_data_volume')?.value || '';
             formData.data_submission_confirmed = document.getElementById('data_submission_confirmed')?.checked ? 'TRUE' : 'FALSE';
@@ -5083,6 +5603,20 @@
             formData.funding_title = document.getElementById('funding_title')?.value || '';
             formData.funding_agency_name = document.getElementById('funding_agency_name')?.value || '';
             formData.funding_identifier = document.getElementById('funding_identifier')?.value || '';
+
+            // Expected scientific outputs (ticked options stored semicolon-joined)
+            formData.expected_outputs = Array.from(document.querySelectorAll('input[name="expected_outputs"]:checked'))
+                .map(cb => cb.value).join('; ');
+            formData.expected_outputs_other = document.getElementById('expected_outputs_other')?.value || '';
+            formData.expected_outputs_detail = document.getElementById('expected_outputs_detail')?.value || '';
+
+            // Declarations and undertakings
+            formData.institutional_support_confirmed = document.getElementById('institutional_support_confirmed')?.checked ? 'Yes' : 'No';
+            formData.cost_insurance_confirmed = document.getElementById('cost_insurance_confirmed')?.checked ? 'Yes' : 'No';
+            // Five separate required checkboxes sharing one name; store the
+            // confirmed undertakings semicolon-joined.
+            formData.equipment_care_confirmed = Array.from(document.querySelectorAll('input[name="equipment_care_confirmed"]:checked'))
+                .map(cb => cb.value).join('; ');
 
             // Supporting documents are handled separately in
             // submitApplication(): each is uploaded on its own and only their
@@ -5114,9 +5648,15 @@
             return contributors;
         }
 
+        /*
+         * Only the categories the applicant can see are collected. Hiding a
+         * category zeroes it, and this filter means that even a quantity that
+         * somehow survived hiding is not submitted under a method that is not
+         * part of the application.
+         */
         function collectEquipmentRequest() {
             const equipment = {};
-            document.querySelectorAll('.equipment-content input[type="number"]').forEach(input => {
+            document.querySelectorAll('.equipment-category:not(.hidden) .equipment-content input[type="number"]').forEach(input => {
                 const qty = parseInt(input.value) || 0;
                 if (qty > 0) {
                     equipment[input.name] = qty;
@@ -5237,7 +5777,12 @@
                 checks: checks,
                 keywords: keywords.slice(),
                 contributors: collectAdditionalContributors(),
-                polygon: document.getElementById('location_polygon').value || ''
+                polygon: document.getElementById('location_polygon').value || '',
+                // Whether the saved FDSN status is the form's answer or the
+                // applicant's. Without this the distinction is lost across a
+                // restore, and an answer nobody gave would survive into an
+                // application that does need a network code.
+                fdsnAuto: fdsnStatusAutoSet
             };
         }
 
@@ -5417,6 +5962,11 @@
                 restoreDrawnGeometry();
             }
 
+            // A draft saved before this key existed is treated as the
+            // applicant's own answer, which is the safe direction: it is kept
+            // rather than silently cleared.
+            fdsnStatusAutoSet = !!draft.fdsnAuto;
+
             syncConditionalUi();
 
             // Return the applicant to where they left off.
@@ -5450,18 +6000,15 @@
                 item.classList.toggle('checked', !!(input && input.checked));
             });
 
-            const dataAccess = document.querySelector('input[name="data_access"]:checked');
-            const embargoDetails = document.getElementById('embargoDetails');
-            const restrictedDetails = document.getElementById('restrictedDetails');
-            if (embargoDetails) {
-                embargoDetails.classList.toggle('active', !!dataAccess && dataAccess.value === 'Embargo');
-            }
-            if (restrictedDetails) {
-                restrictedDetails.classList.toggle('active', !!dataAccess && dataAccess.value === 'Restricted');
-            }
+            syncDataAccessPanels();
 
             toggleIndigenousFields();
             toggleApplicationTypeOther();
+            toggleExpectedOutputsOther();
+            // Equipment visibility is settled before the FDSN block, because
+            // whether that block applies is decided by the restored methods.
+            // updateEquipmentVisibility() calls updateFdsnVisibility(), which
+            // calls toggleFdsnCode().
             updateEquipmentVisibility();
         }
 

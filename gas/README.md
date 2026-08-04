@@ -256,6 +256,15 @@ You do not need to create `ANSIR_Applications` by hand. The first submission
 creates it, with the correct headers and a frozen bold header row. If you would
 rather see it in advance, submit one test application and inspect the result.
 
+> **After a column-set change, recreate the tab.** The restored intake fields
+> widened the tab from 94 to 103 columns, so an `ANSIR_Applications` tab created
+> under the old layout no longer matches `applicationsHeaders_()`. The
+> header-mismatch guard will refuse to write and name the first differing
+> column - this is expected and correct. Rename the existing tab (for example to
+> `ANSIR_Applications_archive`) so the next submission creates a fresh tab with
+> the current headers; the renamed tab keeps its rows. Do not edit columns by
+> hand. See `docs/INTAKE.md` section 3.
+
 ---
 
 ## 5. Deploy as a web app
@@ -531,7 +540,10 @@ Work through this in order. Do it on the real deployment, once.
      `supporting_document_name` each hold three semicolon-delimited values in
      the same order, `application_folder_url` is populated, and the folder URL
      opens the folder.
-   - the intake tab still has **94** columns. This change added no column.
+   - the multi-document change added no column of its own: the three
+     `supporting_document_*` columns hold semicolon-delimited lists. (The tab is
+     **103** columns wide since the restored intake fields were added; see
+     `docs/INTAKE.md` section 3.)
 4. **Filing switched off.** Set `APPLICATION_FOLDER_ID` back to the placeholder,
    deploy a new version, and submit once more. Confirm the application is still
    recorded and still emailed with its PDF attached, that

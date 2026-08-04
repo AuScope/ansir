@@ -23,11 +23,19 @@ before advancing.
 
 | Step | Heading | What it collects |
 | --- | --- | --- |
-| 1 | Project & People | Project title, acronym, project summary, scientific objectives, keywords (chips control writing to the hidden `project_keywords` field), the lead investigator block (title, given name, family name, email, ORCID, organisation, organisation ROR), and any number of additional team members |
-| 2 | Where & When | Proposed start and end dates, alternative dates and timing constraints, location/region, country, and a drawn study area boundary stored as GeoJSON in the hidden `location_polygon` field |
-| 3 | Equipment Request | Primary method(s), methods description, the equipment matrix, field team experience, training and technical assistance, and the equipment availability confirmation |
-| 4 | Data & Declarations | Data archiving requirements, FDSN network code, estimated data volume, data submission acknowledgement, intended data access level with its conditional embargo or restriction detail, cultural heritage and Indigenous engagement questions, project funding, up to five optional supporting PDFs, and the terms declaration |
+| 1 | Project & People | Project title, acronym, project summary, the type of application (with its conditional "Other" free text), scientific objectives, keywords (chips control writing to the hidden `project_keywords` field), the lead investigator block (title, given name, family name, email, ORCID, organisation, organisation ROR), and any number of additional team members |
+| 2 | Where & When | Proposed start and end dates, alternative dates and timing constraints, location/region, country, a drawn study area boundary stored as GeoJSON in the hidden `location_polygon` field, whether environmental noise at the sites has been considered, and the cultural heritage and Indigenous engagement questions |
+| 3 | Equipment Request | Primary method(s), methods description, the equipment matrix, ancillary equipment and kit, field team experience, training and technical assistance, and the equipment availability confirmation |
+| 4 | Data & Declarations | Data archiving requirements, FDSN code status and network code, estimated data volume, data submission acknowledgement, intended data access level with its conditional embargo or restriction detail, project funding, expected scientific outputs, the declarations and undertakings (institutional support; equipment care and return; cost, mobilisation and insurance), up to five optional supporting PDFs, and the terms declaration |
 | 5 | Review & Submit | A read-only rendering of everything collected in steps 1 to 4, then submission |
+
+**Two groups sit where the question belongs rather than where it was first
+written.** The type of application classifies the whole application, so it is
+asked with the project's identity at the top of Step 1. The cultural heritage
+and Indigenous engagement questions are about the proposed sites, so they follow
+the map and the noise question in Step 2. Neither move changes a field name, a
+stored value or an intake column: the order the questions are asked in is the
+only thing that differs.
 
 A sixth section is shown only after a successful submission and displays the
 reference in the `ANSIR-<year>-NNN` format.
@@ -35,13 +43,62 @@ reference in the `ANSIR-<year>-NNN` format.
 ### Mandatory fields
 
 Required inputs carry the `required` attribute and a `.form-label.required`
-label. Step 1 requires project title, project summary, scientific objectives,
-and the lead investigator's given name, family name, email and organisation.
-Step 2 requires the start date, end date and location/region. Step 3 requires at
-least one primary method and the equipment availability confirmation. Step 4
-requires an intended data access level, the Indigenous involvement answer, the
-application type, the funding status, the data submission acknowledgement and
-the terms declaration.
+label. Step 1 requires project title, project summary, the type of application,
+scientific objectives, and the lead investigator's given name, family name,
+email and organisation. Step 2 requires the start date, end date, location/region
+and the Indigenous involvement answer. Step 3 requires at least one primary
+method and the equipment availability confirmation. Step 4 requires an intended
+data access level, the funding status, the data submission acknowledgement, the
+terms declaration, and the three restored undertakings: the institutional
+support declaration, all five equipment care and return undertakings, and the
+cost, mobilisation and insurance declaration. The environmental noise answer and
+the cultural heritage answer (Step 2), the ancillary equipment note (Step 3),
+and the expected scientific outputs (Step 4) are collected but optional.
+
+### Conditional fields are required while their panel is active
+
+A follow-up question that accepts no answer is not a question. When a
+conditional panel is revealed, `required` is set on the fields inside it, and it
+is removed again when the panel is deactivated. This applies to the embargo
+duration and reason, the restricted-access reason, the other expected output,
+the other application type, and the existing FDSN network code. The per-step
+validation already walks `[required]`, so activation is the whole mechanism.
+
+### A deactivated panel is cleared
+
+Switching Data Access from Embargo back to Public clears the duration and the
+reason; answering No to Indigenous involvement clears the engagement narrative;
+unticking the Other expected output clears its free text. A value typed against
+a branch that was later abandoned is not an answer to any question the form is
+still asking, and leaving it behind put it on the review step and in the
+submitted payload.
+
+### Two hard blocks beyond the required fields
+
+- **The dates must be in order.** An end date before the start date blocks the
+  step with that message.
+- **An equipment loan application must request equipment.** If every quantity
+  across the *visible* categories is zero and the ancillary equipment note is
+  empty, Step 3 blocks with "You have not requested any equipment. Enter at
+  least one quantity, or describe what you need under Ancillary Equipment." This
+  is a block, not a confirmation: there is nothing for the facility to allocate.
+
+### Validation messages
+
+The most specific failure wins. A step failing on the date order, on no method
+selected, or on no equipment requested says exactly that. A step failing on one
+required field names it. Only a step failing on several fields at once falls
+back to "Please complete all required fields."
+
+### The FDSN block follows the selected methods
+
+The FDSN network code question applies only to Seismic, Nodal Seismic and DAS.
+With none of those selected the block is hidden, `fdsn_status` is set to
+`Not applicable` on the applicant's behalf, and the code box is cleared. When
+one of them is selected the block appears and `fdsn_status` becomes required,
+and any answer the form set for itself is taken back so that the applicant has
+to choose. The distinction between the form's answer and the applicant's is
+carried through a draft restore by the draft's `fdsnAuto` key.
 
 ### The supporting documents control
 
@@ -96,6 +153,15 @@ the matrix.
 Each item inside a category is a quantity input named `inst_<item>`, defaulting
 to `0`, with a `min` of `0` and an item-appropriate `max`. Category headers are
 collapsible through `toggleEquipment()`.
+
+**Hiding a category zeroes it, and only visible categories are collected.**
+There are two independent guards, and both are deliberate. `updateEquipmentVisibility()`
+resets the quantity inputs of every category it hides, and
+`collectEquipmentRequest()` and `collectEquipmentRows()` both read only
+`.equipment-category:not(.hidden)`. Without this, an applicant who ticked
+Seismic, asked for ten seismometers and then changed to Magnetotelluric
+submitted an order for ten seismometers that no longer appeared anywhere on the
+form.
 
 **Layout contract.** A new instrument is added by placing an
 `input[type="number"][name="inst_<item>"]` inside the appropriate
@@ -299,8 +365,15 @@ corrected, since no information is lost.
 
 Every field change schedules a debounced (800 ms) write to `localStorage` under
 the key `ansir_application_draft_v1`. The draft holds field values, checkbox and
-radio states, keywords, additional team members, the drawn study area and the
-step the applicant was on.
+radio states, keywords, additional team members, the drawn study area, the step
+the applicant was on, and the `fdsnAuto` flag recording whether the saved FDSN
+status is the form's own answer or the applicant's.
+
+Restoring re-applies every piece of UI state that is driven by an event rather
+than by a control's value: selected radio cards, checked checkbox cards,
+conditional panels and equipment visibility. `syncConditionalUi()` does that in
+one place, and it settles equipment visibility before the FDSN block, because
+whether that block applies is decided by the restored methods.
 
 On load, a saved draft is **offered, not applied**. A banner appears with the
 save time and two buttons, "Restore my draft" and "Start fresh", and nothing is
@@ -333,13 +406,23 @@ Each row carries `data-field="<input name>"`, so the enumeration can be checked
 against the form mechanically:
 
 ```js
-// Zero missing is the assertion. Equipment at quantity 0 is excluded by design.
-const collected = new Set(); const zero = new Set();
+// Zero missing is the assertion. Three things are excluded by design:
+// equipment at quantity 0, equipment under a hidden category, and any field
+// belonging to a conditional branch the applicant did not take.
+const dormant = el => (el.closest('.conditional-field') &&
+        !el.closest('.conditional-field').classList.contains('active')) ||
+    el.style.display === 'none';
+const collected = new Set(); const skipped = new Set();
 for (let s = 1; s <= 4; s++) {
     document.querySelector('.form-section[data-step="' + s + '"]')
         .querySelectorAll('input[name],select[name],textarea[name]').forEach(el => {
             const n = el.getAttribute('name'); if (!n) return;
-            if (n.indexOf('inst_') === 0) { ((parseInt(el.value, 10) || 0) > 0 ? collected : zero).add(n); return; }
+            if (dormant(el)) { skipped.add(n); return; }
+            if (n.indexOf('inst_') === 0) {
+                const live = !el.closest('.equipment-category').classList.contains('hidden');
+                ((live && (parseInt(el.value, 10) || 0) > 0) ? collected : skipped).add(n);
+                return;
+            }
             collected.add(n);
         });
 }
@@ -356,14 +439,25 @@ How each kind of control is rendered:
 - **Single required checkboxes** (the equipment availability confirmation, the
   data submission acknowledgement, the terms declaration) show "Confirmed", or
   "Not provided" if unticked. Optional ones show Yes or No.
-- **Conditional detail fields** are shown whether or not their parent answer
-  triggered them, so a value left over from a changed answer is visible rather
-  than hidden.
-- **The Other application type** free text has its own row, since it shares a
-  group label with the radio set it qualifies.
+- **Conditional detail fields belonging to a branch that was not taken are not
+  shown at all.** An embargo duration under Public access, an FDSN code under
+  Not applicable, or the Other free texts when Other is not selected would read
+  as gaps the applicant should go back and fill, when there is nothing there to
+  fill. "Not provided" is kept for questions that are still open. The test is
+  read off the live DOM, not a list of field names: a field inside a
+  `.conditional-field` that is not `.active`, or one hidden inline, is dormant,
+  so a conditional panel added later is covered without changing this code.
+  Those fields are also cleared when their panel deactivates, so nothing stale
+  reaches the payload either.
+- **The Other application type** free text has its own row when it applies,
+  since it shares a group label with the radio set it qualifies.
+- **The equipment care and return undertakings** are five mandatory sentences
+  sharing one field name, and are rendered as a count, "5 of 5 confirmed".
+  Comma-joining five sentences that themselves contain commas produced one
+  unreadable paragraph that said nothing the count does not.
 - **Equipment** appears in place under an "Equipment requested" sub-heading, only
-  where the quantity is above zero, labelled with the item name and its category.
-  If nothing is requested, one row says so.
+  where the quantity is above zero and the category is visible, labelled with the
+  item name and its category. If nothing is requested, one row says so.
 - **Additional contributors** appear in full, each under its own "Team Member N"
   sub-heading so that repeated labels such as "Given Name" stay unambiguous.
 - **Supporting documents** appear under their own sub-heading: one summary row
@@ -373,9 +467,10 @@ How each kind of control is rendered:
   row per named control however many documents are attached.
 - **The drawn map area** shows the coordinates summary, not raw GeoJSON.
 - **An attached file** shows its name and size.
-- **Anything empty** shows "Not provided" in muted italic. Nothing is omitted:
-  the point of the step is to let someone see what is missing while they can
-  still fix it.
+- **Anything empty** shows "Not provided" in muted italic. Nothing an applicant
+  could still sensibly fill is omitted: the point of the step is to let someone
+  see what is missing while they can still fix it. The only omissions are the
+  branches the form itself ruled out, described above.
 
 **Every value is written with `textContent` or `createTextNode`.** There is no
 string of markup for a field value to be interpolated into, so field content
@@ -598,6 +693,26 @@ curl -L -X POST '<endpoint /exec URL>' \
 ```
 
 Expect `{"success":false,"message":"The following required fields are missing: ..."}`.
+
+### 8.6 Conditional behaviour
+
+- **Other application type.** Click Other in Step 1. The "Please specify" box
+  appears, no error reaches the console, and Next blocks until it is filled.
+  Click another option and the box disappears and is emptied.
+- **Phantom equipment.** Tick Seismic, enter a quantity against a broadband
+  seismometer, untick Seismic and tick Magnetotelluric. The quantity is back to
+  zero, no seismometer row appears on the review step, and
+  `instrumentation_request` in the submitted payload contains no `inst_trillium_*`
+  key.
+- **Zero equipment.** With a method ticked, no quantity anywhere and an empty
+  ancillary note, Next blocks on Step 3 with the equipment message. Filling
+  either the quantity or the ancillary note releases it.
+- **Stale conditionals.** Choose Embargo, fill the duration and reason, switch to
+  Public, then go to the review step. Neither value appears anywhere, and neither
+  is in the payload.
+- **FDSN gating.** A Magnetotelluric-only application never sees the FDSN block
+  and submits `fdsn_status` as `Not applicable`. Adding Seismic reveals the
+  block with no option preselected and makes it required.
 
 ---
 

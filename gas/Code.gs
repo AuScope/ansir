@@ -964,7 +964,20 @@ function applicationsHeaders_() {
     'embargo_reason',
     'restricted_reason',
     'cultural_heritage_check',
-    'funding_status'
+    'funding_status',
+    // Fields restored from the earlier ANSIR application. They ask questions
+    // the master list has no column for, so they belong in this intake-only
+    // block and are appended at the end to keep block 2 (columns 9 to 80) a
+    // single unbroken master-aligned range. See docs/INTAKE.md section 3.
+    'expected_outputs',
+    'expected_outputs_other',
+    'expected_outputs_detail',
+    'environmental_noise',
+    'ancillary_equipment',
+    'fdsn_status',
+    'institutional_support_confirmed',
+    'equipment_care_confirmed',
+    'cost_insurance_confirmed'
   ];
 }
 
@@ -1096,7 +1109,19 @@ function buildApplicationRecord_(formData, ansirCode, fileInfos, applicationFold
     'embargo_reason': safeText_(formData.embargo_reason),
     'restricted_reason': safeText_(formData.restricted_reason),
     'cultural_heritage_check': safeText_(formData.cultural_heritage_check),
-    'funding_status': safeText_(formData.funding_status)
+    'funding_status': safeText_(formData.funding_status),
+    // Fields restored from the earlier ANSIR application. One key per header
+    // added in applicationsHeaders_(), in the same order, so the row stays
+    // one-to-one with the header list.
+    'expected_outputs': safeText_(formData.expected_outputs),
+    'expected_outputs_other': safeText_(formData.expected_outputs_other),
+    'expected_outputs_detail': safeText_(formData.expected_outputs_detail),
+    'environmental_noise': safeText_(formData.environmental_noise),
+    'ancillary_equipment': safeText_(formData.ancillary_equipment),
+    'fdsn_status': safeText_(formData.fdsn_status),
+    'institutional_support_confirmed': safeText_(formData.institutional_support_confirmed),
+    'equipment_care_confirmed': safeText_(formData.equipment_care_confirmed),
+    'cost_insurance_confirmed': safeText_(formData.cost_insurance_confirmed)
   };
 }
 
@@ -2043,6 +2068,7 @@ function applicationTranscript_(formData, ansirCode, fileInfos) {
   lines.push('Region: ' + orNotProvided_(formData.location_region));
   lines.push('Country: ' + (safeText_(formData.location_country) || 'Australia'));
   lines.push('Coordinates: ' + (formatPolygon_(formData.location_polygon) || 'Not provided'));
+  lines.push('Environmental noise considered: ' + orNotProvided_(formData.environmental_noise));
   lines.push('');
 
   lines.push('METHODS AND EQUIPMENT');
@@ -2063,12 +2089,14 @@ function applicationTranscript_(formData, ansirCode, fileInfos) {
   }
   lines.push('');
   lines.push('Availability confirmed with ANSIR: ' + (safeText_(formData.equipment_availability_confirmed) || 'No'));
+  lines.push('Ancillary equipment and quantities: ' + orNotProvided_(formData.ancillary_equipment));
   lines.push('Field team experience: ' + orNotProvided_(formData.field_team_experience));
   lines.push('Training required: ' + orNotProvided_(formData.training_required));
   lines.push('');
 
   lines.push('DATA MANAGEMENT AND ACCESS');
   lines.push('--------------------------');
+  lines.push('FDSN status: ' + orNotProvided_(formData.fdsn_status));
   lines.push('FDSN network code: ' + orNotProvided_(formData.fdsn_network_code));
   lines.push('Estimated data volume: ' + orNotProvided_(formData.estimated_data_volume));
   lines.push('Data submission confirmed: ' + orNotProvided_(formData.data_submission_confirmed));
@@ -2096,6 +2124,17 @@ function applicationTranscript_(formData, ansirCode, fileInfos) {
   lines.push('Grant or programme: ' + orNotProvided_(formData.funding_title));
   lines.push('Funding agency: ' + orNotProvided_(formData.funding_agency_name));
   lines.push('Grant identifier: ' + orNotProvided_(formData.funding_identifier));
+  lines.push('');
+
+  lines.push('EXPECTED OUTPUTS AND DECLARATIONS');
+  lines.push('---------------------------------');
+  lines.push('Expected scientific outputs: ' + orNotProvided_(formData.expected_outputs));
+  lines.push('Expected outputs (other): ' + orNotProvided_(formData.expected_outputs_other));
+  lines.push('Expected outputs, further detail:');
+  lines.push(orNotProvided_(formData.expected_outputs_detail));
+  lines.push('Institutional support confirmed: ' + orNotProvided_(formData.institutional_support_confirmed));
+  lines.push('Equipment care and return undertakings: ' + orNotProvided_(formData.equipment_care_confirmed));
+  lines.push('Cost, mobilisation and insurance confirmed: ' + orNotProvided_(formData.cost_insurance_confirmed));
   lines.push('');
 
   lines.push('SUPPORTING DOCUMENTS');
