@@ -264,6 +264,16 @@ function formatDate(val, rowLabel, fieldName) {
     const d = new Date(raw + 'T00:00:00Z');
     if (Number.isNaN(d.getTime())) {
       warn(rowLabel, `${fieldName} "${raw}" is not a valid calendar date`);
+    } else {
+      // Plausibility band, not validity: a well-formed date can still be a
+      // century typo (a real one shipped as 2121 for a project that ended in
+      // 2021). ANSIR predecessor records start around 2000; nothing genuine
+      // is scheduled more than a decade out.
+      const year = d.getUTCFullYear();
+      const maxYear = new Date().getUTCFullYear() + 10;
+      if (year < 1990 || year > maxYear) {
+        warn(rowLabel, `${fieldName} "${raw}" is outside the plausible range 1990-${maxYear}; likely a typo in the sheet`);
+      }
     }
     return raw;
   }

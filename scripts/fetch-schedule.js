@@ -305,6 +305,24 @@ function parseDate(raw, tab, r, c, subject) {
   if (v === '') return null;
   if (v === TENTATIVE_MARK) return { raw: v, iso: null, precision: null, tentative: true };
 
+  // Plausibility band for the leading year, whatever the format below
+  // matches. A well-formed date can still be a century typo (the projects
+  // register shipped a 2121 for an experiment that ended in 2021), and one
+  // absurd year quietly stretches the rendered timeline by a century.
+  const yearIn = /^(\d{4})/.exec(v) || /-(\d{4})$/.exec(v);
+  if (yearIn) {
+    const year = Number(yearIn[1]);
+    const maxYear = new Date().getUTCFullYear() + 10;
+    if (year !== 0 && (year < 1990 || year > maxYear)) {
+      warn(
+        tab,
+        `${cellRef(r, c)} date "${v}" has year ${year}, outside the plausible range 1990-${maxYear}; likely a typo.`,
+        (subject || 'One entry') + ': the date "' + v +
+          '" looks like a typo (year ' + year + '). Please check it in the sheet.'
+      );
+    }
+  }
+
   let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
   if (m) return { raw: v, iso: v, precision: 'day', tentative: false };
 
@@ -975,10 +993,18 @@ async function fetchTabNames() {
 
 function parseAsOf(tabName) {
   if (!tabName) return null;
-  const m = /\(([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})\)/.exec(tabName);
+  const m = /\(([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})\)/.exec(tabName);
   if (m) {
-    const month = MONTHS[m[1].toLowerCase()];
-    if (month) return `${m[3]}-${String(month).padStart(2, '0')}-${String(Number(m[2])).padStart(2, '0')}`;
+    // Accept full or abbreviated month names: staff have used both
+    // "Availability (July 21, 2026)" and "Availability (Aug 04, 2026)".
+    const token = m[1].toLowerCase();
+    const monthKey = Object.keys(MONTHS).find(function (name) {
+      return name === token || (token.length >= 3 && name.startsWith(token));
+    });
+    if (monthKey) {
+      const month = MONTHS[monthKey];
+      return `${m[3]}-${String(month).padStart(2, '0')}-${String(Number(m[2])).padStart(2, '0')}`;
+    }
   }
   const iso = /(\d{4}-\d{2}-\d{2})/.exec(tabName);
   if (iso) return iso[1];

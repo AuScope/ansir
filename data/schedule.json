@@ -1,10 +1,10 @@
 {
-  "fetched": "2026-08-03T06:13:16.585Z",
+  "fetched": "2026-08-04T02:18:27.698Z",
   "source": "ANSIR Seismic Fleet Status",
   "sourceUrl": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRyK1XUmYMXIHt-5BWhoZchVtMD3Lxtgqi69WoxEuWgUem7Ob_VzdG8L1OHlBjD7g/pub",
   "generatedBy": "scripts/fetch-schedule.js",
-  "availabilityTabName": "Availability (July 21, 2026)",
-  "availabilityAsOf": "2026-07-21",
+  "availabilityTabName": "Availability (Aug 04, 2026)",
+  "availabilityAsOf": "2026-08-04",
   "definitions": {
     "totalAvailable": "Field-ready, not reserved."
   },
@@ -52,7 +52,7 @@
               "tentative": false
             }
           ],
-          "unnamedInterest": 2,
+          "unnamedInterest": 1,
           "unnamedInterestUnits": null
         },
         {
@@ -81,7 +81,7 @@
           "note": null,
           "category": "RECORDERS",
           "totalFleet": 163,
-          "available": 69,
+          "available": 67,
           "onLoan": 41,
           "testing": 4,
           "repair": 47,
@@ -108,8 +108,8 @@
               "tentative": false
             }
           ],
-          "unnamedInterest": 1,
-          "unnamedInterestUnits": null
+          "unnamedInterest": 2,
+          "unnamedInterestUnits": 2
         },
         {
           "name": "ANU LPR200 (NZ)",
@@ -246,7 +246,7 @@
           "note": null,
           "category": "SEISMOMETERS",
           "totalFleet": 35,
-          "available": 14,
+          "available": 12,
           "onLoan": 16,
           "testing": 4,
           "repair": 0,
@@ -260,7 +260,7 @@
             }
           ],
           "unnamedInterest": 1,
-          "unnamedInterestUnits": null
+          "unnamedInterestUnits": 2
         },
         {
           "name": "Nanometrics Trillium Compact 20s",
@@ -342,7 +342,7 @@
           "note": null,
           "category": "SEISMOMETERS",
           "totalFleet": 239,
-          "available": 24,
+          "available": 6,
           "onLoan": 207,
           "testing": 0,
           "repair": 0,
@@ -370,7 +370,7 @@
             }
           ],
           "unnamedInterest": 3,
-          "unnamedInterestUnits": null
+          "unnamedInterestUnits": 16
         },
         {
           "name": "SmartSolo node: IGU-16HR 3C 5Hz geophone (NZ)",
@@ -444,13 +444,13 @@
           "note": null,
           "category": "FIBRE-OPTIC",
           "totalFleet": 1,
-          "available": 1,
+          "available": 0,
           "onLoan": 0,
           "testing": 0,
           "repair": 0,
           "allocations": [],
           "unnamedInterest": 1,
-          "unnamedInterestUnits": null
+          "unnamedInterestUnits": 1
         },
         {
           "name": "Silixa iDAS 2.5",
