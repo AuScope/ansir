@@ -3383,6 +3383,49 @@
             if (existing) existing.remove();
         }
 
+        // The family-name box doubles as the search field, so a full name
+        // typed there can survive into the record ("Kay" becoming "Ben Kay").
+        // Spaces are legitimate in family names, so this never rejects or
+        // rewrites the value: it points out the overlap and leaves the choice
+        // to the applicant.
+        var FULL_NAME_HINT = 'This looks like a full name. Family name only, please.';
+
+        function familyHintId(blockId) {
+            return 'familyHint_' + (blockId ? blockId : 'lead');
+        }
+
+        function checkFamilyName(blockId) {
+            var givenField = contributorField(blockId, 'given');
+            var familyField = contributorField(blockId, 'family');
+            if (!givenField || !familyField) return;
+
+            var existing = document.getElementById(familyHintId(blockId));
+            if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+            var given = cleanValue(givenField.value);
+            var family = cleanValue(familyField.value);
+            if (!given || !family) return;
+            if (family.toLowerCase().indexOf(given.toLowerCase() + ' ') !== 0) return;
+
+            var hint = document.createElement('p');
+            hint.id = familyHintId(blockId);
+            hint.className = 'orcid-inline-hint';
+            hint.textContent = FULL_NAME_HINT;
+            var host = familyField.parentNode;
+            if (host) host.appendChild(hint);
+        }
+
+        function bindFamilyNameCheck(blockId) {
+            var familyField = contributorField(blockId, 'family');
+            var givenField = contributorField(blockId, 'given');
+            if (!familyField || familyField.getAttribute('data-family-check')) return;
+            familyField.setAttribute('data-family-check', '1');
+            familyField.addEventListener('blur', function () { checkFamilyName(blockId); });
+            if (givenField) {
+                givenField.addEventListener('blur', function () { checkFamilyName(blockId); });
+            }
+        }
+
         function showOrcidWithheldHint(blockId) {
             var field = contributorField(blockId, 'orcid');
             if (!field) return;
@@ -3487,6 +3530,8 @@
         function setupNameAutocomplete(inputId, blockId) {
             var input = document.getElementById(inputId) || document.querySelector('[name="' + inputId + '"]');
             if (!input) return;
+
+            bindFamilyNameCheck(blockId);
 
             createCombobox(input, {
                 listLabel: 'Matching people from previous applications',
