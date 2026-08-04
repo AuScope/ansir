@@ -913,6 +913,8 @@
 
         .summary-item {
             display: flex;
+            gap: 16px;
+            align-items: baseline;
             padding: 6px 0;
             border-bottom: 1px solid #e9ecef;
         }
@@ -921,10 +923,13 @@
             border-bottom: none;
         }
 
+        /* A fixed label column: long labels wrap inside it instead of
+           growing until they collide with their value. */
         .summary-label {
             font-weight: 600;
             color: #495057;
-            min-width: 160px;
+            flex: 0 0 250px;
+            max-width: 250px;
             font-size: 0.85rem;
         }
 
@@ -3935,17 +3940,32 @@
 
         // ─── KEYWORDS/CHIPS ────────────────────────────────────────
 
-        document.getElementById('keywordsInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const value = this.value.trim();
+        // Text still sitting in the box is a keyword the applicant meant to
+        // add: commit it on Enter, on a comma or semicolon, and on leaving
+        // the field. Without the blur path, typing keywords and clicking
+        // straight through to the next step silently lost them.
+        function commitPendingKeywords() {
+            const input = document.getElementById('keywordsInput');
+            const parts = input.value.split(/[,;]/);
+            let added = false;
+            for (const part of parts) {
+                const value = part.trim();
                 if (value && !keywords.includes(value)) {
                     keywords.push(value);
-                    renderKeywords();
+                    added = true;
                 }
-                this.value = '';
+            }
+            input.value = '';
+            if (added) renderKeywords();
+        }
+
+        document.getElementById('keywordsInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',' || e.key === ';') {
+                e.preventDefault();
+                commitPendingKeywords();
             }
         });
+        document.getElementById('keywordsInput').addEventListener('blur', commitPendingKeywords);
 
         function renderKeywords() {
             const container = document.getElementById('keywordsContainer');
@@ -4724,6 +4744,7 @@
             formData.title_acronym = document.getElementById('title_acronym').value;
             formData.description_primary = document.getElementById('description_primary').value;
             formData.description_objectives = document.getElementById('description_objectives').value;
+            commitPendingKeywords();
             formData.project_keywords = keywords.join('; ');
 
             // Lead contributor (PI)
@@ -4868,23 +4889,12 @@
         }
 
         function resetForm() {
-            document.getElementById('applicationForm').reset();
-            keywords = [];
-            renderKeywords();
-            document.getElementById('additionalContributors').innerHTML = '';
-            contributorCount = 0;
-
-            if (drawnItems) {
-                drawnItems.clearLayers();
-            }
-            document.getElementById('coordinatesDisplay').style.display = 'none';
-            document.getElementById('location_polygon').value = '';
-
-            // Reset equipment visibility
-            updateEquipmentVisibility();
-
-            currentStep = 1;
-            updateStepDisplay();
+            // A full reload, deliberately. The draft is cleared on successful
+            // submission, so reloading yields a genuinely blank form. The
+            // previous piecemeal reset left state behind (submit button,
+            // uploaded file, wizard internals) and a second application could
+            // not be completed without a manual refresh.
+            window.location.reload();
         }
 
         // ─── STATUS MESSAGES ───────────────────────────────────────
