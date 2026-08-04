@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<!--
+    ANSIR Statistics - GitHub Pages Version
+
+    Standalone statistics / impact page for the ANSIR research portfolio.
+    Reads the same static data.json that the projects page uses, computes every
+    figure client-side, and renders hand-rolled SVG charts (no chart library,
+    no CDN, no build step).
+
+    Designed to be embedded as an iframe in the Squarespace site. It posts its
+    content height to the parent so the iframe auto-sizes with no inner scrollbar.
+-->
+<html lang="en-AU">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANSIR Statistics | Research Portfolio at a Glance</title>
+    <meta name="description" content="Statistics for the Australian National Seismic Imaging Resource (ANSIR) research portfolio: projects, researchers, partner organisations, instrument deployments, collection sites and published outputs.">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:title" content="ANSIR Statistics">
+    <meta property="og:description" content="Research portfolio statistics for the Australian National Seismic Imaging Resource.">
+    <meta property="og:type" content="website">
+
+    <style>
+        /* ============================================ */
+        /* DESIGN SYSTEM: CSS Variables                 */
+        /* Names and values mirror ../index.html so the */
+        /* two pages stay visually identical.           */
+        /* ============================================ */
+        :root {
+            /* Brand Colors */
+            --primary-bg: #282572;          /* AuScope brand purple */
+            --primary-hover: #1f1d5a;       /* Darker purple for hover states */
+            --white: #ffffff;
+
+            /* UI Colors */
+            --light-gray: #e9ecef;          /* Background for sections */
+            --medium-gray: #868e96;         /* Secondary text */
+            --border-color: #dee2e6;        /* Borders and dividers */
+            --text-color: #495057;          /* Primary text */
+            --background-light: #f2f2f1;    /* Page background - matches Squarespace */
+
+            /* Project Status Colors (as used on the projects page) */
+            --status-planning-bg: #fff3cd;
+            --status-planning-color: #856404;
+            --status-planning-marker: #ffc107;
+            --status-in-progress-bg: #e8dff5;
+            --status-in-progress-color: #4a2d7a;
+            --status-in-progress-marker: #6f42c1;
+            --status-complete-bg: #d4edda;
+            --status-complete-color: #155724;
+            --status-complete-marker: #28a745;
+
+            /* Typography */
+            --font-family: Arial, sans-serif;
+
+            /* Spacing System */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+
+            /* Border Radius */
+            --border-radius-sm: 3px;
+            --border-radius-md: 4px;
+            --border-radius-lg: 6px;
+            --border-radius-xl: 8px;
+
+            /* ---- Chart tokens (this page only) ---- */
+            /* Chart series colours for project status. These are darker steps of
+               the same three hues used for the map markers on the projects page,
+               chosen so the set passes colour-vision-deficiency separation and
+               3:1 contrast against a white chart surface. The map-marker steps
+               (#ffc107 / #6f42c1 / #28a745) are too light to carry meaning in a
+               chart fill, so the marker colours stay on the map and these carry
+               the charts. Legend swatches use these same values, so identity is
+               consistent within this page. */
+            --series-planning: #c98500;     /* amber  - Planning */
+            --series-in-progress: #6f42c1;  /* indigo - In Progress */
+            --series-complete: #1e7e34;     /* green  - Complete */
+
+            /* Single-series bar colour: the brand purple. */
+            --series-single: #282572;
+            --series-single-hover: #46429c;
+            --series-muted: #8a89ab;        /* "Not specified" / de-emphasis (3:1 on white) */
+
+            /* Chart chrome and ink */
+            --chart-surface: #ffffff;
+            --chart-grid: #e7e7e4;          /* hairline gridline */
+            --chart-axis: #c9c9c4;          /* baseline / axis rule */
+            --chart-ink-muted: #6d6c68;     /* axis + label ink */
+            --chart-ink-strong: #262626;    /* values */
+            --focus-ring: #282572;
+        }
+
+        /* ============================================ */
+        /* BASE                                         */
+        /* ============================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* Explicit display values below would otherwise beat the hidden attribute */
+        [hidden] { display: none !important; }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-light);
+            color: var(--text-color);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* Never scroll the body sideways - wide content scrolls in its own box */
+            overflow-x: hidden;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--focus-ring);
+            outline-offset: 2px;
+            border-radius: var(--border-radius-sm);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* ============================================ */
+        /* LAYOUT                                       */
+        /* ============================================ */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl) var(--spacing-md) 32px;
+        }
+
+        .page-header { margin-bottom: var(--spacing-xl); }
+
+        .page-header h1 {
+            font-size: clamp(1.35rem, 1.1rem + 1.1vw, 1.85rem);
+            line-height: 1.25;
+            color: var(--primary-bg);
+            font-weight: bold;
+        }
+
+        .page-header .lede {
+            margin-top: var(--spacing-sm);
+            max-width: 68ch;
+            font-size: 0.95rem;
+            color: var(--text-color);
+        }
+
+        .data-currency {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            align-items: baseline;
+            margin-top: var(--spacing-md);
+            padding: 6px 10px;
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+        }
+        .data-currency strong { color: var(--text-color); font-weight: bold; }
+
+        /* ============================================ */
+        /* SECTIONS + CARDS                             */
+        /* ============================================ */
+        .section { margin-top: 28px; }
+
+        .section > h2 {
+            font-size: 1.05rem;
+            color: var(--primary-bg);
+            margin-bottom: var(--spacing-md);
+            font-weight: bold;
+        }
+
+        .card {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-lg);
+        }
+
+        .card h3 {
+            font-size: 0.95rem;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .card .card-note {
+            margin-top: 2px;
+            font-size: 0.78rem;
+            color: var(--medium-gray);
+        }
+
+        .card-grid {
+            display: grid;
+            gap: var(--spacing-lg);
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 760px) {
+            .card-grid.two-up { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* ============================================ */
+        /* KPI TILES                                    */
+        /* ============================================ */
+        .kpi-grid {
+            display: grid;
+            gap: var(--spacing-md);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        @media (min-width: 620px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media (min-width: 940px) { .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+        .kpi {
+            background: var(--chart-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+            border-top: 3px solid var(--primary-bg);
+        }
+
+        .kpi .kpi-value {
+            display: block;
+            font-family: var(--font-family);
+            font-size: clamp(1.6rem, 1.2rem + 1.9vw, 2.3rem);
+            font-weight: bold;
+            line-height: 1.1;
+            color: var(--primary-bg);
+            /* Proportional figures on standalone numbers - tabular-nums is for columns */
+        }
+
+        .kpi .kpi-label {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .kpi .kpi-sub {
+            display: block;
+            margin-top: 2px;
+            font-size: 0.74rem;
+            color: var(--medium-gray);
+        }
+
+        /* ============================================ */
+        /* CHARTS                                       */
+        /* ============================================ */
+        .chart-box { margin-top: var(--spacing-md); }
+
+        /* Wide charts scroll inside their own container, never the page */
+        .chart-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: var(--spacing-xs);
+        }
+
+        .chart-scroll:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+        svg.chart { display: block; }
+        svg.chart text { font-family: var(--font-family); }
+
+        svg.chart .mark-group { cursor: default; }
+        svg.chart .mark-group:focus { outline: none; }
+        svg.chart .mark-group:focus-visible .focus-halo,
+        svg.chart .mark-group.is-active .focus-halo { opacity: 1; }
+        svg.chart .focus-halo {
+            opacity: 0;
+            fill: none;
+            stroke: var(--focus-ring);
+            stroke-width: 2;
+        }
+
+        .scroll-hint {
+            margin-top: 6px;
+            font-size: 0.74rem;
+            color: var(--medium-gray);
+        }
+
+        /* Legend - always present for two or more series */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            font-size: 0.8rem;
+            color: var(--text-color);
+        }
+        .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+        .legend-swatch {
+            width: 12px; height: 12px;
+            border-radius: 2px;
+            flex: 0 0 auto;
+        }
+        .legend-count { color: var(--medium-gray); }
+
+        /* ============================================ */
+        /* TOOLTIP                                      */
+        /* ============================================ */
+        .viz-tip {
+            position: fixed;
+            z-index: 50;
+            max-width: 260px;
+            padding: 8px 10px;
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+            font-size: 0.8rem;
+            color: var(--text-color);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(2px);
+            transition: opacity 120ms ease, transform 120ms ease;
+        }
+        .viz-tip[data-open="true"] { opacity: 1; transform: translateY(0); }
+        .viz-tip .tip-value {
+            display: block;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--chart-ink-strong);
+            line-height: 1.2;
+        }
+        .viz-tip .tip-label { display: block; margin-top: 2px; color: var(--medium-gray); }
+        .viz-tip .tip-row {
+            display: flex; align-items: center; gap: 6px;
+            margin-top: 5px;
+        }
+        .viz-tip .tip-key { width: 14px; height: 2px; border-radius: 1px; flex: 0 0 auto; }
+        .viz-tip .tip-row-value { font-weight: bold; color: var(--chart-ink-strong); }
+
+        /* ============================================ */
+        /* DATA TABLES (the accessible twin of each chart) */
+        /* ============================================ */
+        details.table-view { margin-top: var(--spacing-md); }
+
+        details.table-view > summary {
+            display: inline-block;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--primary-bg);
+            font-weight: bold;
+            padding: 4px 2px;
+            border-radius: var(--border-radius-sm);
+        }
+        details.table-view > summary:hover { color: var(--primary-hover); text-decoration: underline; }
+
+        .table-scroll { overflow-x: auto; margin-top: var(--spacing-sm); }
+
+        table.data-table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 260px;
+            font-size: 0.8rem;
+        }
+        table.data-table caption {
+            text-align: left;
+            font-size: 0.78rem;
+            color: var(--medium-gray);
+            padding-bottom: 6px;
+        }
+        table.data-table th, table.data-table td {
+            text-align: left;
+            padding: 6px 10px 6px 0;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+        table.data-table th { color: var(--text-color); font-weight: bold; }
+        table.data-table td.num, table.data-table th.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            padding-right: 0;
+        }
+
+        /* ============================================ */
+        /* STATES                                       */
+        /* ============================================ */
+        .state-box {
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-xl);
+            padding: 28px var(--spacing-xl);
+            text-align: center;
+        }
+        .state-box h2 {
+            font-size: 1rem;
+            color: var(--primary-bg);
+            margin-bottom: var(--spacing-sm);
+        }
+        .state-box p {
+            font-size: 0.88rem;
+            color: var(--text-color);
+            max-width: 56ch;
+            margin: 0 auto var(--spacing-md);
+        }
+        .state-box .detail {
+            font-size: 0.78rem;
+            color: var(--medium-gray);
+            word-break: break-word;
+        }
+        .retry-button {
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            background: var(--primary-bg);
+            color: var(--white);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: 9px 18px;
+            cursor: pointer;
+        }
+        .retry-button:hover { background: var(--primary-hover); }
+
+        .spinner {
+            width: 30px; height: 30px;
+            margin: 0 auto var(--spacing-md);
+            border: 3px solid var(--light-gray);
+            border-top-color: var(--primary-bg);
+            border-radius: 50%;
+            animation: spin 900ms linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+            .spinner { animation: none; border-top-color: var(--primary-bg); }
+        }
+
+        .page-footer {
+            margin-top: 32px;
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.76rem;
+            color: var(--medium-gray);
+        }
+        .page-footer p + p { margin-top: var(--spacing-xs); }
+
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @media print {
+            body { background: var(--white); }
+            .chart-scroll { overflow: visible; }
+            details.table-view[open] > summary { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+
+    <header class="page-header">
+        <h1>ANSIR research portfolio statistics</h1>
+        <p class="lede">
+            A summary of the research supported by the Australian National Seismic Imaging Resource:
+            the projects on record, the people and institutions behind them, the instrumentation
+            deployed in the field, and the outputs published from the data collected.
+        </p>
+        <p class="data-currency" id="data-currency" hidden>
+            <span>Data current as of <strong id="exported-date">-</strong></span>
+        </p>
+    </header>
+
+    <!-- Loading state -->
+    <div id="loading-state" class="state-box" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Loading portfolio statistics.</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state" class="state-box" role="alert" hidden>
+        <h2>Statistics are not available right now</h2>
+        <p>
+            The project dataset could not be loaded, so the figures on this page cannot be
+            calculated. This is usually temporary. Please try again in a few minutes.
+        </p>
+        <p><button type="button" class="retry-button" id="retry-button">Try again</button></p>
+        <p class="detail" id="error-detail"></p>
+    </div>
+
+    <!-- Statistics -->
+    <main id="stats-root" hidden>
+
+        <section class="section" aria-labelledby="h-headline">
+            <h2 id="h-headline">Portfolio at a glance</h2>
+            <div class="kpi-grid" id="kpi-grid"></div>
+        </section>
+
+        <section class="section" aria-labelledby="h-status">
+            <h2 id="h-status">Project status</h2>
+            <div class="card">
+                <h3>Current status of every recorded project</h3>
+                <p class="card-note" id="status-note"></p>
+                <div class="chart-box" id="chart-status"></div>
+                <div class="legend" id="legend-status"></div>
+                <details class="table-view">
+                    <summary>Show data table</summary>
+                    <div class="table-scroll" id="table-status"></div>
+                </details>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="h-timeline">
+            <h2 id="h-timeline">Projects over time</h2>
+            <div class="card">
+                <h3>Projects by start year</h3>
+                <p class="card-note">Each project is counted once, in the year its fieldwork or analysis began. Colour shows current status.</p>
+                <div class="chart-box">
+                    <div class="chart-scroll" id="chart-timeline" tabindex="0" role="group" aria-label="Projects by start year chart, scrollable horizontally"></div>
+                    <p class="scroll-hint" id="timeline-hint" hidden>Scroll sideways to see all years.</p>
+                </div>
+                <div class="legend" id="legend-timeline"></div>
+                <details class="table-view">
+                    <summary>Show data table</summary>
+                    <div class="table-scroll" id="table-timeline"></div>
+                </details>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="h-methods">
+            <h2 id="h-methods">Methods and instrumentation</h2>
+            <div class="card-grid two-up">
+                <div class="card">
+                    <h3>Projects by geophysical method</h3>
+                    <p class="card-note">A project may apply more than one method, so the totals exceed the project count.</p>
+                    <div class="chart-box" id="chart-methods"></div>
+                    <details class="table-view">
+                        <summary>Show data table</summary>
+                        <div class="table-scroll" id="table-methods"></div>
+                    </details>
+                </div>
+                <div class="card">
+                    <h3>Most deployed instrument types</h3>
+                    <p class="card-note">Counted as individual instrument deployments across all projects.</p>
+                    <div class="chart-box" id="chart-instruments"></div>
+                    <details class="table-view">
+                        <summary>Show data table</summary>
+                        <div class="table-scroll" id="table-instruments"></div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="h-partners">
+            <h2 id="h-partners">Partners and funding</h2>
+            <div class="card-grid two-up">
+                <div class="card">
+                    <h3>Organisations by projects contributed to</h3>
+                    <p class="card-note">Counts the distinct projects each organisation has a named contributor on.</p>
+                    <div class="chart-box" id="chart-orgs"></div>
+                    <details class="table-view">
+                        <summary>Show data table</summary>
+                        <div class="table-scroll" id="table-orgs"></div>
+                    </details>
+                </div>
+                <div class="card">
+                    <h3>Funding agencies by grants recorded</h3>
+                    <p class="card-note">Counts individual funding records, so an agency supporting a project through several grants appears once per grant.</p>
+                    <div class="chart-box" id="chart-funders"></div>
+                    <details class="table-view">
+                        <summary>Show data table</summary>
+                        <div class="table-scroll" id="table-funders"></div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="h-geography">
+            <h2 id="h-geography">Geographic spread</h2>
+            <div class="card">
+                <h3>Projects by country or territory</h3>
+                <p class="card-note" id="geography-note"></p>
+                <div class="chart-box" id="chart-countries"></div>
+                <details class="table-view">
+                    <summary>Show data table</summary>
+                    <div class="table-scroll" id="table-countries"></div>
+                </details>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="h-outputs">
+            <h2 id="h-outputs">Research outputs</h2>
+            <div class="card">
+                <h3>Registered outputs linked to ANSIR projects</h3>
+                <p class="card-note" id="outputs-note"></p>
+                <div class="chart-box" id="chart-outputs"></div>
+                <details class="table-view">
+                    <summary>Show data table</summary>
+                    <div class="table-scroll" id="table-outputs"></div>
+                </details>
+            </div>
+        </section>
+
+        <footer class="page-footer">
+            <p>
+                ANSIR, the Australian National Seismic Imaging Resource, is a research facility of
+                AuScope, funded under the National Collaborative Research Infrastructure Strategy (NCRIS).
+            </p>
+            <p id="footer-currency"></p>
+        </footer>
+
+    </main>
+
+</div>
+
+<div class="viz-tip" id="viz-tip" role="status" aria-live="off" aria-hidden="true"></div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ============================================ */
+    /* CONFIGURATION                                */
+    /* ============================================ */
+
+    // Static JSON exported from the Google Sheet by GitHub Actions and committed
+    // to this repository. Same file the projects page reads.
+    var DATA_URL = '../data/data.json';
+
+    // Squarespace parent page URL where this iframe is embedded.
+    // TODO (Ben): confirm the final page slug on auscope.org.au before go-live.
+    var SQUARESPACE_PARENT_URL = 'https://www.auscope.org.au/ansir-stats';
+
+    // Origin derived from the parent URL, used to target postMessage.
+    var PARENT_ORIGIN = (function () {
+        try {
+            return new URL(SQUARESPACE_PARENT_URL).origin;
+        } catch (e) {
+            return '*';
+        }
+    })();
+
+    // Detect if we're running inside an iframe
+    var IS_EMBEDDED = (window !== window.top);
+
+    // How many rows each "top N" chart shows before folding the tail into Other.
+    var TOP_N = 8;
+
+    /* ============================================ */
+    /* DATA HYGIENE                                 */
+    /* ============================================ */
+
+    // Known typos and variant spellings in the source sheet. Keys are the
+    // trimmed, lower-cased raw value; values are the canonical label.
+    // These entries become inert once the sheet itself is corrected.
+    var ALIASES = {
+        country: {
+            'antartica': 'Antarctica',
+            'new zeland': 'New Zealand',
+            'usa': 'United States',
+            'us': 'United States',
+            'united states of america': 'United States'
+        },
+        organisation: {
+            'earth sciences nz': 'Earth Sciences New Zealand',
+            'anu': 'Australian National University'
+        },
+        agency: {
+            'sa department for energy and mining and': 'SA Department for Energy and Mining',
+            'sa dept for energy and mining': 'SA Department for Energy and Mining'
+        }
+    };
+
+    var NOT_SPECIFIED = 'Not specified';
+
+    function text(value) {
+        return (value === null || value === undefined) ? '' : String(value).trim();
+    }
+
+    function keyOf(value) {
+        return text(value).toLowerCase();
+    }
+
+    // Canonical display label for a raw value within a domain.
+    function canonical(value, domain) {
+        var raw = text(value);
+        if (!raw) return '';
+        var map = ALIASES[domain];
+        var alias = map && map[raw.toLowerCase()];
+        return alias || raw;
+    }
+
+    // Group a list of raw strings case-insensitively and trimmed.
+    // Returns [{label, value}] sorted by value descending, then label.
+    function tally(values, domain) {
+        var map = Object.create(null);
+        for (var i = 0; i < values.length; i++) {
+            var label = canonical(values[i], domain);
+            if (!label) continue;
+            var k = label.toLowerCase();
+            if (!map[k]) map[k] = { label: label, value: 0 };
+            map[k].value++;
+        }
+        return sortRows(objectValues(map));
+    }
+
+    // Count distinct projects per grouped value, given an extractor that returns
+    // a list of raw strings for a project.
+    function tallyByProject(projects, extract, domain) {
+        var map = Object.create(null);
+        for (var i = 0; i < projects.length; i++) {
+            var raws = extract(projects[i]) || [];
+            var seen = Object.create(null);
+            for (var j = 0; j < raws.length; j++) {
+                var label = canonical(raws[j], domain);
+                if (!label) continue;
+                var k = label.toLowerCase();
+                if (seen[k]) continue;
+                seen[k] = true;
+                if (!map[k]) map[k] = { label: label, value: 0 };
+                map[k].value++;
+            }
+        }
+        return sortRows(objectValues(map));
+    }
+
+    function distinctCount(values, domain) {
+        var seen = Object.create(null);
+        var n = 0;
+        for (var i = 0; i < values.length; i++) {
+            var label = canonical(values[i], domain);
+            if (!label) continue;
+            var k = label.toLowerCase();
+            if (!seen[k]) { seen[k] = true; n++; }
+        }
+        return n;
+    }
+
+    function objectValues(obj) {
+        var out = [];
+        for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) out.push(obj[k]);
+        return out;
+    }
+
+    function sortRows(rows) {
+        return rows.sort(function (a, b) {
+            if (b.value !== a.value) return b.value - a.value;
+            return a.label.localeCompare(b.label);
+        });
+    }
+
+    // Keep the top N rows and fold the remainder into a single "Other" row,
+    // so no chart ever needs a ninth colour or an unreadable tail.
+    function topWithOther(rows, n, otherLabel) {
+        if (rows.length <= n) return rows.slice();
+        var head = rows.slice(0, n);
+        var tail = rows.slice(n);
+        var sum = 0;
+        for (var i = 0; i < tail.length; i++) sum += tail[i].value;
+        if (sum > 0) {
+            head.push({
+                label: (otherLabel || 'Other') + ' (' + tail.length + ')',
+                value: sum,
+                muted: true
+            });
+        }
+        return head;
+    }
+
+    // Turn snake_case / lower case type codes into readable labels.
+    function humanise(value) {
+        var raw = text(value).replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+        if (!raw) return '';
+        var words = raw.split(' ');
+        var ACRONYMS = { fdsn: 'FDSN', doi: 'DOI', das: 'DAS', ror: 'ROR' };
+        for (var i = 0; i < words.length; i++) {
+            var lower = words[i].toLowerCase();
+            if (ACRONYMS[lower]) { words[i] = ACRONYMS[lower]; continue; }
+            words[i] = lower.charAt(0).toUpperCase() + lower.slice(1);
+        }
+        return words.join(' ');
+    }
+
+    function formatNumber(n) {
+        return Number(n).toLocaleString('en-AU');
+    }
+
+    function formatDate(iso) {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function plural(n, one, many) {
+        return n === 1 ? one : (many || one + 's');
+    }
+
+    /* ============================================ */
+    /* STATISTICS                                   */
+    /* ============================================ */
+
+    // Fixed status order and colour assignment. Colour follows the status, never
+    // its rank, so a status that drops out of the data never repaints the others.
+    var STATUS_ORDER = ['Complete', 'In Progress', 'Planning'];
+    var STATUS_COLOR = {
+        'Complete': 'var(--series-complete)',
+        'In Progress': 'var(--series-in-progress)',
+        'Planning': 'var(--series-planning)'
+    };
+    var STATUS_FALLBACK = 'var(--series-muted)';
+
+    function statusColor(name) {
+        return STATUS_COLOR[name] || STATUS_FALLBACK;
+    }
+
+    // Normalise a project's status onto the canonical set where possible.
+    function statusOf(project) {
+        var raw = text(project.status);
+        if (!raw) return NOT_SPECIFIED;
+        for (var i = 0; i < STATUS_ORDER.length; i++) {
+            if (STATUS_ORDER[i].toLowerCase() === raw.toLowerCase()) return STATUS_ORDER[i];
+        }
+        return raw;
+    }
+
+    function startYear(project) {
+        var m = /^(\d{4})/.exec(text(project.startDate));
+        return m ? Number(m[1]) : null;
+    }
+
+    function isDoi(identifier) {
+        var raw = text(identifier);
+        return /doi\.org\//i.test(raw) || /^doi:/i.test(raw) || /^10\.\d{4,9}\//.test(raw);
+    }
+
+    function flatMap(list, fn) {
+        var out = [];
+        for (var i = 0; i < list.length; i++) {
+            var part = fn(list[i]) || [];
+            for (var j = 0; j < part.length; j++) out.push(part[j]);
+        }
+        return out;
+    }
+
+    function computeStats(projects) {
+        var s = {};
+
+        s.projectCount = projects.length;
+
+        /* --- status --- */
+        var statusMap = Object.create(null);
+        for (var i = 0; i < projects.length; i++) {
+            var st = statusOf(projects[i]);
+            statusMap[st] = (statusMap[st] || 0) + 1;
+        }
+        s.statusRows = [];
+        for (var a = 0; a < STATUS_ORDER.length; a++) {
+            if (statusMap[STATUS_ORDER[a]]) {
+                s.statusRows.push({ label: STATUS_ORDER[a], value: statusMap[STATUS_ORDER[a]] });
+                delete statusMap[STATUS_ORDER[a]];
+            }
+        }
+        // Any unexpected status values keep their own row rather than vanishing.
+        s.statusRows = s.statusRows.concat(sortRows(
+            Object.keys(statusMap).map(function (k) { return { label: k, value: statusMap[k] }; })
+        ));
+
+        /* --- timeline --- */
+        var years = [];
+        for (var t = 0; t < projects.length; t++) {
+            var y = startYear(projects[t]);
+            if (y !== null) years.push(y);
+        }
+        s.projectsWithYear = years.length;
+        if (years.length) {
+            var minY = Math.min.apply(null, years);
+            var maxY = Math.max.apply(null, years);
+            var byYear = Object.create(null);
+            for (var yy = minY; yy <= maxY; yy++) {
+                byYear[yy] = { year: yy, total: 0, parts: Object.create(null) };
+            }
+            for (var p = 0; p < projects.length; p++) {
+                var py = startYear(projects[p]);
+                if (py === null) continue;
+                var ps = statusOf(projects[p]);
+                byYear[py].total++;
+                byYear[py].parts[ps] = (byYear[py].parts[ps] || 0) + 1;
+            }
+            s.timeline = [];
+            for (var k = minY; k <= maxY; k++) s.timeline.push(byYear[k]);
+            s.yearRange = { min: minY, max: maxY };
+        } else {
+            s.timeline = [];
+            s.yearRange = null;
+        }
+        // Series present in the timeline, in fixed order.
+        s.timelineSeries = s.statusRows.map(function (r) { return r.label; });
+
+        /* --- methods --- */
+        s.methodRows = tally(flatMap(projects, function (p) { return p.methods; }), 'method');
+
+        /* --- contributors and organisations --- */
+        var contributors = flatMap(projects, function (p) { return p.contributors; });
+        s.contributorCount = distinctCount(
+            contributors.map(function (c) { return c.name; }), 'person'
+        );
+        var orgNames = contributors.map(function (c) { return c.organisation; });
+        s.organisationCount = distinctCount(orgNames, 'organisation');
+
+        // Organisations ranked by the number of distinct projects they appear on.
+        s.orgRows = tallyByProject(projects, function (p) {
+            return (p.contributors || []).map(function (c) { return c.organisation; });
+        }, 'organisation');
+
+        // Distinct researchers per organisation, shown alongside in the tooltip/table.
+        var orgPeople = Object.create(null);
+        for (var c1 = 0; c1 < contributors.length; c1++) {
+            var org = canonical(contributors[c1].organisation, 'organisation');
+            var person = canonical(contributors[c1].name, 'person');
+            if (!org || !person) continue;
+            var ok = org.toLowerCase();
+            if (!orgPeople[ok]) orgPeople[ok] = Object.create(null);
+            orgPeople[ok][person.toLowerCase()] = true;
+        }
+        for (var o = 0; o < s.orgRows.length; o++) {
+            var bucket = orgPeople[s.orgRows[o].label.toLowerCase()];
+            s.orgRows[o].people = bucket ? Object.keys(bucket).length : 0;
+        }
+
+        /* --- funding --- */
+        var fundingRecords = flatMap(projects, function (p) { return p.funding; });
+        var agencyNames = fundingRecords.map(function (f) { return f.agency; });
+        s.agencyCount = distinctCount(agencyNames, 'agency');
+        s.grantCount = agencyNames.filter(function (n) { return !!text(n); }).length;
+        s.funderRows = tally(agencyNames, 'agency');
+        // Distinct projects per agency, for the tooltip/table.
+        var agencyProjects = tallyByProject(projects, function (p) {
+            return (p.funding || []).map(function (f) { return f.agency; });
+        }, 'agency');
+        var agencyProjectMap = Object.create(null);
+        for (var ap = 0; ap < agencyProjects.length; ap++) {
+            agencyProjectMap[agencyProjects[ap].label.toLowerCase()] = agencyProjects[ap].value;
+        }
+        for (var f2 = 0; f2 < s.funderRows.length; f2++) {
+            s.funderRows[f2].projects = agencyProjectMap[s.funderRows[f2].label.toLowerCase()] || 0;
+        }
+
+        /* --- instruments --- */
+        var deployments = 0;
+        var instMap = Object.create(null);
+        for (var i2 = 0; i2 < projects.length; i2++) {
+            var list = projects[i2].instruments || [];
+            for (var j2 = 0; j2 < list.length; j2++) {
+                var nameLabel = canonical(list[j2].name, 'instrument');
+                var count = Number(list[j2].count);
+                if (!isFinite(count) || count < 0) count = 0;
+                deployments += count;
+                if (!nameLabel) continue;
+                var ik = nameLabel.toLowerCase();
+                if (!instMap[ik]) instMap[ik] = { label: nameLabel, value: 0 };
+                instMap[ik].value += count;
+            }
+        }
+        s.deploymentCount = deployments;
+        s.instrumentTypeCount = Object.keys(instMap).length;
+        s.instrumentRows = sortRows(objectValues(instMap));
+
+        /* --- collection sites --- */
+        var sites = 0;
+        var projectsWithSites = 0;
+        for (var i3 = 0; i3 < projects.length; i3++) {
+            var n = (projects[i3].collectionSites || []).length;
+            sites += n;
+            if (n > 0) projectsWithSites++;
+        }
+        s.siteCount = sites;
+        s.projectsWithSites = projectsWithSites;
+
+        /* --- countries --- */
+        var countryValues = [];
+        var missingCountry = 0;
+        for (var i4 = 0; i4 < projects.length; i4++) {
+            var loc = projects[i4].location || {};
+            var country = canonical(loc.country, 'country');
+            if (country) countryValues.push(country);
+            else missingCountry++;
+        }
+        s.countryRows = tally(countryValues, 'country');
+        s.countryCount = s.countryRows.length;
+        if (missingCountry > 0) {
+            s.countryRows = s.countryRows.concat([
+                { label: NOT_SPECIFIED, value: missingCountry, muted: true }
+            ]);
+        }
+
+        /* --- related objects --- */
+        var related = flatMap(projects, function (p) { return p.relatedObjects; });
+        s.outputRows = tally(related.map(function (r) { return humanise(r.type); }), 'outputType');
+        s.outputTotal = related.filter(function (r) { return !!text(r.type); }).length;
+
+        function countType(match) {
+            var n = 0;
+            for (var i = 0; i < related.length; i++) {
+                if (keyOf(related[i].type) === match) n++;
+            }
+            return n;
+        }
+        s.journalArticles = countType('journal_article');
+        s.fdsnNetworks = countType('fdsn_network');
+        s.datasets = countType('dataset');
+
+        var withDoi = 0;
+        for (var i5 = 0; i5 < projects.length; i5++) {
+            var objs = projects[i5].relatedObjects || [];
+            for (var j5 = 0; j5 < objs.length; j5++) {
+                if (isDoi(objs[j5].identifier)) { withDoi++; break; }
+            }
+        }
+        s.projectsWithDoi = withDoi;
+
+        return s;
+    }
+
+    /* ============================================ */
+    /* SVG + LAYOUT HELPERS                         */
+    /* ============================================ */
+
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+
+    function svgEl(name, attrs) {
+        var el = document.createElementNS(SVG_NS, name);
+        if (attrs) for (var k in attrs) {
+            if (Object.prototype.hasOwnProperty.call(attrs, k) && attrs[k] !== null && attrs[k] !== undefined) {
+                el.setAttribute(k, String(attrs[k]));
+            }
+        }
+        return el;
+    }
+
+    function svgText(str, attrs) {
+        var el = svgEl('text', attrs);
+        el.appendChild(document.createTextNode(str));
+        return el;
+    }
+
+    // Shared canvas context for accurate text measurement, so a label is only
+    // drawn inside a mark when it genuinely fits.
+    var measureCtx = (function () {
+        var c = document.createElement('canvas');
+        return c.getContext ? c.getContext('2d') : null;
+    })();
+
+    function measureText(str, fontPx, weight) {
+        if (!measureCtx) return String(str).length * fontPx * 0.55;
+        measureCtx.font = (weight ? weight + ' ' : '') + fontPx + 'px Arial, sans-serif';
+        return measureCtx.measureText(String(str)).width;
+    }
+
+    function truncateToWidth(str, maxWidth, fontPx, weight) {
+        var s = String(str);
+        if (measureText(s, fontPx, weight) <= maxWidth) return s;
+        var ellipsis = '…';
+        var lo = 0, hi = s.length;
+        while (lo < hi) {
+            var mid = Math.ceil((lo + hi) / 2);
+            if (measureText(s.slice(0, mid) + ellipsis, fontPx, weight) <= maxWidth) lo = mid;
+            else hi = mid - 1;
+        }
+        return lo > 0 ? s.slice(0, lo).replace(/[\s,;:.-]+$/, '') + ellipsis : ellipsis;
+    }
+
+    // Path for a bar with one rounded data-end and a square baseline end.
+    // side: 'right' (horizontal bars) or 'top' (columns). 'none' for square.
+    function barPath(x, y, w, h, r, side) {
+        w = Math.max(0, w);
+        h = Math.max(0, h);
+        if (w <= 0 || h <= 0) return '';
+        var rad = Math.max(0, Math.min(r, w / 2, h / 2));
+        if (side === 'right' && rad > 0) {
+            return 'M' + x + ',' + y +
+                'H' + (x + w - rad) +
+                'A' + rad + ',' + rad + ' 0 0 1 ' + (x + w) + ',' + (y + rad) +
+                'V' + (y + h - rad) +
+                'A' + rad + ',' + rad + ' 0 0 1 ' + (x + w - rad) + ',' + (y + h) +
+                'H' + x + 'Z';
+        }
+        if (side === 'top' && rad > 0) {
+            return 'M' + x + ',' + (y + h) +
+                'V' + (y + rad) +
+                'A' + rad + ',' + rad + ' 0 0 1 ' + (x + rad) + ',' + y +
+                'H' + (x + w - rad) +
+                'A' + rad + ',' + rad + ' 0 0 1 ' + (x + w) + ',' + (y + rad) +
+                'V' + (y + h) + 'Z';
+        }
+        return 'M' + x + ',' + y + 'h' + w + 'v' + h + 'h' + (-w) + 'Z';
+    }
+
+    // Round a maximum up to a clean axis top and return tick values.
+    function niceTicks(maxValue, targetCount) {
+        var max = Math.max(1, maxValue);
+        var rough = max / (targetCount || 4);
+        var mag = Math.pow(10, Math.floor(Math.log(rough) / Math.LN10));
+        var candidates = [1, 2, 2.5, 5, 10];
+        var step = mag;
+        for (var i = 0; i < candidates.length; i++) {
+            if (mag * candidates[i] >= rough) { step = mag * candidates[i]; break; }
+            step = mag * candidates[i];
+        }
+        var top = Math.ceil(max / step) * step;
+        var ticks = [];
+        for (var v = 0; v <= top + step / 2; v += step) {
+            ticks.push(Math.round(v * 1000) / 1000);
+        }
+        return { top: top, ticks: ticks, step: step };
+    }
+
+    /* ============================================ */
+    /* TOOLTIP                                      */
+    /* ============================================ */
+
+    var tipEl = document.getElementById('viz-tip');
+    var tipAnchor = null;
+
+    function showTip(rows, anchorRect) {
+        // rows: [{value, label, color}] - values lead, labels follow.
+        while (tipEl.firstChild) tipEl.removeChild(tipEl.firstChild);
+
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            if (i === 0 && !r.color) {
+                var v = document.createElement('span');
+                v.className = 'tip-value';
+                v.textContent = r.value;
+                tipEl.appendChild(v);
+                if (r.label) {
+                    var l = document.createElement('span');
+                    l.className = 'tip-label';
+                    l.textContent = r.label;
+                    tipEl.appendChild(l);
+                }
+            } else {
+                var row = document.createElement('span');
+                row.className = 'tip-row';
+                if (r.color) {
+                    var keyBar = document.createElement('span');
+                    keyBar.className = 'tip-key';
+                    keyBar.style.background = r.color;
+                    row.appendChild(keyBar);
+                }
+                var name = document.createElement('span');
+                name.textContent = r.label;
+                row.appendChild(name);
+                var val = document.createElement('span');
+                val.className = 'tip-row-value';
+                val.textContent = r.value;
+                row.appendChild(val);
+                tipEl.appendChild(row);
+            }
+        }
+
+        tipEl.setAttribute('data-open', 'true');
+        tipEl.setAttribute('aria-hidden', 'false');
+        positionTip(anchorRect);
+    }
+
+    function positionTip(rect) {
+        var pad = 10;
+        var w = tipEl.offsetWidth;
+        var h = tipEl.offsetHeight;
+        var left = rect.left + rect.width / 2 - w / 2;
+        var top = rect.top - h - 8;
+        if (top < pad) top = rect.bottom + 8;
+        if (left < pad) left = pad;
+        if (left + w > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - pad - w);
+        if (top + h > window.innerHeight - pad) top = Math.max(pad, window.innerHeight - pad - h);
+        tipEl.style.left = Math.round(left) + 'px';
+        tipEl.style.top = Math.round(top) + 'px';
+    }
+
+    function hideTip() {
+        tipEl.setAttribute('data-open', 'false');
+        tipEl.setAttribute('aria-hidden', 'true');
+        if (tipAnchor) {
+            tipAnchor.classList.remove('is-active');
+            tipAnchor = null;
+        }
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') hideTip();
+    });
+    window.addEventListener('scroll', hideTip, true);
+    window.addEventListener('resize', hideTip);
+
+    // Wire hover + keyboard focus on a mark group. Focus shows exactly what
+    // hover shows; the table view keeps every value reachable without either.
+    function attachMark(group, rowsFn) {
+        group.addEventListener('pointerenter', function () {
+            tipAnchor = group;
+            showTip(rowsFn(), group.getBoundingClientRect());
+        });
+        group.addEventListener('pointermove', function () {
+            if (tipAnchor === group) positionTip(group.getBoundingClientRect());
+        });
+        group.addEventListener('pointerleave', hideTip);
+        group.addEventListener('focus', function () {
+            tipAnchor = group;
+            showTip(rowsFn(), group.getBoundingClientRect());
+        });
+        group.addEventListener('blur', hideTip);
+    }
+
+    // Roving tabindex: each chart is a single tab stop; arrow keys move between
+    // marks. Keeps a data-dense page navigable without dozens of tab presses.
+    function enableRovingFocus(svg) {
+        var marks = Array.prototype.slice.call(svg.querySelectorAll('.mark-group'));
+        if (!marks.length) return;
+        for (var i = 0; i < marks.length; i++) {
+            marks[i].setAttribute('tabindex', i === 0 ? '0' : '-1');
+        }
+        svg.addEventListener('keydown', function (e) {
+            var current = document.activeElement;
+            var idx = marks.indexOf(current);
+            if (idx === -1) return;
+            var next = null;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = idx + 1;
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = idx - 1;
+            else if (e.key === 'Home') next = 0;
+            else if (e.key === 'End') next = marks.length - 1;
+            if (next === null) return;
+            e.preventDefault();
+            next = Math.max(0, Math.min(marks.length - 1, next));
+            marks[idx].setAttribute('tabindex', '-1');
+            marks[next].setAttribute('tabindex', '0');
+            marks[next].focus();
+        });
+    }
+
+    /* ============================================ */
+    /* CHART: HORIZONTAL BAR LIST                   */
+    /* ============================================ */
+
+    // One series, one colour. Bars are never coloured by their own value.
+    function drawBarList(container, config) {
+        var rows = config.rows || [];
+        var width = Math.max(280, container.clientWidth || 320);
+        var narrow = width < 520;
+
+        var LABEL_FONT = 12;
+        var VALUE_FONT = 12;
+        var BAR_H = narrow ? 14 : 16;
+        var ROW_H = narrow ? 44 : 30;
+        var TOP_PAD = 4;
+        var BOTTOM_PAD = 4;
+
+        if (!rows.length) {
+            container.textContent = '';
+            var empty = document.createElement('p');
+            empty.className = 'card-note';
+            empty.textContent = 'No data recorded.';
+            container.appendChild(empty);
+            return;
+        }
+
+        var maxValue = 0;
+        for (var i = 0; i < rows.length; i++) maxValue = Math.max(maxValue, rows[i].value);
+        if (maxValue <= 0) maxValue = 1;
+
+        var valueStrings = rows.map(function (r) { return formatNumber(r.value); });
+        var valueW = 0;
+        for (var v = 0; v < valueStrings.length; v++) {
+            valueW = Math.max(valueW, measureText(valueStrings[v], VALUE_FONT, 'bold'));
+        }
+        valueW = Math.ceil(valueW) + 8;
+
+        var labelW, plotX, plotW;
+        if (narrow) {
+            labelW = width;
+            plotX = 0;
+            plotW = Math.max(60, width - valueW - 6);
+        } else {
+            var widest = 0;
+            for (var l = 0; l < rows.length; l++) {
+                widest = Math.max(widest, measureText(rows[l].label, LABEL_FONT));
+            }
+            labelW = Math.min(Math.ceil(widest) + 10, Math.round(width * 0.46));
+            plotX = labelW;
+            plotW = Math.max(60, width - labelW - valueW - 6);
+        }
+
+        var height = TOP_PAD + rows.length * ROW_H + BOTTOM_PAD;
+
+        var svg = svgEl('svg', {
+            'class': 'chart',
+            width: width,
+            height: height,
+            viewBox: '0 0 ' + width + ' ' + height,
+            role: 'group',
+            'aria-label': config.summary || ''
+        });
+
+        // Baseline the bars grow from.
+        svg.appendChild(svgEl('line', {
+            x1: plotX + 0.5, y1: TOP_PAD, x2: plotX + 0.5, y2: height - BOTTOM_PAD,
+            stroke: 'var(--chart-axis)', 'stroke-width': 1
+        }));
+
+        for (var r = 0; r < rows.length; r++) {
+            var row = rows[r];
+            var rowTop = TOP_PAD + r * ROW_H;
+            var barY = narrow ? rowTop + 20 : rowTop + (ROW_H - BAR_H) / 2;
+            var barW = Math.max(row.value > 0 ? 2 : 0, (row.value / maxValue) * plotW);
+            var color = row.muted ? 'var(--series-muted)' : (config.color || 'var(--series-single)');
+
+            var g = svgEl('g', { 'class': 'mark-group', role: 'img' });
+            var ariaValue = formatNumber(row.value) + ' ' + (config.unit || '');
+            g.setAttribute('aria-label', row.label + ': ' + ariaValue.trim() +
+                (row.aria ? '. ' + row.aria : ''));
+
+            // Generous, invisible hit area covering the whole row.
+            g.appendChild(svgEl('rect', {
+                x: 0, y: rowTop, width: width, height: ROW_H, fill: 'transparent'
+            }));
+
+            g.appendChild(svgEl('rect', {
+                'class': 'focus-halo',
+                x: 1, y: rowTop + 1, width: width - 2, height: ROW_H - 2, rx: 4
+            }));
+
+            if (narrow) {
+                g.appendChild(svgText(truncateToWidth(row.label, width - 4, LABEL_FONT), {
+                    x: 0, y: rowTop + 13,
+                    'font-size': LABEL_FONT, fill: 'var(--chart-ink-muted)'
+                }));
+            } else {
+                g.appendChild(svgText(truncateToWidth(row.label, labelW - 10, LABEL_FONT), {
+                    x: labelW - 10, y: barY + BAR_H / 2 + 4,
+                    'text-anchor': 'end',
+                    'font-size': LABEL_FONT, fill: 'var(--chart-ink-muted)'
+                }));
+            }
+
+            if (barW > 0) {
+                g.appendChild(svgEl('path', {
+                    d: barPath(plotX + 1, barY, barW, BAR_H, 4, 'right'),
+                    fill: color
+                }));
+            }
+
+            // Value sits at the bar tip.
+            g.appendChild(svgText(valueStrings[r], {
+                x: plotX + 1 + barW + 6, y: barY + BAR_H / 2 + 4,
+                'font-size': VALUE_FONT, 'font-weight': 'bold',
+                fill: 'var(--chart-ink-strong)'
+            }));
+
+            (function (rowRef) {
+                attachMark(g, function () {
+                    var out = [{
+                        value: formatNumber(rowRef.value) + (config.unit ? ' ' + config.unit : ''),
+                        label: rowRef.label
+                    }];
+                    if (rowRef.secondary) out.push({ label: rowRef.secondary.label, value: rowRef.secondary.value });
+                    return out;
+                });
+            })(row);
+
+            svg.appendChild(g);
+        }
+
+        container.textContent = '';
+        container.appendChild(svg);
+        enableRovingFocus(svg);
+    }
+
+    /* ============================================ */
+    /* CHART: 100% STACKED BAR (part to whole)      */
+    /* ============================================ */
+
+    function drawStackedShare(container, config) {
+        var rows = config.rows || [];
+        var width = Math.max(280, container.clientWidth || 320);
+        var BAR_H = 24; // marks stay thin - the data is the only loud thing
+        var height = BAR_H + 8;
+
+        var total = 0;
+        for (var i = 0; i < rows.length; i++) total += rows[i].value;
+        if (total <= 0) {
+            container.textContent = '';
+            return;
+        }
+
+        var svg = svgEl('svg', {
+            'class': 'chart',
+            width: width, height: height,
+            viewBox: '0 0 ' + width + ' ' + height,
+            role: 'group',
+            'aria-label': config.summary || ''
+        });
+
+        var GAP = 2; // surface gap between segments - white does the separating
+        var usable = width - GAP * Math.max(0, rows.length - 1);
+        var x = 0;
+
+        for (var r = 0; r < rows.length; r++) {
+            var row = rows[r];
+            var segW = (row.value / total) * usable;
+            var isFirst = r === 0;
+            var isLast = r === rows.length - 1;
+            var color = config.colorFor ? config.colorFor(row.label) : 'var(--series-single)';
+            var pct = Math.round((row.value / total) * 100);
+
+            var g = svgEl('g', { 'class': 'mark-group', role: 'img' });
+            g.setAttribute('aria-label', row.label + ': ' + formatNumber(row.value) + ' ' +
+                plural(row.value, 'project') + ', ' + pct + ' per cent of the portfolio');
+
+            // Rounded outer ends only; interior joins stay square so the 2px gap reads clean.
+            var d;
+            if (isFirst && isLast) d = barPath(x, 4, segW, BAR_H, 6, 'right');
+            else if (isFirst) d = 'M' + (x + 6) + ',4 H' + (x + segW) + ' V' + (4 + BAR_H) +
+                ' H' + (x + 6) + ' A6,6 0 0 1 ' + x + ',' + (4 + BAR_H - 6) +
+                ' V10 A6,6 0 0 1 ' + (x + 6) + ',4 Z';
+            else if (isLast) d = barPath(x, 4, segW, BAR_H, 6, 'right');
+            else d = barPath(x, 4, segW, BAR_H, 0, 'none');
+
+            g.appendChild(svgEl('path', { d: d, fill: color }));
+
+            g.appendChild(svgEl('rect', {
+                'class': 'focus-halo',
+                x: x - 1, y: 2, width: segW + 2, height: BAR_H + 4, rx: 6
+            }));
+
+            // Only label inside the segment when it genuinely fits with padding.
+            var inner = formatNumber(row.value);
+            if (measureText(inner, 13, 'bold') + 16 <= segW) {
+                g.appendChild(svgText(inner, {
+                    x: x + segW / 2, y: 4 + BAR_H / 2 + 5,
+                    'text-anchor': 'middle',
+                    'font-size': 13, 'font-weight': 'bold',
+                    fill: '#ffffff'
+                }));
+            }
+
+            (function (rowRef, pctRef) {
+                attachMark(g, function () {
+                    return [{
+                        value: formatNumber(rowRef.value) + ' ' + plural(rowRef.value, 'project'),
+                        label: rowRef.label + ' · ' + pctRef + '% of the portfolio'
+                    }];
+                });
+            })(row, pct);
+
+            svg.appendChild(g);
+            x += segW + GAP;
+        }
+
+        container.textContent = '';
+        container.appendChild(svg);
+        enableRovingFocus(svg);
+    }
+
+    /* ============================================ */
+    /* CHART: STACKED COLUMNS OVER TIME             */
+    /* ============================================ */
+
+    function drawTimeline(container, config) {
+        var bins = config.bins || [];
+        var series = config.series || [];
+        if (!bins.length) { container.textContent = ''; return; }
+
+        var AXIS_W = 34;
+        var TOP_PAD = 12;
+        var PLOT_H = 200;
+        var XAXIS_H = 26;
+        var BAND = 30;
+        var BAR_W = Math.min(24, BAND - 8);
+
+        var available = Math.max(280, container.clientWidth || 320);
+        var plotW = Math.max(available - AXIS_W - 8, bins.length * BAND);
+        var band = plotW / bins.length;
+        var width = AXIS_W + plotW + 8;
+        var height = TOP_PAD + PLOT_H + XAXIS_H;
+
+        var maxTotal = 0;
+        for (var i = 0; i < bins.length; i++) maxTotal = Math.max(maxTotal, bins[i].total);
+        var scale = niceTicks(maxTotal, 4);
+        var yOf = function (value) {
+            return TOP_PAD + PLOT_H - (value / scale.top) * PLOT_H;
+        };
+
+        var svg = svgEl('svg', {
+            'class': 'chart',
+            width: width, height: height,
+            viewBox: '0 0 ' + width + ' ' + height,
+            role: 'group',
+            'aria-label': config.summary || ''
+        });
+
+        // Gridlines: solid hairlines, one step off the surface.
+        for (var t = 0; t < scale.ticks.length; t++) {
+            var ty = Math.round(yOf(scale.ticks[t])) + 0.5;
+            svg.appendChild(svgEl('line', {
+                x1: AXIS_W, y1: ty, x2: AXIS_W + plotW, y2: ty,
+                stroke: scale.ticks[t] === 0 ? 'var(--chart-axis)' : 'var(--chart-grid)',
+                'stroke-width': 1
+            }));
+            svg.appendChild(svgText(formatNumber(scale.ticks[t]), {
+                x: AXIS_W - 8, y: ty + 4,
+                'text-anchor': 'end', 'font-size': 11,
+                fill: 'var(--chart-ink-muted)'
+            }));
+        }
+
+        var GAP = 2; // surface gap between stacked segments
+
+        for (var b = 0; b < bins.length; b++) {
+            var bin = bins[b];
+            var bx = AXIS_W + b * band + (band - BAR_W) / 2;
+
+            var g = svgEl('g', { 'class': 'mark-group', role: 'img' });
+
+            g.appendChild(svgEl('rect', {
+                x: AXIS_W + b * band, y: TOP_PAD,
+                width: band, height: PLOT_H + XAXIS_H,
+                fill: 'transparent'
+            }));
+            g.appendChild(svgEl('rect', {
+                'class': 'focus-halo',
+                x: AXIS_W + b * band + 1, y: TOP_PAD - 2,
+                width: band - 2, height: PLOT_H + XAXIS_H - 2, rx: 4
+            }));
+
+            // Stack from the baseline upward, in fixed series order.
+            var cursor = 0;
+            var present = [];
+            for (var s = 0; s < series.length; s++) {
+                var name = series[s];
+                var val = bin.parts[name] || 0;
+                if (val > 0) present.push({ name: name, value: val });
+            }
+            for (var k = 0; k < present.length; k++) {
+                var seg = present[k];
+                var segBottom = yOf(cursor);
+                var segTop = yOf(cursor + seg.value);
+                var segH = segBottom - segTop;
+                var isTop = (k === present.length - 1);
+                // Take the 2px surface gap off the top of every segment but the topmost.
+                var drawH = isTop ? segH : Math.max(0, segH - GAP);
+                var drawY = segTop + (isTop ? 0 : GAP);
+                if (drawH > 0) {
+                    g.appendChild(svgEl('path', {
+                        d: barPath(bx, drawY, BAR_W, drawH, isTop ? 4 : 0, isTop ? 'top' : 'none'),
+                        fill: statusColor(seg.name)
+                    }));
+                }
+                cursor += seg.value;
+            }
+
+            // Year label - one per band, the band is wide enough to hold it.
+            svg.appendChild(svgText(String(bin.year), {
+                x: AXIS_W + b * band + band / 2, y: TOP_PAD + PLOT_H + 17,
+                'text-anchor': 'middle', 'font-size': 11,
+                fill: 'var(--chart-ink-muted)'
+            }));
+
+            var ariaParts = [];
+            for (var ap = 0; ap < present.length; ap++) {
+                ariaParts.push(formatNumber(present[ap].value) + ' ' + present[ap].name);
+            }
+            g.setAttribute('aria-label', bin.year + ': ' + formatNumber(bin.total) + ' ' +
+                plural(bin.total, 'project') + (ariaParts.length ? ' (' + ariaParts.join(', ') + ')' : ''));
+
+            (function (binRef, presentRef) {
+                attachMark(g, function () {
+                    var out = [{
+                        value: formatNumber(binRef.total) + ' ' + plural(binRef.total, 'project'),
+                        label: 'Started in ' + binRef.year
+                    }];
+                    for (var i = presentRef.length - 1; i >= 0; i--) {
+                        out.push({
+                            label: presentRef[i].name,
+                            value: formatNumber(presentRef[i].value),
+                            color: statusColor(presentRef[i].name)
+                        });
+                    }
+                    return out;
+                });
+            })(bin, present);
+
+            svg.appendChild(g);
+        }
+
+        container.textContent = '';
+        container.appendChild(svg);
+        enableRovingFocus(svg);
+        return { overflow: width > available + 1 };
+    }
+
+    /* ============================================ */
+    /* TABLES                                       */
+    /* ============================================ */
+
+    function buildTable(container, config) {
+        var table = document.createElement('table');
+        table.className = 'data-table';
+
+        if (config.caption) {
+            var cap = document.createElement('caption');
+            cap.textContent = config.caption;
+            table.appendChild(cap);
+        }
+
+        var thead = document.createElement('thead');
+        var htr = document.createElement('tr');
+        for (var h = 0; h < config.columns.length; h++) {
+            var th = document.createElement('th');
+            th.scope = 'col';
+            th.textContent = config.columns[h].label;
+            if (config.columns[h].num) th.className = 'num';
+            htr.appendChild(th);
+        }
+        thead.appendChild(htr);
+        table.appendChild(thead);
+
+        var tbody = document.createElement('tbody');
+        for (var r = 0; r < config.rows.length; r++) {
+            var tr = document.createElement('tr');
+            for (var c = 0; c < config.columns.length; c++) {
+                var cell = document.createElement(c === 0 ? 'th' : 'td');
+                if (c === 0) cell.scope = 'row';
+                // Labels come from the spreadsheet - always inserted as text.
+                cell.textContent = config.rows[r][c];
+                if (config.columns[c].num) cell.className = 'num';
+                tr.appendChild(cell);
+            }
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+
+        container.textContent = '';
+        container.appendChild(table);
+    }
+
+    /* ============================================ */
+    /* LEGEND                                       */
+    /* ============================================ */
+
+    function buildLegend(container, items) {
+        container.textContent = '';
+        for (var i = 0; i < items.length; i++) {
+            var item = document.createElement('span');
+            item.className = 'legend-item';
+
+            var swatch = document.createElement('span');
+            swatch.className = 'legend-swatch';
+            swatch.style.background = items[i].color;
+            item.appendChild(swatch);
+
+            var label = document.createElement('span');
+            label.textContent = items[i].label;
+            item.appendChild(label);
+
+            if (items[i].count !== undefined) {
+                var count = document.createElement('span');
+                count.className = 'legend-count';
+                count.textContent = formatNumber(items[i].count);
+                item.appendChild(count);
+            }
+            container.appendChild(item);
+        }
+    }
+
+    /* ============================================ */
+    /* KPI TILES                                    */
+    /* ============================================ */
+
+    function buildKpis(container, tiles) {
+        container.textContent = '';
+        for (var i = 0; i < tiles.length; i++) {
+            var tile = document.createElement('div');
+            tile.className = 'kpi';
+
+            var value = document.createElement('span');
+            value.className = 'kpi-value';
+            value.textContent = formatNumber(tiles[i].value);
+            tile.appendChild(value);
+
+            var label = document.createElement('span');
+            label.className = 'kpi-label';
+            label.textContent = tiles[i].label;
+            tile.appendChild(label);
+
+            if (tiles[i].sub) {
+                var sub = document.createElement('span');
+                sub.className = 'kpi-sub';
+                sub.textContent = tiles[i].sub;
+                tile.appendChild(sub);
+            }
+            container.appendChild(tile);
+        }
+    }
+
+    /* ============================================ */
+    /* RENDER                                       */
+    /* ============================================ */
+
+    var stats = null;
+    var redrawFns = [];
+
+    function byId(id) { return document.getElementById(id); }
+
+    function render(payload) {
+        var projects = payload.data;
+        stats = computeStats(projects);
+        redrawFns = [];
+
+        /* ---- data currency ---- */
+        var exportedText = formatDate(payload.exported);
+        if (exportedText) {
+            byId('exported-date').textContent = exportedText;
+            byId('data-currency').hidden = false;
+            byId('footer-currency').textContent =
+                'Figures on this page are calculated from the ANSIR project register, ' +
+                'current as of ' + exportedText + '.';
+        } else {
+            byId('footer-currency').textContent =
+                'Figures on this page are calculated from the ANSIR project register.';
+        }
+
+        /* ---- KPI tiles ---- */
+        buildKpis(byId('kpi-grid'), [
+            {
+                value: stats.projectCount,
+                label: 'Research projects',
+                sub: 'on the ANSIR register'
+            },
+            {
+                value: stats.contributorCount,
+                label: 'Contributing researchers',
+                sub: 'named across all projects'
+            },
+            {
+                value: stats.organisationCount,
+                label: 'Partner organisations',
+                sub: 'universities, agencies and industry'
+            },
+            {
+                value: stats.agencyCount,
+                label: 'Funding bodies',
+                sub: formatNumber(stats.grantCount) + ' ' + plural(stats.grantCount, 'grant') + ' recorded'
+            },
+            {
+                value: stats.siteCount,
+                label: 'Collection sites',
+                sub: 'across ' + formatNumber(stats.projectsWithSites) + ' ' + plural(stats.projectsWithSites, 'project')
+            },
+            {
+                value: stats.deploymentCount,
+                label: 'Instrument deployments',
+                sub: formatNumber(stats.instrumentTypeCount) + ' distinct instrument types'
+            },
+            {
+                value: stats.journalArticles,
+                label: 'Journal articles',
+                sub: formatNumber(stats.projectsWithDoi) + ' projects with a registered DOI'
+            },
+            {
+                value: stats.fdsnNetworks,
+                label: 'FDSN networks',
+                sub: 'registered seismic networks'
+            }
+        ]);
+
+        /* ---- status ---- */
+        var completeRow = null;
+        for (var sr = 0; sr < stats.statusRows.length; sr++) {
+            if (stats.statusRows[sr].label === 'Complete') completeRow = stats.statusRows[sr];
+        }
+        byId('status-note').textContent = completeRow
+            ? formatNumber(completeRow.value) + ' of ' + formatNumber(stats.projectCount) +
+              ' projects (' + Math.round((completeRow.value / stats.projectCount) * 100) +
+              ' per cent) have completed their programme of work.'
+            : 'Share of the portfolio in each status.';
+
+        var statusSummary = 'Share of projects by status: ' + stats.statusRows.map(function (r) {
+            return r.label + ' ' + formatNumber(r.value);
+        }).join(', ') + '.';
+
+        registerChart(byId('chart-status'), function (el) {
+            drawStackedShare(el, {
+                rows: stats.statusRows,
+                colorFor: statusColor,
+                summary: statusSummary
+            });
+        });
+
+        buildLegend(byId('legend-status'), stats.statusRows.map(function (r) {
+            return { label: r.label, color: statusColor(r.label), count: r.value };
+        }));
+
+        buildTable(byId('table-status'), {
+            caption: 'Projects by status',
+            columns: [{ label: 'Status' }, { label: 'Projects', num: true }, { label: 'Share', num: true }],
+            rows: stats.statusRows.map(function (r) {
+                return [r.label, formatNumber(r.value),
+                        Math.round((r.value / stats.projectCount) * 100) + '%'];
+            })
+        });
+
+        /* ---- timeline ---- */
+        var timelineSummary = stats.yearRange
+            ? 'Projects by start year from ' + stats.yearRange.min + ' to ' + stats.yearRange.max +
+              ', segmented by current status. ' + formatNumber(stats.projectsWithYear) +
+              ' projects have a recorded start date.'
+            : 'No start dates recorded.';
+
+        registerChart(byId('chart-timeline'), function (el) {
+            var result = drawTimeline(el, {
+                bins: stats.timeline,
+                series: stats.timelineSeries,
+                summary: timelineSummary
+            });
+            var hint = byId('timeline-hint');
+            if (hint) hint.hidden = !(result && result.overflow);
+        });
+
+        buildLegend(byId('legend-timeline'), stats.statusRows.map(function (r) {
+            return { label: r.label, color: statusColor(r.label) };
+        }));
+
+        var timelineCols = [{ label: 'Start year' }].concat(
+            stats.timelineSeries.map(function (n) { return { label: n, num: true }; })
+        ).concat([{ label: 'Total', num: true }]);
+
+        buildTable(byId('table-timeline'), {
+            caption: 'Projects by start year and status',
+            columns: timelineCols,
+            rows: stats.timeline.map(function (bin) {
+                var row = [String(bin.year)];
+                for (var i = 0; i < stats.timelineSeries.length; i++) {
+                    row.push(formatNumber(bin.parts[stats.timelineSeries[i]] || 0));
+                }
+                row.push(formatNumber(bin.total));
+                return row;
+            })
+        });
+
+        /* ---- methods ---- */
+        registerChart(byId('chart-methods'), function (el) {
+            drawBarList(el, {
+                rows: stats.methodRows,
+                unit: plural(2, 'project'),
+                summary: 'Projects by geophysical method: ' + stats.methodRows.map(function (r) {
+                    return r.label + ' ' + formatNumber(r.value);
+                }).join(', ') + '.'
+            });
+        });
+
+        buildTable(byId('table-methods'), {
+            caption: 'Projects by geophysical method',
+            columns: [{ label: 'Method' }, { label: 'Projects', num: true }],
+            rows: stats.methodRows.map(function (r) { return [r.label, formatNumber(r.value)]; })
+        });
+
+        /* ---- instruments ---- */
+        var instrumentTop = topWithOther(stats.instrumentRows, TOP_N, 'All other instrument types');
+        registerChart(byId('chart-instruments'), function (el) {
+            drawBarList(el, {
+                rows: instrumentTop,
+                unit: 'deployments',
+                summary: 'Most deployed instrument types, of ' +
+                    formatNumber(stats.instrumentTypeCount) + ' types and ' +
+                    formatNumber(stats.deploymentCount) + ' deployments in total: ' +
+                    instrumentTop.map(function (r) {
+                        return r.label + ' ' + formatNumber(r.value);
+                    }).join(', ') + '.'
+            });
+        });
+
+        buildTable(byId('table-instruments'), {
+            caption: 'Instrument deployments by type (all ' +
+                formatNumber(stats.instrumentTypeCount) + ' types)',
+            columns: [{ label: 'Instrument type' }, { label: 'Deployments', num: true }],
+            rows: stats.instrumentRows.map(function (r) { return [r.label, formatNumber(r.value)]; })
+        });
+
+        /* ---- organisations ---- */
+        var orgTop = topWithOther(stats.orgRows, TOP_N, 'All other organisations');
+        for (var ot = 0; ot < orgTop.length; ot++) {
+            if (orgTop[ot].people !== undefined) {
+                orgTop[ot].secondary = {
+                    label: 'Named researchers',
+                    value: formatNumber(orgTop[ot].people)
+                };
+                orgTop[ot].aria = formatNumber(orgTop[ot].people) + ' named ' +
+                    plural(orgTop[ot].people, 'researcher');
+            }
+        }
+        registerChart(byId('chart-orgs'), function (el) {
+            drawBarList(el, {
+                rows: orgTop,
+                unit: plural(2, 'project'),
+                summary: 'Organisations by number of projects contributed to, of ' +
+                    formatNumber(stats.organisationCount) + ' organisations in total: ' +
+                    orgTop.map(function (r) {
+                        return r.label + ' ' + formatNumber(r.value);
+                    }).join(', ') + '.'
+            });
+        });
+
+        buildTable(byId('table-orgs'), {
+            caption: 'Organisations by projects contributed to (all ' +
+                formatNumber(stats.organisationCount) + ')',
+            columns: [{ label: 'Organisation' }, { label: 'Projects', num: true },
+                      { label: 'Researchers', num: true }],
+            rows: stats.orgRows.map(function (r) {
+                return [r.label, formatNumber(r.value), formatNumber(r.people || 0)];
+            })
+        });
+
+        /* ---- funders ---- */
+        var funderTop = topWithOther(stats.funderRows, TOP_N, 'All other funding bodies');
+        for (var ft = 0; ft < funderTop.length; ft++) {
+            if (funderTop[ft].projects !== undefined) {
+                funderTop[ft].secondary = {
+                    label: 'Projects supported',
+                    value: formatNumber(funderTop[ft].projects)
+                };
+                funderTop[ft].aria = formatNumber(funderTop[ft].projects) + ' ' +
+                    plural(funderTop[ft].projects, 'project') + ' supported';
+            }
+        }
+        registerChart(byId('chart-funders'), function (el) {
+            drawBarList(el, {
+                rows: funderTop,
+                unit: plural(2, 'grant'),
+                summary: 'Funding agencies by grants recorded, of ' +
+                    formatNumber(stats.agencyCount) + ' agencies in total: ' +
+                    funderTop.map(function (r) {
+                        return r.label + ' ' + formatNumber(r.value);
+                    }).join(', ') + '.'
+            });
+        });
+
+        buildTable(byId('table-funders'), {
+            caption: 'Funding agencies by grants recorded (all ' +
+                formatNumber(stats.agencyCount) + ')',
+            columns: [{ label: 'Funding agency' }, { label: 'Grants', num: true },
+                      { label: 'Projects', num: true }],
+            rows: stats.funderRows.map(function (r) {
+                return [r.label, formatNumber(r.value), formatNumber(r.projects || 0)];
+            })
+        });
+
+        /* ---- countries ---- */
+        byId('geography-note').textContent =
+            'Fieldwork and study areas span ' + formatNumber(stats.countryCount) + ' ' +
+            plural(stats.countryCount, 'country', 'countries and territories') + '.';
+
+        registerChart(byId('chart-countries'), function (el) {
+            drawBarList(el, {
+                rows: stats.countryRows,
+                unit: plural(2, 'project'),
+                summary: 'Projects by country or territory: ' + stats.countryRows.map(function (r) {
+                    return r.label + ' ' + formatNumber(r.value);
+                }).join(', ') + '.'
+            });
+        });
+
+        buildTable(byId('table-countries'), {
+            caption: 'Projects by country or territory',
+            columns: [{ label: 'Country or territory' }, { label: 'Projects', num: true }],
+            rows: stats.countryRows.map(function (r) { return [r.label, formatNumber(r.value)]; })
+        });
+
+        /* ---- outputs ---- */
+        byId('outputs-note').textContent =
+            formatNumber(stats.outputTotal) + ' registered ' + plural(stats.outputTotal, 'output') +
+            ' are linked to ANSIR projects, including publications, datasets and seismic networks.';
+
+        registerChart(byId('chart-outputs'), function (el) {
+            drawBarList(el, {
+                rows: stats.outputRows,
+                unit: plural(2, 'record'),
+                summary: 'Registered outputs by type: ' + stats.outputRows.map(function (r) {
+                    return r.label + ' ' + formatNumber(r.value);
+                }).join(', ') + '.'
+            });
+        });
+
+        buildTable(byId('table-outputs'), {
+            caption: 'Registered outputs by type',
+            columns: [{ label: 'Output type' }, { label: 'Records', num: true }],
+            rows: stats.outputRows.map(function (r) { return [r.label, formatNumber(r.value)]; })
+        });
+
+        /* ---- reveal ---- */
+        byId('loading-state').hidden = true;
+        byId('error-state').hidden = true;
+        byId('stats-root').hidden = false;
+
+        drawAll();
+        observeResize();
+        sendHeightToParent();
+    }
+
+    function registerChart(el, drawFn) {
+        if (!el) return;
+        redrawFns.push(function () { drawFn(el); });
+    }
+
+    var drawScheduled = false;
+    function drawAll() {
+        for (var i = 0; i < redrawFns.length; i++) redrawFns[i]();
+    }
+
+    function scheduleDraw() {
+        if (drawScheduled) return;
+        drawScheduled = true;
+        window.requestAnimationFrame(function () {
+            drawScheduled = false;
+            hideTip();
+            drawAll();
+            sendHeightToParent();
+        });
+    }
+
+    var lastWidth = window.innerWidth;
+    function observeResize() {
+        window.addEventListener('resize', function () {
+            // Only redraw on width changes - height changes come from our own draws.
+            if (window.innerWidth === lastWidth) return;
+            lastWidth = window.innerWidth;
+            scheduleDraw();
+        });
+        // Details panels change layout width for nothing, but opening one changes
+        // page height, so keep the parent iframe in step.
+        var details = document.querySelectorAll('details.table-view');
+        for (var i = 0; i < details.length; i++) {
+            details[i].addEventListener('toggle', sendHeightToParent);
+        }
+    }
+
+    /* ============================================ */
+    /* IFRAME AUTO-RESIZE                           */
+    /* Matches the convention used by ../index.html */
+    /* ============================================ */
+
+    var lastSentHeight = 0;
+    function sendHeightToParent() {
+        if (!IS_EMBEDDED) return;
+        try {
+            // Measure the body, not documentElement: inside an iframe the
+            // documentElement is at least as tall as the iframe itself, so
+            // including it means the reported height can grow but never
+            // shrink (e.g. after closing a data table).
+            var height = Math.max(
+                document.body.scrollHeight,
+                document.body.offsetHeight
+            );
+            if (!height) height = document.documentElement.scrollHeight;
+            if (height !== lastSentHeight && height > 0) {
+                lastSentHeight = height;
+                window.parent.postMessage({
+                    type: 'ansir-resize',
+                    height: height
+                }, PARENT_ORIGIN);
+            }
+        } catch (e) {
+            // Silently fail if cross-origin restrictions prevent messaging
+        }
+    }
+
+    if (IS_EMBEDDED && typeof ResizeObserver !== 'undefined') {
+        var resizeObserver = new ResizeObserver(function () {
+            sendHeightToParent();
+        });
+        resizeObserver.observe(document.documentElement);
+        resizeObserver.observe(document.body);
+    }
+
+    if (IS_EMBEDDED) {
+        window.addEventListener('load', sendHeightToParent);
+        // Poll briefly after load to catch late-rendering content.
+        var pollCount = 0;
+        var heightPoll = setInterval(function () {
+            sendHeightToParent();
+            pollCount++;
+            if (pollCount >= 20) clearInterval(heightPoll); // 20 x 500ms = 10s
+        }, 500);
+    }
+
+    /* ============================================ */
+    /* FETCH + BOOT                                 */
+    /* ============================================ */
+
+    function showError(detail) {
+        byId('loading-state').hidden = true;
+        byId('stats-root').hidden = true;
+        byId('error-state').hidden = false;
+        byId('error-detail').textContent = detail ? 'Technical detail: ' + detail : '';
+        sendHeightToParent();
+    }
+
+    function load() {
+        byId('error-state').hidden = true;
+        byId('loading-state').hidden = false;
+
+        fetch(DATA_URL, { cache: 'default' })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ' loading the project dataset');
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                // Support both the wrapped envelope and a plain array.
+                if (Array.isArray(payload)) payload = { data: payload };
+                if (!payload || !Array.isArray(payload.data)) {
+                    throw new Error('The project dataset is not in the expected format');
+                }
+                if (!payload.data.length) {
+                    throw new Error('The project dataset is empty');
+                }
+                render(payload);
+            })
+            .catch(function (err) {
+                showError(err && err.message ? err.message : String(err));
+            });
+    }
+
+    byId('retry-button').addEventListener('click', load);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', load);
+    } else {
+        load();
+    }
+})();
+</script>
+
+</body>
+</html>
