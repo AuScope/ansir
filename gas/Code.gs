@@ -177,6 +177,57 @@ var TIMEZONE = 'Australia/Sydney';
 /** Display name on outgoing mail. */
 var MAIL_FROM_NAME = 'ANSIR Equipment Loans';
 
+/**
+ * The address outgoing mail is sent FROM, for continuity across staff changes.
+ *
+ * Apps Script cannot invent a sender: mail can only leave AS this address if
+ * the account that deployed the script either IS this account, or has it as a
+ * verified Gmail "Send mail as" alias (Gmail Settings > Accounts > Send mail
+ * as; for a Workspace group like ansir@auscope.org.au, the group must allow
+ * members to post as the group before Gmail will verify it).
+ *
+ * sendMail_ below checks whether the alias is actually available at send time.
+ * When it is, mail goes out as this address via GmailApp. When it is not, the
+ * send still happens - from the deploying account, via MailApp - and a loud
+ * line is written to the execution log saying exactly what to configure. An
+ * application must never be lost to a sender-identity problem.
+ *
+ * Set to '' to skip the alias logic entirely and always send as the deploying
+ * account.
+ */
+var MAIL_FROM_ADDRESS = 'ansir@auscope.org.au';
+
+/**
+ * Sends one email as MAIL_FROM_ADDRESS when possible, as the deploying
+ * account when not. Options: to, subject, body, name, attachments, replyTo.
+ * @private
+ */
+function sendMail_(options) {
+  if (MAIL_FROM_ADDRESS) {
+    try {
+      var me = Session.getEffectiveUser().getEmail();
+      var canSendAs = (MAIL_FROM_ADDRESS === me) ||
+        (GmailApp.getAliases().indexOf(MAIL_FROM_ADDRESS) !== -1);
+      if (canSendAs) {
+        GmailApp.sendEmail(options.to, options.subject, options.body, {
+          from: MAIL_FROM_ADDRESS,
+          name: options.name,
+          attachments: options.attachments,
+          replyTo: options.replyTo
+        });
+        return;
+      }
+      logLine_('MAIL_FROM_ADDRESS (' + MAIL_FROM_ADDRESS + ') is not ' + me +
+        ' and is not one of its verified Send-mail-as aliases. Sending from ' +
+        me + ' instead. To send as ' + MAIL_FROM_ADDRESS + ', either deploy ' +
+        'this script from that account or verify it as a Gmail alias.');
+    } catch (err) {
+      logError_('sendMail_ (alias check)', err);
+    }
+  }
+  MailApp.sendEmail(options);
+}
+
 /** Contact address quoted to applicants in the confirmation email. */
 var CONTACT_EMAIL = 'ben@auscope.org.au';
 
@@ -1029,7 +1080,7 @@ function sendNotifications_(formData, ansirCode, fileInfo) {
 
   var applicantAddress = safeText_(formData.lead_email);
   try {
-    MailApp.sendEmail({
+    sendMail_({
       to: applicantAddress,
       subject: 'ANSIR equipment loan application received - ' + ansirCode,
       body: buildApplicantEmail_(formData, ansirCode, fileInfo),
@@ -1046,7 +1097,7 @@ function sendNotifications_(formData, ansirCode, fileInfo) {
 
   if (ADMIN_EMAILS && ADMIN_EMAILS.length) {
     try {
-      MailApp.sendEmail({
+      sendMail_({
         to: ADMIN_EMAILS.join(','),
         subject: internalSubject,
         body: internalBody,
@@ -1069,7 +1120,7 @@ function sendNotifications_(formData, ansirCode, fileInfo) {
   var facilityRecipients = facilityRecipients_(formData);
   if (facilityRecipients.length) {
     try {
-      MailApp.sendEmail({
+      sendMail_({
         to: facilityRecipients.join(','),
         subject: internalSubject,
         body: internalBody,

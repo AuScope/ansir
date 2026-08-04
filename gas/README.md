@@ -104,6 +104,29 @@ Workspace account gets roughly 1500. Each submission sends up to three emails,
 so an ordinary Workspace account is comfortable and a consumer account is fine
 for the volumes ANSIR sees.
 
+### Sender identity
+
+Outgoing mail is configured to be sent as **ansir@auscope.org.au**
+(`MAIL_FROM_ADDRESS`), so the address applicants see stays stable across staff
+changes. Apps Script cannot invent a sender, so this works in exactly two
+setups:
+
+1. **Deploy the script from the ansir@auscope.org.au account itself** (the
+   clean long-term arrangement: that account then also owns the upload folder
+   and the deployment), or
+2. **Deploy from a personal account that has ansir@auscope.org.au as a
+   verified Gmail "Send mail as" alias** (Gmail Settings > Accounts > Send
+   mail as; if the address is a Workspace group, the group must first allow
+   members to post as the group).
+
+If neither is true at send time, the application is NOT lost: the email still
+goes out, sent from the deploying account, and the execution log records
+exactly what to configure. Watch the log after the first real submission.
+
+Note that sending as an alias uses `GmailApp`, so the one-time authorisation
+prompt asks for Gmail permission in addition to the basic send-mail scope.
+That is expected.
+
 ---
 
 ## 3. Create the Drive folder
@@ -141,6 +164,7 @@ for the volumes ANSIR sees.
    | `UPLOAD_FOLDER_ID` | **Required.** The folder ID from step 3 |
    | `ADMIN_EMAILS` | Already `ben@auscope.org.au`; add others as needed |
    | `FACILITY_ROUTES` | Facility addresses per research method (Seismic/Nodal Seismic/DAS, Magnetotelluric, Petrophysical). Every route deliberately empty; fill in per method when the addresses are agreed |
+   | `MAIL_FROM_ADDRESS` | Already `ansir@auscope.org.au` - see "Sender identity" below |
    | `MAX_SUBMISSIONS_PER_HOUR` | `20` is a sensible starting point |
 
    If you leave `UPLOAD_FOLDER_ID` as the placeholder, uploads will fail with a
