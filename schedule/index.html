@@ -97,10 +97,8 @@
             --chart-ink-strong: #262626;    /* values */
             --focus-ring: #282572;
 
-            /* Notice band */
-            --notice-bg: #fff8e6;
+            /* Dashed edge on the expression-of-interest pill */
             --notice-border: #e8c76a;
-            --notice-ink: #6b5310;
 
             /* Timeline geometry, mirrored in JS */
             --row-height: 34px;
@@ -161,13 +159,6 @@
             line-height: 1.25;
             color: var(--primary-bg);
             font-weight: bold;
-        }
-
-        .page-header .lede {
-            margin-top: var(--spacing-sm);
-            max-width: 68ch;
-            font-size: 0.95rem;
-            color: var(--text-color);
         }
 
         .data-currency {
@@ -304,29 +295,6 @@
             font-size: 0.72rem;
             color: var(--medium-gray);
         }
-
-        /* ============================================ */
-        /* NOTICES                                      */
-        /* ============================================ */
-        .notice {
-            background: var(--notice-bg);
-            border: 1px solid var(--notice-border);
-            border-left: 4px solid var(--notice-border);
-            border-radius: var(--border-radius-lg);
-            padding: var(--spacing-md) var(--spacing-lg);
-            margin-top: var(--spacing-lg);
-            font-size: 0.84rem;
-            color: var(--notice-ink);
-        }
-        .notice h2 {
-            font-size: 0.88rem;
-            font-weight: bold;
-            color: var(--notice-ink);
-            margin-bottom: var(--spacing-xs);
-        }
-        .notice ul { margin: var(--spacing-sm) 0 0 var(--spacing-xl); }
-        .notice li + li { margin-top: var(--spacing-xs); }
-        .notice .notice-tail { margin-top: var(--spacing-sm); }
 
         /* ============================================ */
         /* CATEGORY ACCORDIONS                          */
@@ -497,6 +465,18 @@
             color: var(--medium-gray);
         }
 
+        /* A muted line inside a category accordion, above or below the card
+           grid rather than in it. Padded to the same gutter as .cat-body so it
+           lines up with the cards. Used by the magnetotellurics accordion for
+           its provenance line and its not-in-the-register line. */
+        .cat-note {
+            padding: var(--spacing-md) var(--spacing-lg) 0;
+            font-size: 0.78rem;
+            color: var(--medium-gray);
+            max-width: 96ch;
+        }
+        .cat-body + .cat-note { padding: 0 var(--spacing-lg) var(--spacing-lg); }
+
         /* A stock annotation carried on the instrument name in the sheet, for
            example "+50 units in production". Quiet: it qualifies the name, it is
            not a status. */
@@ -529,6 +509,9 @@
         }
         .pill-deployed { background: var(--status-in-progress-bg); color: #4a2d7a; }
         .pill-reserved { background: #fbf0da; color: #7a5200; }
+        /* Only reachable from the project register, where a project marked
+           Complete can still carry an end date in the future. */
+        .pill-complete { background: var(--status-complete-bg); color: var(--status-complete-color); }
         .pill-tentative {
             background: repeating-linear-gradient(135deg, #fbf0da, #fbf0da 4px, #f4e3c2 4px, #f4e3c2 8px);
             color: #7a5200;
@@ -725,6 +708,7 @@
             padding: var(--spacing-md) var(--spacing-lg);
         }
         .exp-card.is-reserved { border-left-color: var(--series-reserved); }
+        .exp-card.is-complete { border-left-color: var(--series-available); }
 
         .exp-card h3 {
             font-size: 0.95rem;
@@ -861,16 +845,6 @@
             .spinner { animation: none; border-top-color: var(--primary-bg); }
         }
 
-        .page-footer {
-            margin-top: 32px;
-            padding-top: var(--spacing-lg);
-            border-top: 1px solid var(--border-color);
-            font-size: 0.76rem;
-            color: var(--medium-gray);
-        }
-        .page-footer p + p { margin-top: var(--spacing-xs); }
-        .page-footer .footer-note { margin-top: var(--spacing-xs); }
-        .page-footer a { word-break: break-word; }
 
         .visually-hidden {
             position: absolute !important;
@@ -896,15 +870,6 @@
 
     <header class="page-header">
         <h1>ANSIR instrument availability and schedule</h1>
-        <p class="lede">
-            What ANSIR's seismic fleet - recorders, seismometers and fibre-optic sensing - has
-            available now, what is committed to which experiments, and when instruments are due
-            back. Researchers planning an application should read the availability figures first,
-            then check the deployment timeline for the window they need.
-            <!-- Delete this sentence when the Fleet Status sheet gains MT rows - the categories below render whatever the sheet contains. -->
-            Magnetotelluric (MT) instruments are managed separately; email
-            <a href="mailto:ansir@anu.edu.au">ansir@anu.edu.au</a> to discuss MT availability.
-        </p>
         <p class="data-currency" id="data-currency" hidden>
             <span>Availability as of <strong id="as-of-date">-</strong></span>
             <span id="synced-wrap" hidden>Last synced from the source sheet <strong id="synced-date">-</strong></span>
@@ -943,7 +908,6 @@
 
         <section class="section" aria-labelledby="h-headline">
             <h2 id="h-headline">Availability at a glance</h2>
-            <p class="section-note" id="headline-note"></p>
             <div class="headline">
                 <div class="hero-tile">
                     <span class="hero-value" id="hero-available">-</span>
@@ -952,30 +916,15 @@
                 </div>
                 <div class="kpi-grid" id="kpi-grid"></div>
             </div>
-
-            <!-- Data-quality notice, populated only when the source file carries
-                 warnings. It sits below the figures it qualifies, so the answer
-                 comes first and the caveat second. -->
-            <div class="notice" id="warnings-box" role="note" hidden>
-                <h2 id="warnings-heading">Notes on the source data</h2>
-                <p>
-                    The following were recorded when this data was last read from the spreadsheet.
-                    The figures here are shown exactly as the sheet records them and have not been
-                    adjusted to make them agree.
-                </p>
-                <ul id="warnings-list"></ul>
-                <p class="notice-tail">
-                    For a definitive figure on any instrument type, contact ANSIR directly.
-                </p>
-            </div>
         </section>
 
         <section class="section" aria-labelledby="h-categories">
             <h2 id="h-categories">Availability by instrument type</h2>
             <p class="section-note">
-                Every instrument type in the fleet, grouped as the source sheet groups them.
-                The large figure is the number field-ready and not reserved. Select a heading to
-                collapse or expand a group.
+                Every instrument type in the fleet, grouped as the source sheet groups them,
+                plus magnetotellurics from the AuScope instrument register. The large figure is
+                the number field-ready and not reserved. Select a heading to collapse or expand
+                a group.
             </p>
             <div class="legend pill-legend">
                 <span class="legend-item">
@@ -989,6 +938,22 @@
                 </span>
             </div>
             <div id="categories"></div>
+        </section>
+
+        <!-- Magnetotellurics, project by project. Derived from ../data/data.json,
+             the research project register, not from the Fleet Status sheet. This
+             section states commitments only: the per-model availability figures
+             live in the Magnetotellurics accordion above, which pairs these same
+             commitments with fleet totals from the instrument register. Hidden
+             unless data.json loads and yields at least one current or upcoming
+             MT project. -->
+        <section class="section" id="mt-section" aria-labelledby="h-mt" hidden>
+            <h2 id="h-mt">Magnetotellurics</h2>
+            <p class="section-note">
+                Magnetotelluric instrument commitments from the ANSIR project register: what is
+                committed to which project, not what is free.
+            </p>
+            <div class="exp-grid" id="mt-projects"></div>
         </section>
 
         <section class="section" aria-labelledby="h-timeline">
@@ -1029,17 +994,9 @@
             </p>
         </section>
 
-        <footer class="page-footer">
-            <p>
-                ANSIR, the Australian National Seismic Imaging Resource, is a research facility of
-                AuScope, funded under the National Collaborative Research Infrastructure Strategy (NCRIS).
-            </p>
-            <!-- Eligibility, the application terms link and the ANSIR contact address.
-                 Written by buildFooter from the notes below the fleet table in the
-                 source sheet, with a fixed fallback if the sheet ever drops them. -->
-            <div id="footer-terms"></div>
-            <p id="footer-currency"></p>
-        </footer>
+        <!-- No footer by design: this page is embedded in the AuScope Squarespace
+             site, whose surrounding page carries the NCRIS attribution, eligibility,
+             application terms and contact details. -->
 
     </main>
 
@@ -1058,6 +1015,45 @@
     // Static JSON normalised from the "ANSIR Seismic Fleet Status" sheet by
     // scripts/fetch-schedule.js and committed to this repository.
     var DATA_URL = '../data/schedule.json';
+
+    // The research project register, served from this repository and already
+    // consumed by ../index.html and ../stats/index.html. It is the only source
+    // this page has for magnetotelluric work. Secondary: if it fails to load the
+    // page still renders every seismic figure, and the MT section stays hidden.
+    var PROJECTS_URL = '../data/data.json';
+
+    // Method label that puts a project into the magnetotellurics section,
+    // compared lowercased and trimmed against each entry in methods[].
+    var MT_METHOD = 'magnetotelluric';
+
+    // Display labels for category names, keyed on the sheet's verbatim string.
+    // The sheet groups the fleet under short headings written for its own
+    // maintainer; a reader arriving from the AuScope site needs the method
+    // named, and "RECORDERS" beside a Magnetotellurics group would read as
+    // though it covered MT recorders too. Nothing here touches the data: a
+    // category not listed keeps the sheet's own wording, so a heading renamed
+    // or added in the sheet still renders, just without a display label.
+    var CATEGORY_LABELS = {
+        'RECORDERS': 'Seismic Recorders',
+        'SEISMOMETERS': 'Seismometers',
+        'FIBRE-OPTIC': 'Fibre-Optic (DAS)'
+    };
+
+    function categoryLabel(name) {
+        var raw = text(name);
+        return Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, raw)
+            ? CATEGORY_LABELS[raw]
+            : raw;
+    }
+
+    // Fleet totals for magnetotelluric equipment, built by
+    // scripts/fetch-instruments.js from the AuScope PIDINST instrument records
+    // published through DataCite. It counts what is registered as owned, and
+    // says nothing about condition, location or field-readiness. Tertiary: if it
+    // fails to load the Magnetotellurics availability accordion is simply
+    // absent, and the rest of the page renders exactly as it did before this
+    // file existed.
+    var REGISTER_URL = '../data/instrument-register.json';
 
     // Where to send someone when the data file will not load. Hardcoded because
     // sourceUrl lives inside the file we just failed to read.
@@ -1096,6 +1092,16 @@
     // the tooltip and the table. Without this clamp one 2018 deployment would
     // stretch the axis over eight mostly empty years.
     var MONTHS_BACK = 18;
+
+    // The same clamp on the other side. The project register holds end dates
+    // typed by hand, and one current MT row ends in 2121, which would stretch
+    // the axis over a century and squash every real deployment into the first
+    // two percent of it. A bar running past this horizon is drawn clipped at the
+    // right edge with a square end, exactly as MONTHS_BACK does on the left, and
+    // its true due date is in the row tooltip and the table. At 36 months this
+    // is well clear of the latest seismic due date, so the seismic timeline is
+    // drawn exactly as it was before.
+    var MONTHS_FORWARD = 36;
 
     /* ============================================ */
     /* SMALL HELPERS                                */
@@ -1479,12 +1485,6 @@
             tile.appendChild(el('span', 'kpi-sub', tiles[i].sub));
             grid.appendChild(tile);
         }
-
-        byId('headline-note').textContent =
-            'Available, On loan, In testing and Under repair are each the sum of that column in the ' +
-            'source spreadsheet. The columns are maintained independently, so they are not expected ' +
-            'to add up to the fleet total. Reserved is different: it is the sum of the instrument ' +
-            'bookings to approved projects listed in the tables below.';
     }
 
     /* ============================================ */
@@ -1650,11 +1650,13 @@
             }
 
             var details = el('details', 'category');
-            details.open = true;
+            // Collapsed on load by request: the header line already carries the
+        // availability figures, and the reader expands only what they need.
+        details.open = false;
 
             var summary = el('summary');
             summary.appendChild(el('span', 'cat-chevron'));
-            summary.appendChild(el('span', 'cat-name', text(category.name)));
+            summary.appendChild(el('span', 'cat-name', categoryLabel(category.name)));
 
             var meta = el('span', 'cat-meta');
             meta.appendChild(el('b', null, formatNumber(catAvailable)));
@@ -1676,21 +1678,501 @@
     }
 
     /* ============================================ */
+    /* MAGNETOTELLURICS                             */
+    /* Derived from the research project register,  */
+    /* which records commitments only. It carries   */
+    /* no MT fleet totals, so nothing here is an    */
+    /* availability figure and no MT number reaches */
+    /* the headline tiles, which are seismic-fleet  */
+    /* column sums.                                 */
+    /* ============================================ */
+
+    function hasMtMethod(methods) {
+        if (!methods || !methods.length) return false;
+        for (var i = 0; i < methods.length; i++) {
+            if (text(methods[i]).toLowerCase() === MT_METHOD) return true;
+        }
+        return false;
+    }
+
+    // Status decides, dates do not: only Planning (reserved) and In Progress
+    // (deployed) projects belong on a schedule. A date-based rule was tried
+    // and rejected - a Complete project with a mistyped far-future end date
+    // (a real 2121-for-2021 case) would sit on the timeline for a century.
+    function isCurrentOrUpcoming(project) {
+        var status = text(project.status);
+        return status === 'Planning' || status === 'In Progress';
+    }
+
+    // A sheet experiment whose due date has passed is finished work, not
+    // schedule: it drops off the experiment cards and the timeline. It stays
+    // in the instrument cards' allocation tables, which mirror the sheet's
+    // own on-loan bookkeeping. Month- and year-precision dates count as live
+    // through the end of that month or year; ISO strings compare as strings.
+    function isPastDue(dateObj) {
+        if (!dateObj || !dateObj.iso) return false;
+        var iso = dateObj.iso;
+        if (iso.length === 4) iso += '-12';
+        if (iso.length === 7) iso += '-31';
+        return iso < todayIso();
+    }
+
+    function selectMtProjects(projectsPayload) {
+        if (!projectsPayload || !Array.isArray(projectsPayload.data)) return [];
+        var picked = [];
+        for (var i = 0; i < projectsPayload.data.length; i++) {
+            var project = projectsPayload.data[i];
+            if (!project) continue;
+            if (!hasMtMethod(project.methods)) continue;
+            if (!isCurrentOrUpcoming(project)) continue;
+            // Decorated with the register's own order, so projects that tie on
+            // start date keep the order the file lists them in.
+            picked.push({ project: project, order: picked.length });
+        }
+        // Start date ascending, projects with no start date last.
+        picked.sort(function (a, b) {
+            var aStart = text(a.project.startDate);
+            var bStart = text(b.project.startDate);
+            if (aStart && bStart && aStart !== bStart) return aStart < bStart ? -1 : 1;
+            if (aStart && !bStart) return -1;
+            if (!aStart && bStart) return 1;
+            return a.order - b.order;
+        });
+        var out = [];
+        for (var p = 0; p < picked.length; p++) out.push(picked[p].project);
+        return out;
+    }
+
+    // The register's status vocabulary mapped onto the pills this page already
+    // defines, so an MT card reads the same way as an experiment card:
+    //   Planning    -> Reserved, the page's word for approved but not yet out
+    //   In Progress -> Deployed, the page's word for in the field now
+    //   anything else (in practice Complete, which only reaches this section
+    //                  when its recorded end date is still in the future)
+    //               -> Complete, stated as recorded rather than dressed up as
+    //                  a live deployment
+    function mtStatusKey(status) {
+        var value = text(status);
+        if (value === 'Planning') return 'reserved';
+        if (value === 'In Progress') return 'deployed';
+        return 'complete';
+    }
+
+    function mtStatusPill(statusKey) {
+        if (statusKey === 'reserved') return el('span', 'pill pill-reserved', 'Reserved');
+        if (statusKey === 'complete') return el('span', 'pill pill-complete', 'Complete');
+        return el('span', 'pill pill-deployed', 'Deployed');
+    }
+
+    function mtProjectName(project) {
+        var title = text(project.title) || 'Untitled project';
+        var acronym = text(project.acronym);
+        if (!acronym) return title;
+        // Compact by request: a spelled-out programme name overwhelms the
+        // allocation tables and the timeline gutter. When the title carries
+        // the acronym in brackets, keep the acronym plus whatever follows it
+        // ("AusLAMP Phase 2 Queensland"); otherwise the acronym stands alone.
+        var marker = '(' + acronym + ')';
+        var at = title.indexOf(marker);
+        if (at !== -1) {
+            var suffix = title.slice(at + marker.length).trim();
+            return suffix ? acronym + ' ' + suffix : acronym;
+        }
+        return acronym;
+    }
+
+    function mtInstrumentTotal(project) {
+        var instruments = project.instruments || [];
+        var total = 0;
+        for (var i = 0; i < instruments.length; i++) {
+            if (isNum(instruments[i].count)) total += instruments[i].count;
+        }
+        return total;
+    }
+
+    function buildMtSection(mtProjects) {
+        var section = byId('mt-section');
+        var host = byId('mt-projects');
+        clear(host);
+
+        // Nothing to show, or the register did not load: the section is omitted
+        // rather than left standing with an apology in it.
+        if (!mtProjects.length) {
+            section.hidden = true;
+            return;
+        }
+
+        for (var i = 0; i < mtProjects.length; i++) {
+            var project = mtProjects[i];
+            var statusKey = mtStatusKey(project.status);
+
+            var cardClass = 'exp-card';
+            if (statusKey === 'reserved') cardClass += ' is-reserved';
+            if (statusKey === 'complete') cardClass += ' is-complete';
+
+            var card = el('article', cardClass);
+            card.appendChild(el('h3', null, mtProjectName(project)));
+
+            var head = el('div', 'exp-head');
+            head.appendChild(mtStatusPill(statusKey));
+            head.appendChild(el('span', 'exp-code',
+                text(project.ansirCode) || 'No ANSIR reference recorded'));
+            card.appendChild(head);
+
+            var dates = el('p', 'exp-dates');
+            dates.appendChild(document.createTextNode('Out '));
+            dates.appendChild(el('b', null, formatIso(text(project.startDate), 'long') || 'Not recorded'));
+            dates.appendChild(document.createTextNode('. Due '));
+            dates.appendChild(el('b', null, formatIso(text(project.endDate), 'long') || 'Not recorded'));
+            dates.appendChild(document.createTextNode('.'));
+            card.appendChild(dates);
+
+            var location = project.location || {};
+            var region = text(location.region);
+            var country = text(location.country);
+            var place = region && country ? (region + ', ' + country) : (region || country);
+            card.appendChild(el('p', 'exp-commit', place || 'Location not recorded'));
+
+            var instruments = project.instruments || [];
+            if (instruments.length) {
+                var loans = el('ul', 'exp-loans');
+                for (var n = 0; n < instruments.length; n++) {
+                    var loan = instruments[n];
+                    var li = el('li');
+                    li.appendChild(el('b', null, isNum(loan.count) ? formatNumber(loan.count) : 'TBC'));
+                    li.appendChild(document.createTextNode(' x ' + text(loan.name)));
+                    loans.appendChild(li);
+                }
+                card.appendChild(loans);
+            } else {
+                card.appendChild(el('p', 'empty-note',
+                    'No instrument loans recorded against this project.'));
+            }
+
+            host.appendChild(card);
+        }
+
+        section.hidden = false;
+    }
+
+    /* ============================================ */
+    /* MAGNETOTELLURIC AVAILABILITY                 */
+    /* A fourth accordion under "Availability by     */
+    /* instrument type", built from two files the    */
+    /* Fleet Status sheet knows nothing about: the   */
+    /* instrument register supplies the fleet, the   */
+    /* project register supplies the commitments.    */
+    /* Nothing here reaches the headline tiles,      */
+    /* which stay seismic-sheet column sums.         */
+    /* ============================================ */
+
+    // Normalise an instrument or model string for matching. Case and repeated
+    // whitespace go, and the separator between a letter run and a digit run
+    // goes with them, so "LEMI-120", "LEMI 120" and "lemi120" are one key. The
+    // model key is then looked for anywhere inside the instrument key, because
+    // the project register writes the model into a longer descriptive name
+    // ("LEMI-120 Magnetic Coils", "Earth Data PR6-24 Loggers").
+    //
+    // Deliberately no typo table. "MTU-150 Magnetic Coils" in the project
+    // register is almost certainly MTC-150 mistyped, and it stays unmatched
+    // here: guessing would put 12 units against a model nobody wrote down, and
+    // the fix belongs in the master sheet where the error can actually be
+    // corrected. Until then it shows up in the not-in-the-register line.
+    function instrumentKey(value) {
+        return text(value)
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .replace(/([a-z])[\s-]+(?=\d)/g, '$1')
+            .replace(/(\d)[\s-]+(?=[a-z])/g, '$1');
+    }
+
+    // What the register owns, in the order it lists it (largest holding first).
+    function mtRegisterModels(registerPayload) {
+        if (!registerPayload || !Array.isArray(registerPayload.models)) return [];
+        var out = [];
+        for (var i = 0; i < registerPayload.models.length; i++) {
+            var entry = registerPayload.models[i];
+            if (!entry) continue;
+            var model = text(entry.model);
+            var key = instrumentKey(model);
+            if (!model || !key) continue;
+            out.push({
+                model: model,
+                title: text(entry.title),
+                registered: num(entry.count),
+                key: key,
+                onLoanNow: 0,
+                available: num(entry.count),
+                exceeded: false,
+                rows: []
+            });
+        }
+        return out;
+    }
+
+    // Out in the field right now, which is narrower than "committed". A project
+    // is In Progress until someone edits the register, so status alone would
+    // keep a finished deployment on loan forever: AusLAMP Phase 2
+    // (ANSIR-2026-001) is still In Progress and ended in April 2026. The end
+    // date settles it. A missing end date counts as still out, because the
+    // instruments are not back until a return is recorded. ISO strings compare
+    // as strings, so no Date object and no timezone can shift the boundary.
+    function mtIsOnLoanNow(project) {
+        if (text(project.status) !== 'In Progress') return false;
+        var end = text(project.endDate);
+        if (!end) return true;
+        return end >= todayIso();
+    }
+
+    // Join the selected projects' instrument lines onto the register's models.
+    // Every line that matches becomes a table row on that model's card whatever
+    // its dates say - the table is the display of what is committed - while
+    // only the on-loan-now lines move the availability figure.
+    function mtFleet(registerPayload, mtProjects) {
+        var models = mtRegisterModels(registerPayload);
+        var unmatched = [];
+        var seenUnmatched = {};
+        if (!models.length) return { models: [], unmatched: [] };
+
+        for (var p = 0; p < mtProjects.length; p++) {
+            var project = mtProjects[p];
+            var instruments = project.instruments || [];
+            var onLoan = mtIsOnLoanNow(project);
+
+            for (var i = 0; i < instruments.length; i++) {
+                var line = instruments[i];
+                var name = text(line.name);
+                if (!name) continue;
+                var key = instrumentKey(name);
+
+                // First model whose key appears in the name wins, so a name can
+                // never be counted against two models at once.
+                var match = null;
+                for (var m = 0; m < models.length; m++) {
+                    if (key.indexOf(models[m].key) !== -1) {
+                        match = models[m];
+                        break;
+                    }
+                }
+
+                if (!match) {
+                    if (!Object.prototype.hasOwnProperty.call(seenUnmatched, name)) {
+                        seenUnmatched[name] = true;
+                        unmatched.push(name);
+                    }
+                    continue;
+                }
+
+                match.rows.push({ project: project, count: line.count });
+                if (onLoan && isNum(line.count)) match.onLoanNow += line.count;
+            }
+        }
+
+        for (var f = 0; f < models.length; f++) {
+            var entry = models[f];
+            // Clamped, never negative. A negative would be read as a fleet
+            // figure rather than as the editing error it is, so the card shows
+            // zero and says plainly that the numbers do not add up.
+            entry.exceeded = entry.onLoanNow > entry.registered;
+            entry.available = Math.max(0, entry.registered - entry.onLoanNow);
+        }
+
+        return { models: models, unmatched: unmatched };
+    }
+
+    // The same table the seismic instrument cards carry, fed from the project
+    // register instead of the sheet: same columns, same pills, same date format.
+    function buildMtCommitmentTable(entry) {
+        var table = el('table', 'alloc-table');
+
+        var thead = el('thead');
+        var headRow = el('tr');
+        headRow.appendChild(el('th', null, 'Committed to'));
+        headRow.appendChild(el('th', 'num', 'Units'));
+        headRow.appendChild(el('th', null, 'Out'));
+        headRow.appendChild(el('th', null, 'Due'));
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        var tbody = el('tbody');
+        for (var i = 0; i < entry.rows.length; i++) {
+            var project = entry.rows[i].project;
+            var count = entry.rows[i].count;
+            var row = el('tr');
+
+            var nameCell = el('td');
+            nameCell.appendChild(el('span', 'alloc-name', mtProjectName(project)));
+            var codeWrap = el('span', 'alloc-code');
+            var code = text(project.ansirCode);
+            if (code) codeWrap.appendChild(document.createTextNode(code + ' '));
+            codeWrap.appendChild(mtStatusPill(mtStatusKey(project.status)));
+            nameCell.appendChild(codeWrap);
+            row.appendChild(nameCell);
+
+            var unitsCell = el('td', 'num');
+            if (isNum(count)) {
+                unitsCell.appendChild(el('b', null, formatNumber(count)));
+            } else {
+                unitsCell.appendChild(document.createTextNode('-'));
+            }
+            row.appendChild(unitsCell);
+
+            row.appendChild(el('td', 'date', formatDateObj(isoDateObj(project.startDate), 'short')));
+            row.appendChild(el('td', 'date', formatDateObj(isoDateObj(project.endDate), 'short')));
+
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+        return table;
+    }
+
+    function buildMtInstrumentCard(entry) {
+        var card = el('article', 'instrument' + (entry.available > 0 ? '' : ' is-none'));
+
+        card.appendChild(el('h4', null, entry.model));
+        if (entry.title) card.appendChild(el('p', 'inst-note', entry.title));
+
+        var line = el('div', 'avail-line');
+        line.appendChild(el('span', 'avail-value', formatNumber(entry.available)));
+        line.appendChild(el('span', 'avail-caption',
+            'available of ' + formatNumber(entry.registered) + ' registered'));
+        card.appendChild(line);
+
+        var pct = entry.registered > 0
+            ? Math.max(0, Math.min(100, (entry.available / entry.registered) * 100))
+            : 0;
+        var meter = el('div', 'meter');
+        meter.setAttribute('role', 'img');
+        meter.setAttribute('aria-label',
+            formatNumber(entry.available) + ' of ' + formatNumber(entry.registered) + ' available');
+        var fill = el('span');
+        fill.style.width = pct + '%';
+        meter.appendChild(fill);
+        card.appendChild(meter);
+
+        // Testing and repair are stated as zero rather than left out, so the
+        // card reads the same way as a seismic one. Neither is tracked for MT
+        // anywhere in the two registers; the accordion's note says so.
+        var stats = el('ul', 'inst-stats');
+        var statFields = [
+            { label: 'On loan', value: entry.onLoanNow },
+            { label: 'Testing', value: 0 },
+            { label: 'Repair', value: 0 }
+        ];
+        for (var s = 0; s < statFields.length; s++) {
+            var li = el('li');
+            li.appendChild(document.createTextNode(statFields[s].label + ' '));
+            li.appendChild(el('b', null, formatNumber(statFields[s].value)));
+            stats.appendChild(li);
+        }
+        card.appendChild(stats);
+
+        if (entry.rows.length) {
+            card.appendChild(buildMtCommitmentTable(entry));
+        } else {
+            card.appendChild(el('p', 'empty-note',
+                'No project commitments recorded against this model.'));
+        }
+
+        if (entry.exceeded) {
+            card.appendChild(el('p', 'empty-note',
+                'figures exceed the registered fleet - check the project register'));
+        }
+
+        return card;
+    }
+
+    // Appended to the same host as the sheet categories, so it lands after them
+    // and behaves like them. If the instrument register did not load, or holds
+    // no models, nothing is appended at all and the page is exactly the page it
+    // was before this file existed.
+    function buildMtCategory(registerPayload, mtProjects) {
+        var fleet = mtFleet(registerPayload, mtProjects || []);
+        if (!fleet.models.length) return;
+
+        var available = 0;
+        var registered = 0;
+        for (var i = 0; i < fleet.models.length; i++) {
+            available += fleet.models[i].available;
+            registered += fleet.models[i].registered;
+        }
+
+        var details = el('details', 'category');
+        // Collapsed on load by request: the header line already carries the
+        // availability figures, and the reader expands only what they need.
+        details.open = false;
+
+        var summary = el('summary');
+        summary.appendChild(el('span', 'cat-chevron'));
+        summary.appendChild(el('span', 'cat-name', 'Magnetotellurics'));
+        var meta = el('span', 'cat-meta');
+        meta.appendChild(el('b', null, formatNumber(available)));
+        meta.appendChild(document.createTextNode(' available of ' + formatNumber(registered) +
+            ' - ' + formatNumber(fleet.models.length) + ' ' +
+            plural(fleet.models.length, 'instrument type')));
+        summary.appendChild(meta);
+        details.appendChild(summary);
+
+        var sourceNote = el('p', 'cat-note');
+        sourceNote.appendChild(document.createTextNode('Fleet from the '));
+        var registerLink = document.createElement('a');
+        registerLink.href = 'https://pidinst.data.auscope.org.au/instruments' +
+            '?owner_party=adelaide-university&vocab_instrument_classification=Geophysics';
+        registerLink.target = '_blank';
+        registerLink.rel = 'noopener';
+        registerLink.appendChild(document.createTextNode('AuScope instrument register'));
+        sourceNote.appendChild(registerLink);
+        sourceNote.appendChild(document.createTextNode(
+            '; commitments from the ANSIR project register. ' +
+            'Testing and repair are not tracked for MT and are shown as zero.'));
+        details.appendChild(sourceNote);
+
+        var body = el('div', 'cat-body');
+        for (var c = 0; c < fleet.models.length; c++) {
+            body.appendChild(buildMtInstrumentCard(fleet.models[c]));
+        }
+        details.appendChild(body);
+
+        // Everything the projects name that the register does not own: consumables,
+        // ancillary kit, and the one suspected typo. Named rather than dropped,
+        // because a reader comparing the two sources should see the gap.
+        if (fleet.unmatched.length) {
+            details.appendChild(el('p', 'cat-note',
+                'Recorded in projects but not in the instrument register: ' +
+                fleet.unmatched.join(', ') + '.'));
+        }
+
+        details.addEventListener('toggle', sendHeightToParent);
+        byId('categories').appendChild(details);
+    }
+
+    /* ============================================ */
     /* RENDER: TIMELINE                             */
     /* ============================================ */
 
     var timelineRows = [];
     var timelineDomain = null;
 
-    function prepareTimeline(payload, commitments) {
+    // A date object shaped like the ones in schedule.json, built from a plain
+    // ISO string in the project register so MT rows travel through the same
+    // formatting, positioning and table code as the experiment rows.
+    function isoDateObj(iso) {
+        var value = text(iso);
+        if (!value) return null;
+        return { raw: value, iso: value, precision: 'day', tentative: false };
+    }
+
+    function prepareTimeline(payload, commitments, mtProjects) {
         var experiments = payload.experiments || [];
         timelineRows = [];
 
         var minOut = null;
         var maxDue = null;
+        var seenCodes = {};
 
         for (var i = 0; i < experiments.length; i++) {
             var exp = experiments[i];
+            if (isPastDue(exp.dueDate)) continue;
             var start = monthPos(exp.outDate, false);
             var end = monthPos(exp.dueDate, true);
             if (start !== null) minOut = (minOut === null) ? start : Math.min(minOut, start);
@@ -1698,11 +2180,13 @@
 
             var name = text(exp.name);
             var commitment = commitments[name] || null;
+            var code = text(exp.ansirCode);
+            if (code) seenCodes[code.toUpperCase()] = true;
 
             timelineRows.push({
                 experiment: exp,
                 name: name,
-                code: text(exp.ansirCode),
+                code: code,
                 status: exp.status === 'reserved' ? 'reserved' : 'deployed',
                 start: start,
                 end: end,
@@ -1711,19 +2195,57 @@
             });
         }
 
+        // Magnetotelluric projects join the same timeline, because the window a
+        // reader is checking is the one window. A project can borrow seismic
+        // gear as well as MT gear, in which case the Fleet Status sheet has
+        // already put it on the timeline under its own name: matching on the
+        // ANSIR reference keeps it to one row rather than two.
+        var mtList = mtProjects || [];
+        for (var m = 0; m < mtList.length; m++) {
+            var project = mtList[m];
+            var mtCode = text(project.ansirCode);
+            if (mtCode && seenCodes[mtCode.toUpperCase()]) continue;
+            if (mtCode) seenCodes[mtCode.toUpperCase()] = true;
+
+            var mtExp = {
+                outDate: isoDateObj(project.startDate),
+                dueDate: isoDateObj(project.endDate)
+            };
+            var mtStart = monthPos(mtExp.outDate, false);
+            var mtEnd = monthPos(mtExp.dueDate, true);
+            if (mtStart !== null) minOut = (minOut === null) ? mtStart : Math.min(minOut, mtStart);
+            if (mtEnd !== null) maxDue = (maxDue === null) ? mtEnd : Math.max(maxDue, mtEnd);
+
+            timelineRows.push({
+                experiment: mtExp,
+                name: mtProjectName(project),
+                code: mtCode,
+                status: mtStatusKey(project.status),
+                start: mtStart,
+                end: mtEnd,
+                units: mtInstrumentTotal(project),
+                anyTentative: false,
+                fromRegister: true
+            });
+        }
+
         var today = todayPos();
         var clampStart = Math.floor(today) - MONTHS_BACK;
+        var clampEnd = Math.ceil(today) + MONTHS_FORWARD;
 
         var domainStart = (minOut === null) ? clampStart : Math.floor(Math.max(minOut, clampStart));
         // One month of headroom so the longest bar does not run into the right edge,
         // where a rounded end would be mistaken for a clipped one.
         var domainEnd = (maxDue === null) ? (clampStart + 24) : (Math.ceil(maxDue) + 1);
+        if (domainEnd > clampEnd) domainEnd = clampEnd;
         if (domainEnd < today + 3) domainEnd = Math.ceil(today) + 3;
         if (domainEnd <= domainStart) domainEnd = domainStart + 12;
 
         var clippedLeft = 0;
+        var clippedRight = 0;
         for (var r = 0; r < timelineRows.length; r++) {
             if (timelineRows[r].start !== null && timelineRows[r].start < domainStart) clippedLeft++;
+            if (timelineRows[r].end !== null && timelineRows[r].end > domainEnd) clippedRight++;
         }
 
         timelineDomain = {
@@ -1732,8 +2254,31 @@
             months: domainEnd - domainStart,
             today: today,
             clippedLeft: clippedLeft,
+            clippedRight: clippedRight,
             undated: timelineRows.filter(function (row) { return row.start === null && row.end === null; }).length
         };
+    }
+
+    // Two statuses come from the Fleet Status sheet. The third only ever arrives
+    // from the project register, where a project marked Complete can still carry
+    // an end date in the future.
+    function seriesColor(status) {
+        if (status === 'reserved') return 'var(--series-reserved)';
+        if (status === 'complete') return 'var(--series-available)';
+        return 'var(--series-deployed)';
+    }
+
+    function statusLabel(status) {
+        if (status === 'reserved') return 'Reserved';
+        if (status === 'complete') return 'Complete';
+        return 'Deployed';
+    }
+
+    function hasCompleteRow() {
+        for (var i = 0; i < timelineRows.length; i++) {
+            if (timelineRows[i].status === 'complete') return true;
+        }
+        return false;
     }
 
     function buildTimelineLegend() {
@@ -1744,6 +2289,14 @@
             { label: 'Deployed - in the field now', color: 'var(--series-deployed)' },
             { label: 'Reserved - approved, not yet shipped', color: 'var(--series-reserved)' }
         ];
+        // Only offered when such a row is actually drawn, so the legend never
+        // names a colour that is not on the chart.
+        if (hasCompleteRow()) {
+            series.push({
+                label: 'Complete - recorded end date is still in the future',
+                color: 'var(--series-available)'
+            });
+        }
         for (var i = 0; i < series.length; i++) {
             var item = el('span', 'legend-item');
             var swatch = el('span', 'legend-swatch');
@@ -1810,7 +2363,7 @@
             height: height,
             viewBox: '0 0 ' + plotW + ' ' + height,
             role: 'img',
-            'aria-label': 'Timeline of ' + timelineRows.length + ' ANSIR experiments from ' +
+            'aria-label': 'Timeline of ' + timelineRows.length + ' ANSIR deployments from ' +
                 monthLabel(timelineDomain.start) + ' to ' + monthLabel(timelineDomain.end - 1) +
                 '. The same information is in the data table below.'
         });
@@ -1902,7 +2455,7 @@
             var drawEnd = Math.min(rawEnd, timelineDomain.end);
             if (drawEnd <= drawStart) drawEnd = drawStart + 0.35;
 
-            var color = row.status === 'reserved' ? 'var(--series-reserved)' : 'var(--series-deployed)';
+            var color = seriesColor(row.status);
 
             var group = svgEl('g', {
                 'class': 'bar-group',
@@ -1984,7 +2537,7 @@
     function timelineAriaLabel(row) {
         var parts = [row.name];
         if (row.code) parts.push(row.code);
-        parts.push(row.status === 'reserved' ? 'reserved' : 'deployed');
+        parts.push(statusLabel(row.status).toLowerCase());
         parts.push('out ' + formatDateObj(row.experiment.outDate, 'long'));
         parts.push('due ' + formatDateObj(row.experiment.dueDate, 'long'));
         if (row.units > 0) parts.push(formatNumber(row.units) + ' instruments committed');
@@ -1993,7 +2546,7 @@
 
     function attachTip(group, row) {
         var rows = [
-            { label: 'Status', value: row.status === 'reserved' ? 'Reserved' : 'Deployed' },
+            { label: 'Status', value: statusLabel(row.status) },
             { label: 'Out', value: formatDateObj(row.experiment.outDate, 'long') },
             { label: 'Due', value: formatDateObj(row.experiment.dueDate, 'long') }
         ];
@@ -2024,7 +2577,9 @@
 
         var table = el('table', 'data-table');
         var caption = el('caption', null,
-            'Every experiment on the timeline, with the dates exactly as the source sheet records them.');
+            'Every row on the timeline, with the dates exactly as the source records them. ' +
+            'Seismic rows come from the Fleet Status sheet, magnetotelluric rows from the ' +
+            'project register.');
         table.appendChild(caption);
 
         var thead = el('thead');
@@ -2047,7 +2602,7 @@
             nameCell.scope = 'row';
             tr.appendChild(nameCell);
             tr.appendChild(el('td', null, row.code || 'Not assigned'));
-            tr.appendChild(el('td', null, row.status === 'reserved' ? 'Reserved' : 'Deployed'));
+            tr.appendChild(el('td', null, statusLabel(row.status)));
             tr.appendChild(el('td', 'date', formatDateObj(row.experiment.outDate, 'long')));
             tr.appendChild(el('td', 'date', formatDateObj(row.experiment.dueDate, 'long')));
             tr.appendChild(el('td', 'num', row.units > 0 ? formatNumber(row.units) : '-'));
@@ -2058,8 +2613,26 @@
     }
 
     function buildTimelineCaption() {
+        var registerRows = 0;
+        for (var i = 0; i < timelineRows.length; i++) {
+            if (timelineRows[i].fromRegister) registerRows++;
+        }
+
         var caption = 'One row per experiment currently holding or reserving ANSIR instruments. ' +
             'A bar runs from the out date to the due date recorded in the sheet.';
+        if (registerRows > 0) {
+            caption += ' ' + formatNumber(registerRows) + ' magnetotelluric ' +
+                plural(registerRows, 'project') + ' from the project register ' +
+                (registerRows === 1 ? 'is' : 'are') + ' included, dated from that register.';
+        }
+        if (timelineDomain.clippedRight > 0) {
+            caption += ' ' + formatNumber(timelineDomain.clippedRight) + ' ' +
+                plural(timelineDomain.clippedRight, 'row') + ' ' +
+                (timelineDomain.clippedRight === 1 ? 'ends' : 'end') +
+                ' after this window closes and ' +
+                (timelineDomain.clippedRight === 1 ? 'is' : 'are') +
+                ' drawn with a square right end; the true due date is in the table below.';
+        }
         if (timelineDomain.clippedLeft > 0) {
             caption += ' ' + formatNumber(timelineDomain.clippedLeft) + ' ' +
                 plural(timelineDomain.clippedLeft, 'deployment') + ' started before this window opens ' +
@@ -2094,6 +2667,7 @@
 
         for (var i = 0; i < experiments.length; i++) {
             var exp = experiments[i];
+            if (isPastDue(exp.dueDate)) continue;
             var name = text(exp.name);
             var isReserved = exp.status === 'reserved';
             var commitment = commitments[name] || { total: 0, rows: [], anyTentative: false };
@@ -2260,64 +2834,6 @@
         }
     }
 
-    /* ============================================ */
-    /* RENDER: FOOTER                               */
-    /* ============================================ */
-
-    // The three pieces the footer must always carry, whatever the sheet says.
-    var TERMS_URL = 'https://www.auscope.org.au/ansir-terms';
-    var CONTACT_EMAIL = 'ansir@anu.edu.au';
-
-    function buildFooter(payload) {
-        // Eligibility, the application terms and the contact address are
-        // maintained in the source sheet, in the notes below the fleet table, so
-        // they are rendered from the data rather than duplicated here. The
-        // fallback below guarantees a researcher can always find the terms and
-        // the address even if a note is edited away.
-        var host = byId('footer-terms');
-        clear(host);
-
-        var notes = payload.notes || [];
-        var joined = '';
-        for (var i = 0; i < notes.length; i++) {
-            var noteText = text(notes[i]);
-            if (!noteText) continue;
-            joined += ' ' + noteText;
-            var noteP = el('p', 'footer-note');
-            appendLinkified(noteP, noteText);
-            host.appendChild(noteP);
-        }
-
-        if (joined.indexOf(TERMS_URL) === -1 || joined.indexOf(CONTACT_EMAIL) === -1) {
-            var fallback = el('p', 'footer-note');
-            fallback.appendChild(document.createTextNode(
-                'ANSIR equipment and services are available to researchers from Australian and ' +
-                'international universities, publicly funded research organisations, and their ' +
-                'industry partners. Application terms: '));
-            var termsLink = document.createElement('a');
-            termsLink.href = TERMS_URL;
-            termsLink.rel = 'noopener';
-            termsLink.appendChild(document.createTextNode(TERMS_URL));
-            fallback.appendChild(termsLink);
-            fallback.appendChild(document.createTextNode('. To discuss instruments and availability, email '));
-            var mailLink = document.createElement('a');
-            mailLink.href = 'mailto:' + CONTACT_EMAIL;
-            mailLink.appendChild(document.createTextNode(CONTACT_EMAIL));
-            fallback.appendChild(mailLink);
-            fallback.appendChild(document.createTextNode('.'));
-            host.appendChild(fallback);
-        }
-
-        // The currency disclaimer. This has to survive any rearrangement of the
-        // page above it: it is the sentence that stops a stale figure being used
-        // as though it were live.
-        var asOfText = payload.availabilityAsOf ? formatIso(payload.availabilityAsOf, 'long') : null;
-        var currency = 'Availability figures on this page are as recorded in the ANSIR Seismic Fleet Status sheet';
-        if (asOfText) currency += ' as at ' + asOfText;
-        currency += '. Instrument availability changes; confirm with ANSIR before relying on it for an application.';
-        byId('footer-currency').textContent = currency;
-    }
-
     function buildProvenanceHeader(payload) {
         var asOf = text(payload.availabilityAsOf);
         var currency = byId('data-currency');
@@ -2335,25 +2851,18 @@
         currency.hidden = false;
     }
 
-    function buildWarnings(payload) {
-        var warnings = payload.warnings || [];
-        if (!warnings.length) return;
-
-        var list = byId('warnings-list');
-        clear(list);
-        for (var i = 0; i < warnings.length; i++) {
-            list.appendChild(el('li', null, text(warnings[i])));
-        }
-        byId('warnings-box').hidden = false;
-    }
-
     /* ============================================ */
     /* RENDER: ORCHESTRATION                        */
     /* ============================================ */
 
-    function render(payload) {
+    // The data-quality warnings carried in schedule.json are deliberately not
+    // rendered. They stay in the file and in the sync job's stderr, where the
+    // maintainer sees them; the page states the figures as recorded and the
+    // footer carries the confirm-before-relying line.
+    function render(payload, projectsPayload, registerPayload) {
         var summary = summarise(payload);
         var commitments = commitmentsByExperiment(payload);
+        var mtProjects = selectMtProjects(projectsPayload);
 
         // Index the experiments by name so an allocation row can show its dates.
         experimentIndex = {};
@@ -2363,11 +2872,12 @@
         }
 
         buildProvenanceHeader(payload);
-        buildWarnings(payload);
         buildHeadline(payload, summary);
         buildCategories(payload);
+        buildMtCategory(registerPayload, mtProjects);
+        buildMtSection(mtProjects);
 
-        prepareTimeline(payload, commitments);
+        prepareTimeline(payload, commitments, mtProjects);
         buildTimelineLegend();
         buildTimelineNames();
         buildTimelineCaption();
@@ -2375,7 +2885,6 @@
 
         buildExperiments(payload, commitments);
         buildRapidResponse(payload);
-        buildFooter(payload);
 
         byId('loading-state').hidden = true;
         byId('error-state').hidden = true;
@@ -2475,7 +2984,6 @@
     function showError(detail) {
         byId('loading-state').hidden = true;
         byId('schedule-root').hidden = true;
-        byId('warnings-box').hidden = true;
         byId('error-state').hidden = false;
         byId('error-detail').textContent = detail ? 'Technical detail: ' + detail : '';
         sendHeightToParent();
@@ -2485,7 +2993,9 @@
         byId('error-state').hidden = true;
         byId('loading-state').hidden = false;
 
-        fetch(DATA_URL, { cache: 'default' })
+        // The fleet schedule. Failing to load it is fatal: without it there are
+        // no availability figures, so the error panel shows instead.
+        var schedulePromise = fetch(DATA_URL, { cache: 'default' })
             .then(function (response) {
                 if (!response.ok) {
                     throw new Error('HTTP ' + response.status + ' loading the fleet schedule');
@@ -2499,7 +3009,44 @@
                 if (!payload.categories.length) {
                     throw new Error('The fleet schedule contains no instrument categories');
                 }
-                render(payload);
+                return payload;
+            });
+
+        // The project register, requested at the same time rather than after.
+        // Failing to load it is not fatal: it resolves to null, the
+        // magnetotellurics section is omitted, and every seismic figure on the
+        // page renders exactly as it did before this file was ever read.
+        var projectsPromise = fetch(PROJECTS_URL, { cache: 'default' })
+            .then(function (response) {
+                if (!response.ok) return null;
+                return response.json();
+            })
+            .then(function (payload) {
+                return (payload && Array.isArray(payload.data)) ? payload : null;
+            })
+            .catch(function () {
+                return null;
+            });
+
+        // The instrument register, requested alongside the other two. Failing to
+        // load it is not fatal either: it resolves to null, the Magnetotellurics
+        // accordion is simply absent, and every other figure on the page renders
+        // exactly as it would have anyway.
+        var registerPromise = fetch(REGISTER_URL, { cache: 'default' })
+            .then(function (response) {
+                if (!response.ok) return null;
+                return response.json();
+            })
+            .then(function (payload) {
+                return (payload && Array.isArray(payload.models)) ? payload : null;
+            })
+            .catch(function () {
+                return null;
+            });
+
+        Promise.all([schedulePromise, projectsPromise, registerPromise])
+            .then(function (results) {
+                render(results[0], results[1], results[2]);
             })
             .catch(function (err) {
                 showError(err && err.message ? err.message : String(err));
