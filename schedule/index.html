@@ -862,12 +862,6 @@
 
         <section class="section" aria-labelledby="h-categories">
             <h2 id="h-categories">Availability by instrument type</h2>
-            <p class="section-note">
-                Every instrument type in the fleet, grouped as the source sheet groups them,
-                plus magnetotellurics from the AuScope instrument register. The large figure is
-                the number field-ready and not reserved. Select a heading to collapse or expand
-                a group.
-            </p>
             <div class="legend pill-legend">
                 <span class="legend-item">
                     <span class="pill pill-deployed">Deployed</span> in the field now
@@ -1372,19 +1366,9 @@
                 label: 'Reserved',
                 sub: 'committed to approved projects not yet in the field',
                 cls: 'kpi is-reserved'
-            },
-            {
-                value: summary.testing,
-                label: 'In testing',
-                sub: 'being checked before or after a deployment',
-                cls: 'kpi'
-            },
-            {
-                value: summary.repair,
-                label: 'Under repair',
-                sub: 'not currently field-ready',
-                cls: 'kpi'
             }
+            // Testing and repair tiles removed by request: those figures
+            // still appear per instrument inside the category accordions.
         ];
 
         var grid = byId('kpi-grid');
