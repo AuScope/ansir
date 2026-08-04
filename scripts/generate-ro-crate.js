@@ -73,7 +73,7 @@ function buildGraph(data) {
   const ansirRef = addEntity({
     '@id': ANSIR_URL,
     '@type': 'Organization',
-    'name': 'Australian National Seismic Imaging Resource (ANSIR)',
+    'name': 'ANSIR Research Facilities for Earth Sounding (ANSIR)',
     'url': ANSIR_URL,
     'parentOrganization': { '@id': AUSCOPE_URL }
   });
@@ -403,7 +403,7 @@ function buildGraph(data) {
     '@id': './',
     '@type': 'Dataset',
     'name': 'ANSIR Research Projects Database',
-    'description': 'Public database of geophysical research projects enabled by the Australian National Seismic Imaging Resource (ANSIR), an AuScope national facility. Includes seismic, magnetotelluric, and DAS deployments across Australia and internationally.',
+    'description': 'Public database of geophysical research projects enabled by the ANSIR Research Facilities for Earth Sounding (ANSIR), an AuScope national facility. Includes seismic, magnetotelluric, and DAS deployments across Australia and internationally.',
     'datePublished': data.exported ? data.exported.split('T')[0] : new Date().toISOString().split('T')[0],
     'license': { '@id': 'https://creativecommons.org/licenses/by/4.0/' },
     'provider': ansirRef,

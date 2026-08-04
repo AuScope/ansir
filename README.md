@@ -1,7 +1,7 @@
 # ANSIR web
 
-Public web pages and data pipeline for **ANSIR**, the Australian National
-Seismic Imaging Resource - a national research facility of
+Public web pages and data pipeline for **ANSIR Research Facilities for Earth
+Sounding**, a national research facility program of
 [AuScope](https://www.auscope.org.au/), funded under the National
 Collaborative Research Infrastructure Strategy (NCRIS).
 

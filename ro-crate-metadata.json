@@ -15,7 +15,7 @@
       "@id": "./",
       "@type": "Dataset",
       "name": "ANSIR Research Projects Database",
-      "description": "Public database of geophysical research projects enabled by the Australian National Seismic Imaging Resource (ANSIR), an AuScope national facility. Includes seismic, magnetotelluric, and DAS deployments across Australia and internationally.",
+      "description": "Public database of geophysical research projects enabled by the ANSIR Research Facilities for Earth Sounding (ANSIR), an AuScope national facility. Includes seismic, magnetotelluric, and DAS deployments across Australia and internationally.",
       "datePublished": "2026-03-12",
       "license": {
         "@id": "https://creativecommons.org/licenses/by/4.0/"
@@ -186,7 +186,7 @@
     {
       "@id": "https://ansir.org.au",
       "@type": "Organization",
-      "name": "Australian National Seismic Imaging Resource (ANSIR)",
+      "name": "ANSIR Research Facilities for Earth Sounding (ANSIR)",
       "url": "https://ansir.org.au",
       "parentOrganization": {
         "@id": "https://www.auscope.org.au"

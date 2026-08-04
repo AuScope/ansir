@@ -1,6 +1,6 @@
 /**
  * ANSIR - Equipment Loan Application Intake Endpoint
- * Australian National Seismic Imaging Resource (AuScope / NCRIS)
+ * ANSIR Research Facilities for Earth Sounding (AuScope / NCRIS)
  *
  * ============================================================================
  * THE CORE SECURITY PROPERTY OF THIS FILE
@@ -1180,7 +1180,7 @@ function buildApplicantEmail_(formData, ansirCode, fileInfo) {
   var lines = [];
   lines.push('Dear ' + (salutation || 'Applicant') + ',');
   lines.push('');
-  lines.push('Thank you for submitting an equipment loan application to ANSIR, the Australian National Seismic Imaging Resource.');
+  lines.push('Thank you for submitting an equipment loan application to ANSIR Research Facilities for Earth Sounding (ANSIR).');
   lines.push('');
   lines.push('Your application has been received and is pending review.');
   lines.push('');
@@ -1196,7 +1196,7 @@ function buildApplicantEmail_(formData, ansirCode, fileInfo) {
   lines.push('');
   lines.push('Yours sincerely,');
   lines.push('The ANSIR team');
-  lines.push('Australian National Seismic Imaging Resource');
+  lines.push('ANSIR Research Facilities for Earth Sounding');
   lines.push('An AuScope research facility funded under NCRIS');
   lines.push('');
 
