@@ -416,98 +416,17 @@
             border-top: 1px solid var(--border-color);
         }
 
-        /* Panel summarising what an applied profile did and did not fill */
-        .profile-panel {
-            margin-top: var(--spacing-lg);
-            padding: var(--spacing-md) var(--spacing-lg);
-            border: 1px solid var(--border-color);
-            border-left: 4px solid var(--primary-bg);
-            border-radius: var(--border-radius-md);
-            background: var(--white);
-            font-size: 0.85rem;
+        /*
+           One quiet line under an ORCID field the verification gate withheld.
+           This is the only notice an applied profile leaves behind: everything
+           else about the fill is visible in the fields themselves.
+        */
+        .orcid-inline-hint {
+            margin-top: var(--spacing-xs);
+            font-size: 0.78rem;
             color: var(--text-color);
         }
 
-        .profile-panel-title {
-            font-size: 0.95rem;
-            color: var(--primary-bg);
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .profile-panel-provenance {
-            font-size: 0.8rem;
-            color: var(--medium-gray);
-            margin-bottom: var(--spacing-md);
-        }
-
-        .profile-panel-heading {
-            font-weight: bold;
-            margin-top: var(--spacing-md);
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .profile-panel-hint {
-            font-size: 0.8rem;
-            color: var(--medium-gray);
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .profile-panel-list {
-            margin: 0 0 var(--spacing-sm) var(--spacing-xl);
-            padding: 0;
-        }
-
-        .profile-panel-list li {
-            margin-bottom: 3px;
-            line-height: 1.4;
-        }
-
-        .profile-panel-btn {
-            font-family: var(--font-family);
-            font-size: 0.8rem;
-            padding: 6px var(--spacing-md);
-            margin-top: var(--spacing-sm);
-            margin-right: var(--spacing-sm);
-            border: 1px solid var(--primary-bg);
-            border-radius: var(--border-radius-md);
-            background: var(--primary-bg);
-            color: var(--white);
-            cursor: pointer;
-        }
-
-        .profile-panel-btn:hover {
-            background: var(--primary-hover);
-        }
-
-        .profile-panel-dismiss {
-            font-family: var(--font-family);
-            font-size: 0.8rem;
-            padding: 6px var(--spacing-md);
-            margin-top: var(--spacing-sm);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-md);
-            background: var(--white);
-            color: var(--text-color);
-            cursor: pointer;
-        }
-
-        .profile-panel-dismiss:hover {
-            background: var(--light-gray);
-        }
-
-        .profile-recall {
-            margin-top: var(--spacing-md);
-            padding-top: var(--spacing-md);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .profile-recall .form-select {
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .profile-recall-result:empty {
-            display: none;
-        }
 
         /* Visually hidden, still announced by screen readers */
         .visually-hidden {
@@ -1013,6 +932,26 @@
             color: #333;
             flex: 1;
             font-size: 0.85rem;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        /* An answer the applicant has not given yet. Muted, never omitted. */
+        .summary-empty {
+            color: var(--medium-gray);
+            font-style: italic;
+        }
+
+        /*
+           Groups the rows that belong to one person or one equipment
+           category, so repeated field labels stay unambiguous.
+        */
+        .summary-subhead {
+            font-weight: 600;
+            color: var(--primary-bg);
+            font-size: 0.85rem;
+            padding: 10px 0 4px;
+            border-bottom: 1px solid #e9ecef;
         }
 
         /* Success confirmation */
@@ -2518,6 +2457,14 @@
          * blank for the applicant to type. Offering a known-wrong identifier
          * with an authoritative-looking provenance line is worse than offering
          * nothing at all.
+         *
+         * The file vouches for a PAIR, not an identifier. Each verified entry
+         * carries matchedClaimants, the ANSIR names the register's name for
+         * that ORCID matches. An identifier the shift copied onto other people
+         * is still its owner's identifier, so it is offered to the owner and
+         * withheld from everybody else who carries it. Ben Kay's ORCID also
+         * sits on Emily Lewis and Kate Brand; Ben Kay is offered it and they
+         * are not.
          */
         var ORCID_VERIFICATION_URL = '../data/contributor-verification.json';
 
@@ -2609,9 +2556,11 @@
         // Counter used to mint unique element ids for combobox listboxes.
         let comboboxSeq = 0;
 
-        // Bare ORCIDs the public register has confirmed, as a plain lookup
-        // object keyed by the canonical NNNN-NNNN-NNNN-NNNX form. Null until
-        // the allow-list has loaded, and null again if it could not be loaded.
+        // Bare ORCIDs the public register has confirmed, keyed by the canonical
+        // NNNN-NNNN-NNNN-NNNX form. Each value is a lookup object of the name
+        // keys the identifier was confirmed FOR, because an ORCID is verified
+        // for a person and not on its own. Null until the allow-list has
+        // loaded, and null again if it could not be loaded.
         let verifiedOrcids = null;
 
         // True only when a usable allow-list is in hand. While this is false
@@ -2676,14 +2625,26 @@
 
         /**
          * The single gate. An ORCID may be offered only if its bare form is a
-         * key in the verified list. Anything else - rejected, unknown, absent
-         * from the file, or the whole file missing - is not offered.
+         * key in the verified list AND the person it is being offered to is one
+         * of the claimants that entry was verified for. Anything else -
+         * rejected, verified for somebody else, unknown, absent from the file,
+         * or the whole file missing - is not offered.
+         *
+         * The claimant name comes from the same data.json record the ORCID came
+         * from, and matchedClaimants was written from those same strings, so
+         * comparing them after trimming, collapsing whitespace and lowercasing
+         * is exact. The register-side allowance for spelling variants stays in
+         * scripts/validate-contributors.js where the register's own name is at
+         * hand; reimplementing a fuzzy match here would quietly widen the gate.
          */
-        function orcidIsVerified(value) {
+        function orcidIsVerified(value, claimantName) {
             if (!orcidGateAvailable || !verifiedOrcids) return false;
             var bare = bareOrcid(value);
             if (!bare) return false;
-            return Object.prototype.hasOwnProperty.call(verifiedOrcids, bare);
+            if (!Object.prototype.hasOwnProperty.call(verifiedOrcids, bare)) return false;
+            var key = nameKey(claimantName);
+            if (!key) return false;
+            return Object.prototype.hasOwnProperty.call(verifiedOrcids[bare], key);
         }
 
         function canonicalRor(value) {
@@ -2751,7 +2712,11 @@
                 done();
             }
 
-            fetch(ORCID_VERIFICATION_URL)
+            // no-cache: revalidate rather than trust a cached copy. A stale
+            // old-format file closes the gate (correct but needlessly strict
+            // for up to a cache lifetime after a deploy); revalidating costs
+            // one conditional request for a small file.
+            fetch(ORCID_VERIFICATION_URL, { cache: 'no-cache' })
                 .then(function (response) {
                     if (!response.ok) {
                         throw new Error('ORCID verification list unavailable.');
@@ -2769,7 +2734,28 @@
                     Object.keys(verified).forEach(function (raw) {
                         var bare = bareOrcid(raw);
                         if (!bare) return;
-                        allowed[bare] = true;
+
+                        // An entry with no usable matchedClaimants vouches for
+                        // nobody and is dropped. That is deliberate: an older
+                        // file written before verification became per-person
+                        // says which identifiers are sound but not who they are
+                        // sound for, and guessing the who is exactly the
+                        // mistake this gate exists to prevent.
+                        var entry = verified[raw];
+                        var claimants = entry && entry.matchedClaimants;
+                        if (!claimants || !Array.isArray(claimants)) return;
+
+                        var names = {};
+                        var kept = 0;
+                        claimants.forEach(function (claimant) {
+                            var key = nameKey(claimant);
+                            if (!key) return;
+                            names[key] = true;
+                            kept++;
+                        });
+                        if (!kept) return;
+
+                        allowed[bare] = names;
                         count++;
                     });
 
@@ -2853,8 +2839,10 @@
                     // so an unverified ORCID never exists anywhere downstream.
                     // Every later consumer - profile derivation, the suggestion
                     // dropdown, the profile panel, team recall - sees only ''.
+                    // The name is passed with it because the same identifier
+                    // can be right on this record and wrong on the next one.
                     var storedOrcid = canonicalOrcid(c.orcid);
-                    var offerableOrcid = orcidIsVerified(storedOrcid) ? storedOrcid : '';
+                    var offerableOrcid = orcidIsVerified(storedOrcid, name) ? storedOrcid : '';
 
                     var record = {
                         name: name,
@@ -3342,13 +3330,6 @@
             return select.value === value;
         }
 
-        function sourceLabel(meta) {
-            if (!meta) return '';
-            var label = meta.code;
-            if (meta.year) label += ' (' + meta.year + ')';
-            return label;
-        }
-
         // ─── WITHHELD ORCID WORDING ────────────────────────────────────
 
         /**
@@ -3362,23 +3343,8 @@
          * shown another researcher's name. What they need is to know the field
          * is theirs to fill and that nothing was quietly guessed.
          */
-        function orcidWithheldNote(profile) {
-            if (!profile || !profile.orcidWithheld) return '';
-            if (!orcidGateAvailable) {
-                return 'ORCID left blank - our ORCID verification list is unavailable, ' +
-                    'so no ORCIDs are being suggested. Please enter it yourself.';
-            }
-            return 'ORCID left blank - we could not confirm this one against the ORCID register. ' +
-                'Please enter it yourself.';
-        }
-
-        /** The same point in the compressed form the team recall list uses. */
-        function orcidWithheldFragment() {
-            if (!orcidGateAvailable) {
-                return 'ORCID left blank, our verification list is unavailable';
-            }
-            return 'ORCID left blank, not confirmed against the ORCID register';
-        }
+        var ORCID_WITHHELD_HINT = 'ORCID left blank - could not be confirmed ' +
+            'against the ORCID register. Please enter it yourself.';
 
         /**
          * Shows the standing notice when the allow-list is unavailable, so the
@@ -3400,15 +3366,45 @@
             notice.style.display = 'block';
         }
 
-        /** The same point again, counted, for the team recall summary line. */
-        function orcidWithheldSummary(count) {
-            var subject = count + ' ' + (count === 1 ? 'ORCID was' : 'ORCIDs were') + ' left blank';
-            var ask = ' Please enter ' + (count === 1 ? 'it' : 'them') + ' yourself.';
-            if (!orcidGateAvailable) {
-                return subject + ' - our ORCID verification list is unavailable.' + ask;
+        /* ─── THE ONE SURVIVING FIELD NOTICE ─────────────────────────────
+         *
+         * Applying a profile is meant to feel like nothing more than the
+         * fields filling in. The single exception is an ORCID the
+         * verification gate refused to offer: that field stays empty for a
+         * reason the applicant cannot see, so one quiet line says so. It
+         * clears itself the moment they type an ORCID.
+         */
+        function orcidHintId(blockId) {
+            return 'orcidHint_' + (blockId ? blockId : 'lead');
+        }
+
+        function clearOrcidWithheldHint(blockId) {
+            var existing = document.getElementById(orcidHintId(blockId));
+            if (existing) existing.remove();
+        }
+
+        function showOrcidWithheldHint(blockId) {
+            var field = contributorField(blockId, 'orcid');
+            if (!field) return;
+
+            clearOrcidWithheldHint(blockId);
+
+            var hint = document.createElement('p');
+            hint.id = orcidHintId(blockId);
+            hint.className = 'orcid-inline-hint';
+            hint.textContent = ORCID_WITHHELD_HINT;
+
+            var host = field.parentNode;
+            if (host) host.appendChild(hint);
+
+            // Typing an ORCID answers the hint, so it goes away. Bound once
+            // per field; re-showing the hint later re-uses the same listener.
+            if (!field.getAttribute('data-orcid-hint-bound')) {
+                field.setAttribute('data-orcid-hint-bound', 'true');
+                field.addEventListener('input', function () {
+                    if (cleanValue(field.value)) clearOrcidWithheldHint(blockId);
+                });
             }
-            return subject + ' - we could not confirm ' + (count === 1 ? 'it' : 'them') +
-                ' against the ORCID register.' + ask;
         }
 
         // ─── APPLYING A PROFILE ────────────────────────────────────────
@@ -3416,29 +3412,32 @@
         /**
          * Applies a derived profile to one team member block.
          *
-         * Nothing the applicant has already typed is overwritten. Empty fields
-         * are filled; fields that already hold a different value are listed
-         * back with an explicit control to replace them. Email is never
-         * filled, and identifiers that conflict across previous records are
-         * left blank on purpose.
+         * Choosing a suggestion simply fills the fields. There is no summary
+         * of what happened, because the fields themselves are the summary.
+         *
+         * The rules that make that safe are unchanged and now silent:
+         * anything the applicant has already typed wins and is never
+         * overwritten, email is never filled, and identifiers that conflict
+         * across previous records are left blank rather than guessed. The one
+         * thing an applicant could not work out by looking is an ORCID the
+         * verification gate withheld, so that single case leaves a one-line
+         * hint under the field it affects.
          */
-        function autoFillContributor(profile, blockId, replaceKeys) {
+        function autoFillContributor(profile, blockId) {
             if (!profile) return;
 
-            var replacing = replaceKeys || {};
             var planned = [];
 
             var parts = splitName(profile.name);
-            if (parts.given) planned.push({ key: 'given', label: 'Given name', value: parts.given, source: profile.source });
-            if (parts.family) planned.push({ key: 'family', label: 'Family name', value: parts.family, source: profile.source });
-            if (profile.title) planned.push({ key: 'title', label: 'Title', value: profile.title, source: profile.fieldSource.title });
-            if (profile.orcid) planned.push({ key: 'orcid', label: 'ORCID', value: profile.orcid, source: profile.fieldSource.orcid });
-            if (profile.organisation) planned.push({ key: 'organisation', label: 'Organisation', value: profile.organisation, source: profile.fieldSource.organisation });
-            if (profile.organisationRor) planned.push({ key: 'org_ror', label: 'Organisation ROR', value: profile.organisationRor, source: profile.fieldSource.organisationRor });
+            if (parts.given) planned.push({ key: 'given', value: parts.given });
+            if (parts.family) planned.push({ key: 'family', value: parts.family });
+            if (profile.title) planned.push({ key: 'title', value: profile.title });
+            if (profile.orcid) planned.push({ key: 'orcid', value: profile.orcid });
+            if (profile.organisation) planned.push({ key: 'organisation', value: profile.organisation });
+            if (profile.organisationRor) planned.push({ key: 'org_ror', value: profile.organisationRor });
 
-            var filled = [];
-            var unchanged = [];
-            var conflicts = [];
+            var filledCount = 0;
+            var keptCount = 0;
 
             planned.forEach(function (item) {
                 var field = contributorField(blockId, item.key);
@@ -3449,7 +3448,7 @@
 
                 if (!existing) {
                     if (isSelect) { setSelectValue(field, item.value); } else { field.value = item.value; }
-                    filled.push(item);
+                    filledCount++;
                     return;
                 }
                 if (existing.toLowerCase() === item.value.toLowerCase()) {
@@ -3458,345 +3457,29 @@
                     // canonical form is applied. No information is lost.
                     if (existing !== item.value) {
                         if (isSelect) { setSelectValue(field, item.value); } else { field.value = item.value; }
-                        item.normalised = existing;
                     }
-                    unchanged.push(item);
                     return;
                 }
-                if (replacing[item.key]) {
-                    if (isSelect) { setSelectValue(field, item.value); } else { field.value = item.value; }
-                    filled.push(item);
-                    return;
-                }
-                item.existing = existing;
-                conflicts.push(item);
+                // Something different is already there. What the applicant
+                // typed wins, with no notice about it.
+                keptCount++;
             });
 
-            renderProfilePanel(profile, blockId, filled, unchanged, conflicts);
+            var orcidField = contributorField(blockId, 'orcid');
+            if (profile.orcidWithheld && orcidField && !cleanValue(orcidField.value)) {
+                showOrcidWithheldHint(blockId);
+            } else {
+                clearOrcidWithheldHint(blockId);
+            }
 
+
+            // Screen reader users get no visual cue that six fields just
+            // changed, so the live region still says so. Nothing is drawn.
             announce('Details applied for ' + profile.name + '. ' +
-                filled.length + ' ' + (filled.length === 1 ? 'field' : 'fields') + ' filled. ' +
-                (conflicts.length > 0
-                    ? conflicts.length + ' ' + (conflicts.length === 1 ? 'field was' : 'fields were') + ' left as you typed them.'
-                    : 'Email is left blank for you to enter.'));
-        }
-
-        function profilePanelId(blockId) {
-            return 'profilePanel_' + (blockId ? blockId : 'lead');
-        }
-
-        function getProfilePanel(blockId) {
-            var id = profilePanelId(blockId);
-            var panel = document.getElementById(id);
-            if (panel) return panel;
-
-            var host = document.getElementById(blockId ? 'contributor_' + blockId : 'leadContributor');
-            if (!host) return null;
-
-            panel = document.createElement('div');
-            panel.className = 'profile-panel';
-            panel.id = id;
-            host.appendChild(panel);
-            return panel;
-        }
-
-        function appendPanelList(panel, headingText, items, describe) {
-            if (items.length === 0) return;
-            var heading = document.createElement('p');
-            heading.className = 'profile-panel-heading';
-            heading.textContent = headingText;
-            panel.appendChild(heading);
-
-            var list = document.createElement('ul');
-            list.className = 'profile-panel-list';
-            items.forEach(function (item) {
-                var li = document.createElement('li');
-                li.textContent = describe(item);
-                list.appendChild(li);
-            });
-            panel.appendChild(list);
-        }
-
-        function renderProfilePanel(profile, blockId, filled, unchanged, conflicts) {
-            var panel = getProfilePanel(blockId);
-            if (!panel) return;
-            panel.innerHTML = '';
-
-            var title = document.createElement('h4');
-            title.className = 'profile-panel-title';
-            title.textContent = 'Details recalled for ' + profile.name;
-            panel.appendChild(title);
-
-            var summaryBits = [];
-            if (profile.title) summaryBits.push(profile.title);
-            if (profile.organisation) summaryBits.push(profile.organisation);
-            var provenance = document.createElement('p');
-            provenance.className = 'profile-panel-provenance';
-            provenance.textContent = (summaryBits.length > 0 ? summaryBits.join(', ') + ' - ' : '') +
-                'from ' + sourceLabel(profile.source) +
-                (profile.source && profile.source.title ? ', ' + profile.source.title : '');
-            panel.appendChild(provenance);
-
-            appendPanelList(panel, 'Filled from your previous records:', filled, function (item) {
-                return item.label + ': ' + item.value +
-                    (item.source ? ' - from ' + sourceLabel(item.source) : '');
-            });
-
-            appendPanelList(panel, 'Already matched what you had typed:', unchanged, function (item) {
-                return item.label + ': ' + item.value +
-                    (item.normalised ? ' - capitalisation corrected from "' + item.normalised + '"' : '');
-            });
-
-            // Fields left blank on purpose, each with the reason.
-            var blanks = [];
-            blanks.push('Email - never recalled. The published record holds no email addresses, by design. Please enter it yourself.');
-            if (profile.orcidConflict) {
-                blanks.push('ORCID - left blank. Previous records disagree (' +
-                    profile.orcidOptions.join(' and ') +
-                    '). An ORCID identifies one person, so please confirm the correct one rather than have it guessed.');
-            } else if (profile.orcidWithheld) {
-                blanks.push(orcidWithheldNote(profile));
-            }
-            if (profile.rorConflict) {
-                blanks.push('Organisation ROR - left blank. Previous records disagree (' +
-                    profile.rorOptions.join(' and ') +
-                    '). Choose your organisation from the Organisation field to fill the matching identifier.');
-            }
-            appendPanelList(panel, 'Left blank on purpose:', blanks, function (item) { return item; });
-
-            if (conflicts.length > 0) {
-                appendPanelList(panel, 'Kept as you typed them, not overwritten:', conflicts, function (item) {
-                    return item.label + ': you have "' + item.existing + '", previous record has "' + item.value + '"' +
-                        (item.source ? ' - from ' + sourceLabel(item.source) : '');
-                });
-
-                var replaceBtn = document.createElement('button');
-                replaceBtn.type = 'button';
-                replaceBtn.className = 'profile-panel-btn';
-                replaceBtn.textContent = 'Replace ' + (conflicts.length === 1
-                    ? 'that field' : 'those ' + conflicts.length + ' fields') + ' with the previous values';
-                replaceBtn.addEventListener('click', function () {
-                    var keys = {};
-                    conflicts.forEach(function (item) { keys[item.key] = true; });
-                    autoFillContributor(profile, blockId, keys);
-                });
-                panel.appendChild(replaceBtn);
-            }
-
-            renderTeamRecall(panel, profile, blockId);
-
-            var dismiss = document.createElement('button');
-            dismiss.type = 'button';
-            dismiss.className = 'profile-panel-dismiss';
-            dismiss.textContent = 'Dismiss this note';
-            dismiss.addEventListener('click', function () { panel.remove(); });
-            panel.appendChild(dismiss);
-        }
-
-        // ─── TEAM RECALL ───────────────────────────────────────────────
-
-        /**
-         * Offers to load the full contributor list of one of this person's
-         * previous projects into the team section.
-         *
-         * Always an explicit opt-in action, never automatic, and always
-         * additive: existing rows are never altered and people already listed
-         * are skipped. Position is not carried across, per the rule above.
-         */
-        function renderTeamRecall(panel, profile, blockId) {
-            if (!profile.projects || profile.projects.length === 0) return;
-
-            var wrap = document.createElement('div');
-            wrap.className = 'profile-recall';
-
-            var heading = document.createElement('p');
-            heading.className = 'profile-panel-heading';
-            heading.textContent = 'Recall a team from a previous project';
-            wrap.appendChild(heading);
-
-            var hint = document.createElement('p');
-            hint.className = 'profile-panel-hint';
-            hint.textContent = profile.name + ' appears on ' + profile.projects.length +
-                ' previous ' + (profile.projects.length === 1 ? 'project' : 'projects') +
-                '. Choose one to add its team members as new rows. Nothing already on this form is changed or removed.';
-            wrap.appendChild(hint);
-
-            var selectId = 'recallProject_' + (blockId ? blockId : 'lead');
-            var label = document.createElement('label');
-            label.className = 'form-label';
-            label.setAttribute('for', selectId);
-            label.textContent = 'Previous project';
-            wrap.appendChild(label);
-
-            var select = document.createElement('select');
-            select.className = 'form-select';
-            select.id = selectId;
-            profile.projects.forEach(function (meta) {
-                var option = document.createElement('option');
-                option.value = meta.id;
-                var text = meta.code + (meta.year ? ' (' + meta.year + ')' : '');
-                if (meta.title) text += ' - ' + meta.title;
-                var count = meta.contributors ? meta.contributors.length : 0;
-                text += ' [' + count + ' ' + (count === 1 ? 'person' : 'people') + ']';
-                option.textContent = text;
-                select.appendChild(option);
-            });
-            wrap.appendChild(select);
-
-            var button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'profile-panel-btn';
-            button.textContent = 'Add team members from this project';
-            button.addEventListener('click', function () {
-                recallTeamFromProject(select.value, wrap);
-            });
-            wrap.appendChild(button);
-
-            var result = document.createElement('div');
-            result.className = 'profile-recall-result';
-            wrap.appendChild(result);
-
-            panel.appendChild(wrap);
-        }
-
-        function collectExistingNames() {
-            var names = {};
-
-            function add(givenField, familyField) {
-                if (!givenField && !familyField) return;
-                var given = givenField ? cleanValue(givenField.value) : '';
-                var family = familyField ? cleanValue(familyField.value) : '';
-                var full = nameKey((given + ' ' + family).trim());
-                if (full) names[full] = true;
-            }
-
-            add(document.getElementById('lead_given_name'), document.getElementById('lead_family_name'));
-
-            var container = document.getElementById('additionalContributors');
-            if (container) {
-                var blocks = container.querySelectorAll('.contributor-block');
-                Array.prototype.forEach.call(blocks, function (block) {
-                    add(block.querySelector('[id$="_given"]'), block.querySelector('[id$="_family"]'));
-                });
-            }
-            return names;
-        }
-
-        function recallTeamFromProject(projectId, wrap) {
-            var result = wrap.querySelector('.profile-recall-result');
-            if (result) result.innerHTML = '';
-
-            var meta = projectIndex.get(String(projectId));
-            if (!meta) return;
-
-            var existing = collectExistingNames();
-            var added = [];
-            var skipped = [];
-
-            (meta.contributors || []).forEach(function (record) {
-                var key = nameKey(record.name);
-                if (!key) return;
-                if (existing[key]) { skipped.push(record.name); return; }
-                existing[key] = true;
-
-                var profile = contributorProfiles.get(key);
-                addContributor();
-                var newBlockId = contributorCount;
-
-                var parts = splitName(record.name);
-                var givenField = contributorField(newBlockId, 'given');
-                var familyField = contributorField(newBlockId, 'family');
-                if (givenField) givenField.value = parts.given;
-                if (familyField) familyField.value = parts.family;
-
-                // Prefer the person's derived profile so the newest known
-                // details win and conflicting identifiers stay blank. Fall
-                // back to this project's own record if no profile exists.
-                var titleValue = profile ? profile.title : record.title;
-                var orgValue = profile ? profile.organisation : record.organisation;
-                var orcidValue = profile ? (profile.orcidConflict ? '' : profile.orcid) : record.orcid;
-                var rorValue = profile ? (profile.rorConflict ? '' : profile.organisationRor) : record.organisationRor;
-
-                // Team recall writes fields directly rather than going through
-                // autoFillContributor, so the allow-list is re-applied here at
-                // the point of writing. Both sources above are already filtered;
-                // this makes certain no future change to this path can reopen
-                // the hole, and costs one object lookup per person.
-                if (!orcidIsVerified(orcidValue)) orcidValue = '';
-                var orcidWasWithheld = !orcidValue &&
-                    !!(profile ? profile.orcidWithheld : record.orcidWithheld);
-
-                var titleField = contributorField(newBlockId, 'title');
-                if (titleField && titleValue) setSelectValue(titleField, titleValue);
-                var orgField = contributorField(newBlockId, 'organisation');
-                if (orgField && orgValue) orgField.value = orgValue;
-                var orcidField = contributorField(newBlockId, 'orcid');
-                if (orcidField && orcidValue) orcidField.value = orcidValue;
-                var rorField = contributorField(newBlockId, 'org_ror');
-                if (rorField && rorValue) rorField.value = rorValue;
-
-                // Position is deliberately not carried across. It belongs to
-                // the previous project, not to this application.
-
-                added.push({
-                    name: record.name,
-                    orcidBlank: !!(profile && profile.orcidConflict),
-                    orcidWithheld: orcidWasWithheld,
-                    rorBlank: !!(profile && profile.rorConflict)
-                });
-            });
-
-            if (!result) return;
-
-            var withheldCount = 0;
-            added.forEach(function (item) {
-                if (item.orcidWithheld) withheldCount++;
-            });
-
-            var summary = document.createElement('p');
-            summary.className = 'profile-panel-heading';
-            summary.textContent = 'Added ' + added.length + ' ' +
-                (added.length === 1 ? 'team member' : 'team members') + ' from ' +
-                meta.code + (meta.year ? ' (' + meta.year + ')' : '') + '.' +
-                (withheldCount > 0 ? ' ' + orcidWithheldSummary(withheldCount) : '');
-            result.appendChild(summary);
-
-            if (added.length > 0) {
-                var list = document.createElement('ul');
-                list.className = 'profile-panel-list';
-                added.forEach(function (item) {
-                    var li = document.createElement('li');
-                    var text = item.name;
-                    var blanks = [];
-                    if (item.orcidBlank) {
-                        blanks.push('ORCID left blank, previous records disagree');
-                    } else if (item.orcidWithheld) {
-                        blanks.push(orcidWithheldFragment());
-                    }
-                    if (item.rorBlank) blanks.push('ROR left blank, previous records disagree');
-                    if (blanks.length > 0) text += ' - ' + blanks.join('; ');
-                    li.textContent = text;
-                    list.appendChild(li);
-                });
-                result.appendChild(list);
-            }
-
-            var note = document.createElement('p');
-            note.className = 'profile-panel-hint';
-            note.textContent = 'Email addresses and project positions are not recalled. ' +
-                'Please add an email for each person and set positions for this application.';
-            result.appendChild(note);
-
-            if (skipped.length > 0) {
-                var skippedNote = document.createElement('p');
-                skippedNote.className = 'profile-panel-hint';
-                skippedNote.textContent = 'Already on this form, so left untouched: ' + skipped.join(', ') + '.';
-                result.appendChild(skippedNote);
-            }
-
-            announce('Added ' + added.length + ' team members from ' + meta.code + '. ' +
-                skipped.length + ' already present and left unchanged.' +
-                (withheldCount > 0 ? ' ' + orcidWithheldSummary(withheldCount) : ''));
+                filledCount + ' ' + (filledCount === 1 ? 'field' : 'fields') + ' filled.' +
+                (keptCount > 0
+                    ? ' ' + keptCount + ' ' + (keptCount === 1 ? 'field was' : 'fields were') + ' left as you typed them.'
+                    : ''));
         }
 
         // ─── NAME AUTOCOMPLETE ─────────────────────────────────────────
@@ -3808,34 +3491,20 @@
             createCombobox(input, {
                 listLabel: 'Matching people from previous applications',
                 limit: 8,
+                // A suggestion card is a name, where they work, and their
+                // ORCID when the register has confirmed it - the identifier
+                // helps pick between similarly named people. Email never
+                // appears: the public dataset deliberately carries none.
                 getItems: function (value) {
                     return findProfileMatches(value).map(function (profile) {
                         var summaryBits = [];
                         if (profile.title) summaryBits.push(profile.title);
                         if (profile.organisation) summaryBits.push(profile.organisation);
 
-                        var note = '';
-                        if (profile.orcidConflict && profile.rorConflict) {
-                            note = 'ORCID and ROR left blank - previous records disagree, please confirm.';
-                        } else if (profile.orcidConflict) {
-                            note = 'ORCID left blank - previous records disagree, please confirm.';
-                        } else if (profile.orcidWithheld && profile.rorConflict) {
-                            note = orcidWithheldNote(profile) +
-                                ' ROR left blank - previous records disagree, please confirm.';
-                        } else if (profile.orcidWithheld) {
-                            note = orcidWithheldNote(profile);
-                        } else if (profile.rorConflict) {
-                            note = 'ROR left blank - previous records disagree, please confirm.';
-                        }
-
                         return {
                             primary: profile.name,
                             secondary: summaryBits.join(', '),
-                            provenance: 'from ' + sourceLabel(profile.source) +
-                                (profile.projects.length > 1
-                                    ? ', 1 of ' + profile.projects.length + ' previous projects'
-                                    : ''),
-                            note: note,
+                            provenance: profile.orcid || '',
                             payload: profile
                         };
                     });
@@ -4233,7 +3902,13 @@
             keywords.forEach((keyword, index) => {
                 const chip = document.createElement('span');
                 chip.className = 'chip';
-                chip.innerHTML = `${keyword} <span class="chip-remove" onclick="removeKeyword(${index})">×</span>`;
+                // Text node, never innerHTML: a keyword is applicant input.
+                chip.appendChild(document.createTextNode(keyword + ' '));
+                const remove = document.createElement('span');
+                remove.className = 'chip-remove';
+                remove.textContent = '×';
+                remove.addEventListener('click', function () { removeKeyword(index); });
+                chip.appendChild(remove);
                 container.insertBefore(chip, input);
             });
 
@@ -4440,315 +4115,307 @@
         // ─── SUMMARY GENERATION ────────────────────────────────────
 
         // Summary shows every field the applicant filled in.
-        function populateSummary() {
-            const summary = document.getElementById('applicationSummary');
+        /* ─── REVIEW STEP ───────────────────────────────────────────────
+         *
+         * The review step shows everything the form collected, in the order
+         * the form asked for it, grouped under the form's own section
+         * headings.
+         *
+         * The rows are enumerated from the DOM rather than hand-listed. A
+         * field added to the form later turns up here without anyone having
+         * to remember to add it, which is the only version of this that stays
+         * true. Fields with no answer are shown as "Not provided" rather than
+         * dropped: the purpose of the step is to let someone see what is
+         * missing while they can still fix it.
+         *
+         * Every value is written with textContent. Nothing an applicant typed
+         * is ever handed back to the parser as markup.
+         */
 
-            // Project Details
-            const title = document.getElementById('title_primary').value;
-            const acronym = document.getElementById('title_acronym').value;
-            const description = document.getElementById('description_primary').value;
-            const objectives = document.getElementById('description_objectives').value;
+        /*
+         * Labels for the few controls whose surrounding markup does not
+         * describe them usefully: a multi-line acknowledgement whose text
+         * runs to a paragraph, or a field that shares a group label with the
+         * radio set it qualifies. Everything else reads its label off the
+         * form.
+         */
+        var REVIEW_LABEL_OVERRIDES = {
+            application_type_other: 'Type of application, other',
+            equipment_availability_confirmed: 'Equipment availability confirmed',
+            data_submission_confirmed: 'Data submission acknowledged',
+            acceptTerms: 'Declaration accepted',
+            project_keywords: 'Keywords',
+            location_polygon: 'Study area boundary',
+            supporting_document: 'Supporting document'
+        };
 
-            // Lead CI
-            const leadName = [
-                document.getElementById('lead_title').value,
-                document.getElementById('lead_given_name').value,
-                document.getElementById('lead_family_name').value
-            ].filter(Boolean).join(' ');
-            const leadEmail = document.getElementById('lead_email').value;
-            const leadOrcid = document.getElementById('lead_orcid').value;
-            const leadOrg = document.getElementById('lead_organisation').value;
-            const leadOrgRor = document.getElementById('lead_org_ror').value;
-
-            // Additional Contributors
-            const additionalContribs = collectAdditionalContributorsSummary();
-
-            // Timeline & Location
-            const startDate = formatDate(document.getElementById('date_start_date').value);
-            const endDate = formatDate(document.getElementById('date_end_date').value);
-            const timingConstraints = document.getElementById('timing_constraints')?.value || '';
-            const region = document.getElementById('location_region').value;
-            const country = document.getElementById('location_country').value;
-            const polygon = document.getElementById('location_polygon')?.value || '';
-
-            // Methods & Equipment
-            const methods = Array.from(document.querySelectorAll('input[name="methods_field"]:checked'))
-                .map(cb => cb.value).join(', ');
-            const methodsDesc = document.getElementById('methods_description').value;
-            const equipment = collectEquipmentSummary();
-            const equipmentConfirmed = document.getElementById('equipment_availability_confirmed').checked ? 'Yes' : 'No';
-
-            // Data Access
-            const dataAccess = document.querySelector('input[name="data_access"]:checked')?.value || 'Not specified';
-            const embargoDuration = document.getElementById('embargo_duration')?.value || '';
-            const embargoReason = document.getElementById('embargo_reason')?.value || '';
-
-            // Indigenous
-            const indigenous = document.querySelector('input[name="indigenous_involvement_flag"]:checked')?.value || 'Not specified';
-            const indigenousEngagement = document.getElementById('description_indigenous_engagement_summary')?.value || '';
-            const indigenousGovernance = document.getElementById('description_indigenous_data_governance')?.value || '';
-            const indigenousAcknowledgement = document.getElementById('description_indigenous_acknowledgement')?.value || '';
-            const indigenousSensitivity = document.getElementById('indigenous_data_sensitivity_flag')?.checked ? 'Yes' : 'No';
-
-            // Funding
-            const fundingTitle = document.getElementById('funding_title').value;
-            const fundingAgency = document.getElementById('funding_agency_name').value;
-            const fundingId = document.getElementById('funding_identifier').value;
-
-            // Supporting Document
-            const hasFile = uploadedFileData ? uploadedFileData.fileName : null;
-
-            // Build summary HTML
-            let html = `
-                <div class="summary-section">
-                    <h3>Project Details</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Title:</span>
-                        <span class="summary-value">${title}${acronym ? ' (' + acronym + ')' : ''}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Summary:</span>
-                        <span class="summary-value">${description || '<em>Not provided</em>'}</span>
-                    </div>
-                    ${objectives ? `<div class="summary-item">
-                        <span class="summary-label">Objectives:</span>
-                        <span class="summary-value">${objectives}</span>
-                    </div>` : ''}
-                    <div class="summary-item">
-                        <span class="summary-label">Keywords:</span>
-                        <span class="summary-value">${keywords.join(', ') || 'None specified'}</span>
-                    </div>
-                </div>
-
-                <div class="summary-section">
-                    <h3>Principal Investigator</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Name:</span>
-                        <span class="summary-value">${leadName}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Email:</span>
-                        <span class="summary-value">${leadEmail}</span>
-                    </div>
-                    ${leadOrcid ? `<div class="summary-item">
-                        <span class="summary-label">ORCID:</span>
-                        <span class="summary-value">${leadOrcid}</span>
-                    </div>` : ''}
-                    <div class="summary-item">
-                        <span class="summary-label">Institution:</span>
-                        <span class="summary-value">${leadOrg}</span>
-                    </div>
-                    ${leadOrgRor ? `<div class="summary-item">
-                        <span class="summary-label">Institution ROR:</span>
-                        <span class="summary-value">${leadOrgRor}</span>
-                    </div>` : ''}
-                </div>`;
-
-            // Additional team members, including ORCID and organisation ROR
-            if (additionalContribs.length > 0) {
-                html += `
-                <div class="summary-section">
-                    <h3>Additional Team Members (${additionalContribs.length})</h3>
-                    ${additionalContribs.map((c, i) => `
-                    <div class="summary-item" style="flex-direction: column; align-items: flex-start; margin-bottom: 12px;">
-                        <span class="summary-label" style="font-weight: 600;">${i + 1}. ${c.name}</span>
-                        <span class="summary-value" style="margin-left: 20px;">Email: ${c.email || '<em>Not provided</em>'}</span>
-                        ${c.orcid ? `<span class="summary-value" style="margin-left: 20px;">ORCID: ${c.orcid}</span>` : ''}
-                        <span class="summary-value" style="margin-left: 20px;">Organisation: ${c.org || '<em>Not provided</em>'}</span>
-                        ${c.org_ror ? `<span class="summary-value" style="margin-left: 20px;">Organisation ROR: ${c.org_ror}</span>` : ''}
-                    </div>`).join('')}
-                </div>`;
-            }
-
-            // Timeline & Location
-            html += `
-                <div class="summary-section">
-                    <h3>Timeline & Location</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Dates:</span>
-                        <span class="summary-value">${startDate} to ${endDate}</span>
-                    </div>
-                    ${timingConstraints ? `<div class="summary-item">
-                        <span class="summary-label">Timing Constraints:</span>
-                        <span class="summary-value">${timingConstraints}</span>
-                    </div>` : ''}
-                    <div class="summary-item">
-                        <span class="summary-label">Region:</span>
-                        <span class="summary-value">${region}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Country:</span>
-                        <span class="summary-value">${country}</span>
-                    </div>
-                    ${polygon ? `<div class="summary-item">
-                        <span class="summary-label">Map Area:</span>
-                        <span class="summary-value">Coordinates defined</span>
-                    </div>` : ''}
-                </div>
-
-                <div class="summary-section">
-                    <h3>Methods & Equipment</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Methods:</span>
-                        <span class="summary-value">${methods || 'None selected'}</span>
-                    </div>
-                    ${methodsDesc ? `<div class="summary-item">
-                        <span class="summary-label">Methods Description:</span>
-                        <span class="summary-value">${methodsDesc}</span>
-                    </div>` : ''}
-                    <div class="summary-item">
-                        <span class="summary-label">Equipment:</span>
-                        <span class="summary-value">${equipment || 'None specified'}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Availability Confirmed:</span>
-                        <span class="summary-value">${equipmentConfirmed}</span>
-                    </div>
-                </div>
-
-                <div class="summary-section">
-                    <h3>Data Access</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Data Access:</span>
-                        <span class="summary-value">${dataAccess}</span>
-                    </div>`;
-
-            if (dataAccess === 'Embargo' && embargoDuration) {
-                html += `
-                    <div class="summary-item">
-                        <span class="summary-label">Embargo Duration:</span>
-                        <span class="summary-value">${embargoDuration}</span>
-                    </div>`;
-                if (embargoReason) {
-                    html += `
-                    <div class="summary-item">
-                        <span class="summary-label">Embargo Reason:</span>
-                        <span class="summary-value">${embargoReason}</span>
-                    </div>`;
-                }
-            }
-            html += `</div>`;
-
-            // Indigenous Engagement
-            html += `
-                <div class="summary-section">
-                    <h3>Indigenous Engagement</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Indigenous Involvement:</span>
-                        <span class="summary-value">${indigenous}</span>
-                    </div>`;
-
-            if (indigenous === 'Yes') {
-                if (indigenousEngagement) {
-                    html += `
-                    <div class="summary-item">
-                        <span class="summary-label">Engagement Summary:</span>
-                        <span class="summary-value">${indigenousEngagement}</span>
-                    </div>`;
-                }
-                if (indigenousGovernance) {
-                    html += `
-                    <div class="summary-item">
-                        <span class="summary-label">Data Governance:</span>
-                        <span class="summary-value">${indigenousGovernance}</span>
-                    </div>`;
-                }
-                if (indigenousAcknowledgement) {
-                    html += `
-                    <div class="summary-item">
-                        <span class="summary-label">Acknowledgement:</span>
-                        <span class="summary-value">${indigenousAcknowledgement}</span>
-                    </div>`;
-                }
-                html += `
-                    <div class="summary-item">
-                        <span class="summary-label">Data Sensitivity:</span>
-                        <span class="summary-value">${indigenousSensitivity}</span>
-                    </div>`;
-            }
-            html += `</div>`;
-
-            // Funding
-            if (fundingTitle || fundingAgency || fundingId) {
-                html += `
-                <div class="summary-section">
-                    <h3>Funding</h3>
-                    ${fundingTitle ? `<div class="summary-item">
-                        <span class="summary-label">Grant Title:</span>
-                        <span class="summary-value">${fundingTitle}</span>
-                    </div>` : ''}
-                    ${fundingAgency ? `<div class="summary-item">
-                        <span class="summary-label">Funding Agency:</span>
-                        <span class="summary-value">${fundingAgency}</span>
-                    </div>` : ''}
-                    ${fundingId ? `<div class="summary-item">
-                        <span class="summary-label">Grant ID:</span>
-                        <span class="summary-value">${fundingId}</span>
-                    </div>` : ''}
-                </div>`;
-            }
-
-            // Supporting Document
-            if (hasFile) {
-                html += `
-                <div class="summary-section">
-                    <h3>Supporting Document</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">File:</span>
-                        <span class="summary-value">${hasFile}</span>
-                    </div>
-                </div>`;
-            }
-
-            summary.innerHTML = html;
+        /**
+         * Trimmed, but not otherwise touched.
+         *
+         * cleanValue is deliberately not used here. It collapses newlines and
+         * treats 'Unknown', 'TBD' and 'None' as absent, which is right when
+         * reading the published data set and wrong when showing an applicant
+         * what they typed.
+         */
+        function reviewText(value) {
+            if (value === null || value === undefined) return '';
+            return String(value).trim();
         }
 
-        // Collects additional contributors for the review step.
-        function collectAdditionalContributorsSummary() {
-            const contributors = [];
-            document.querySelectorAll('#additionalContributors .contributor-block').forEach(block => {
-                const id = block.id.split('_')[1];
+        function tidyLabel(text) {
+            return String(text).replace(/\s+/g, ' ').replace(/[:*]+$/, '').trim();
+        }
 
-                const name = [
-                    block.querySelector(`[name="contributor_${id}_title"]`)?.value,
-                    block.querySelector(`[name="contributor_${id}_given"]`)?.value,
-                    block.querySelector(`[name="contributor_${id}_family"]`)?.value
-                ].filter(Boolean).join(' ');
-                const email = block.querySelector(`[name="contributor_${id}_email"]`)?.value || '';
-                const orcid = block.querySelector(`[name="contributor_${id}_orcid"]`)?.value || '';
-                const org = block.querySelector(`[name="contributor_${id}_org"]`)?.value || '';
+        function reviewLabelFor(el) {
+            var name = el.getAttribute('name') || el.id;
+            if (REVIEW_LABEL_OVERRIDES[name]) return REVIEW_LABEL_OVERRIDES[name];
 
-                // Look up org_ror by field name first, then by element id.
-                let org_ror = '';
-                const rorByName = block.querySelector(`[name="contributor_${id}_org_ror"]`);
-                const rorById = block.querySelector(`#contributor_${id}_org_ror`);
+            if (el.id) {
+                var tied = document.querySelector('label[for="' + el.id + '"]');
+                if (tied && tidyLabel(tied.textContent)) return tidyLabel(tied.textContent);
+            }
 
-                if (rorByName) {
-                    org_ror = rorByName.value;
-                } else if (rorById) {
-                    org_ror = rorById.value;
+            var group = el.closest ? el.closest('.form-group') : null;
+            if (group) {
+                var groupLabel = group.querySelector('.form-label');
+                if (groupLabel && tidyLabel(groupLabel.textContent)) {
+                    return tidyLabel(groupLabel.textContent);
                 }
+            }
+            return tidyLabel(String(name).replace(/_/g, ' '));
+        }
 
+        /**
+         * The heading a row belongs under when field labels repeat, so that
+         * six fields called "Given Name" stay tellable apart.
+         */
+        function reviewBlockLabel(el) {
+            var block = el.closest ? el.closest('.contributor-block') : null;
+            if (!block) return '';
+            var title = block.querySelector('.block-title');
+            return title ? tidyLabel(title.textContent) : '';
+        }
 
-                if (name) {
-                    contributors.push({ name, email, orcid, org, org_ror });
+        /** The wording shown against a chosen radio, preferring its label. */
+        function reviewRadioText(radio) {
+            var wrapper = radio.closest ? radio.closest('label') : null;
+            var labelSpan = wrapper ? wrapper.querySelector('.radio-label') : null;
+            if (labelSpan && tidyLabel(labelSpan.textContent)) {
+                return tidyLabel(labelSpan.textContent);
+            }
+            return reviewText(radio.value);
+        }
+
+        function reviewFileSize(bytes) {
+            var size = Number(bytes);
+            if (!isFinite(size) || size <= 0) return '';
+            if (size < 1024) return size + ' bytes';
+            var kb = size / 1024;
+            if (kb < 1024) return kb.toFixed(1) + ' KB';
+            return (kb / 1024).toFixed(1) + ' MB';
+        }
+
+        /** Builds one row for one named control. */
+        function reviewRowFor(el, section) {
+            var name = el.getAttribute('name');
+            var row = { name: name, label: reviewLabelFor(el), value: '' };
+            var type = (el.type || '').toLowerCase();
+
+            if (type === 'radio') {
+                var checked = section.querySelector('input[name="' + name + '"]:checked');
+                row.value = checked ? reviewRadioText(checked) : '';
+                return row;
+            }
+
+            if (type === 'checkbox') {
+                var boxes = section.querySelectorAll('input[name="' + name + '"]');
+                if (boxes.length > 1) {
+                    var picked = [];
+                    Array.prototype.forEach.call(boxes, function (box) {
+                        if (box.checked) picked.push(reviewText(box.value));
+                    });
+                    row.value = picked.join(', ');
+                    return row;
                 }
+                // A lone box is a declaration. Unticked reads as unanswered,
+                // because that is what it is at this point in the form.
+                if (el.required) {
+                    row.value = el.checked ? 'Confirmed' : '';
+                } else {
+                    row.value = el.checked ? 'Yes' : 'No';
+                }
+                return row;
+            }
+
+            if (type === 'file') {
+                if (uploadedFileData && uploadedFileData.fileName) {
+                    var size = reviewFileSize(uploadedFileData.size);
+                    row.value = uploadedFileData.fileName + (size ? ' (' + size + ')' : '');
+                }
+                return row;
+            }
+
+            if (type === 'date') {
+                row.value = formatDate(el.value);
+                return row;
+            }
+
+            if (name === 'project_keywords') {
+                row.value = keywords.join(', ');
+                return row;
+            }
+
+            // The drawn area is shown as the coordinates summary the map
+            // already writes, rather than as raw GeoJSON.
+            if (name === 'location_polygon') {
+                if (reviewText(el.value)) {
+                    var coords = document.getElementById('coordsText');
+                    row.value = coords ? reviewText(coords.textContent) : 'Area defined';
+                    if (!row.value) row.value = 'Area defined';
+                }
+                return row;
+            }
+
+            row.value = reviewText(el.value);
+            return row;
+        }
+
+        /** Requested equipment only, with its category, quantities above zero. */
+        function collectEquipmentRows() {
+            var rows = [];
+            var categories = document.querySelectorAll('.form-section[data-step="3"] .equipment-category');
+
+            Array.prototype.forEach.call(categories, function (category) {
+                var heading = category.querySelector('.equipment-header h4');
+                var categoryName = heading ? tidyLabel(heading.textContent) : 'Equipment';
+
+                var inputs = category.querySelectorAll('.equipment-content input[type="number"]');
+                Array.prototype.forEach.call(inputs, function (input) {
+                    var qty = parseInt(input.value, 10);
+                    if (!qty || qty <= 0) return;
+                    var item = input.closest('.equipment-item');
+                    var nameEl = item ? item.querySelector('.equipment-name') : null;
+                    rows.push({
+                        name: input.getAttribute('name'),
+                        label: (nameEl ? tidyLabel(nameEl.textContent) : 'Item') +
+                            ' (' + categoryName + ')',
+                        value: String(qty)
+                    });
+                });
             });
-            return contributors;
+            return rows;
         }
 
-        function collectEquipmentSummary() {
-            const equipment = [];
-            document.querySelectorAll('.equipment-content input[type="number"]').forEach(input => {
-                const qty = parseInt(input.value) || 0;
-                if (qty > 0) {
-                    const nameEl = input.closest('.equipment-item').querySelector('.equipment-name');
-                    if (nameEl) {
-                        equipment.push(`${nameEl.textContent}: ${qty}`);
+        /**
+         * Walks steps 1 to 4 and returns the review as data, so that the
+         * rendering below has no decisions left to make.
+         */
+        function collectReviewSections() {
+            var sections = [];
+            var seenNames = {};
+
+            for (var step = 1; step <= 4; step++) {
+                var section = document.querySelector('.form-section[data-step="' + step + '"]');
+                if (!section) continue;
+
+                var heading = section.querySelector('.section-header h2');
+                var group = {
+                    heading: heading ? tidyLabel(heading.textContent) : 'Section ' + step,
+                    rows: []
+                };
+                var currentBlock = '';
+                var equipmentDone = false;
+
+                var fields = section.querySelectorAll('input[name], select[name], textarea[name]');
+                Array.prototype.forEach.call(fields, function (el) {
+                    var name = el.getAttribute('name');
+                    if (!name || seenNames[name]) return;
+
+                    // Instrument quantities are shown together, in place, and
+                    // only where something was actually asked for.
+                    if (name.indexOf('inst_') === 0) {
+                        if (equipmentDone) return;
+                        equipmentDone = true;
+                        var equipmentRows = collectEquipmentRows();
+                        if (equipmentRows.length === 0) {
+                            group.rows.push({ label: 'Equipment requested', value: '' });
+                            return;
+                        }
+                        if (currentBlock !== 'Equipment requested') {
+                            currentBlock = 'Equipment requested';
+                            group.rows.push({ subhead: 'Equipment requested' });
+                        }
+                        equipmentRows.forEach(function (row) {
+                            seenNames[row.name] = true;
+                            group.rows.push(row);
+                        });
+                        return;
                     }
-                }
+
+                    seenNames[name] = true;
+
+                    var blockLabel = reviewBlockLabel(el);
+                    if (blockLabel !== currentBlock) {
+                        currentBlock = blockLabel;
+                        if (blockLabel) group.rows.push({ subhead: blockLabel });
+                    }
+
+                    group.rows.push(reviewRowFor(el, section));
+                });
+
+                sections.push(group);
+            }
+            return sections;
+        }
+
+        function populateSummary() {
+            var summary = document.getElementById('applicationSummary');
+            if (!summary) return;
+
+            // Clearing, not injecting. Every node below is built by hand.
+            summary.textContent = '';
+
+            collectReviewSections().forEach(function (group) {
+                var block = document.createElement('div');
+                block.className = 'summary-section';
+
+                var heading = document.createElement('h3');
+                heading.textContent = group.heading;
+                block.appendChild(heading);
+
+                group.rows.forEach(function (row) {
+                    if (row.subhead) {
+                        var subhead = document.createElement('div');
+                        subhead.className = 'summary-subhead';
+                        subhead.textContent = row.subhead;
+                        block.appendChild(subhead);
+                        return;
+                    }
+
+                    var item = document.createElement('div');
+                    item.className = 'summary-item';
+                    if (row.name) item.setAttribute('data-field', row.name);
+
+                    var label = document.createElement('span');
+                    label.className = 'summary-label';
+                    label.appendChild(document.createTextNode(row.label));
+                    item.appendChild(label);
+
+                    var value = document.createElement('span');
+                    value.className = 'summary-value';
+                    if (row.value) {
+                        value.appendChild(document.createTextNode(row.value));
+                    } else {
+                        value.className = 'summary-value summary-empty';
+                        value.appendChild(document.createTextNode('Not provided'));
+                    }
+                    item.appendChild(value);
+
+                    block.appendChild(item);
+                });
+
+                summary.appendChild(block);
             });
-            return equipment.join(', ');
         }
 
         function formatDate(dateStr) {
