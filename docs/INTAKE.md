@@ -115,29 +115,112 @@ keep reference numbering globally correct; it has no code path that writes to
 it.
 
 `ANSIR_Applications` is created automatically on the first submission, with
-headers, a frozen first row and bold header text. Its columns use the **same
-header names** as the master list wherever the same field exists, so promotion
-is a header-name match rather than a re-typing exercise. Five intake-only
-columns come first:
+headers, a frozen first row and bold header text.
+
+### The column layout
+
+The tab has 93 columns in three blocks. The order is what makes promotion a
+copy rather than a re-typing exercise.
+
+**Block 1 - review workflow (columns 1 to 7).** Intake-only. A reviewer opening
+the tab sees these before any application content.
 
 | Column | Meaning |
 |---|---|
 | `submission_timestamp` | ISO 8601, when the submission was received |
-| `alternative_identifier_ansir_code` | The allocated ANSIR reference |
 | `review_status` | `New` on arrival; maintained by hand thereafter |
 | `reviewed_by` | Who assessed it |
 | `review_notes` | Free text for the assessment |
+| `supporting_document_file_id` | Drive file ID of the uploaded PDF |
+| `supporting_document_url` | Drive link to the uploaded PDF |
+| `supporting_document_name` | File name of the uploaded PDF |
 
-Everything after those five mirrors the master list: `title_primary`,
-`title_acronym`, `description_primary`, `description_objectives`,
-`project_keywords`, the flattened `contributor_*` and `organisation_*` columns,
-dates and timing, location, methods and instrumentation, data access and
-embargo, Indigenous engagement, application type and funding, the three
-`supporting_document_*` columns, and `internal_notes`.
+**Block 2 - the master list (columns 8 to 79).** Every column of
+`ANSIR_Projects_MasterList`, using the master list's exact header spellings and
+its exact order, starting at `title_primary` and ending at `internal_notes`.
+The allocated `alternative_identifier_ansir_code` sits at its master position,
+column 12.
 
-The intake sets none of `project_status`, `visible` or `project_approval`. The
-endpoint does not create projects, so it has no opinion on those fields; they
-are set at promotion.
+Block 2 contains **every** master column, including the many the form does not
+collect. Those are written empty. An empty column that lines up is what makes
+promotion a single contiguous copy: select block 2, paste it into the master
+list, and every value lands under the header it belongs to. Leaving an
+uncollected column out would save nothing and would shift every column after it
+by one, without any visible sign that it had happened.
+
+The form fills 35 of the 72 master columns:
+
+`title_primary`, `alternative_identifier_ansir_code`, `title_acronym`,
+`date_start_date`, `date_end_date`, the flattened `contributor_honoury_title`,
+`contributor_name`, `contributor_id`, `contributor_email`,
+`contributor_position_id`, `contributor_leader`, `contributor_is_contact`,
+`organisation_name`, `organisation_id`, `organisation_role_id`,
+`funding_identifier`, `funding_title`, `funding_agency_name`,
+`description_primary`, `description_objectives`, `project_keywords`,
+`methods_field`, `methods_description`, `instrumentation_type`,
+`instrumentation_numbers`, `location_region`, `location_country`,
+`location_polygon`, `indigenous_involvement_flag`,
+`description_indigenous_engagement_summary`,
+`description_indigenous_data_governance`,
+`description_indigenous_acknowledgement`, `indigenous_data_sensitivity_flag`,
+`data_access` and `internal_notes`.
+
+The remaining 37 are present and empty. Most are simply not asked at intake:
+`raid_identifier`, `related_raid_relation`, `contributor_role_id`,
+`funding_agency_location`, `funding_agency_ror`, `funding_identifier_type`,
+`methods_analytical`, `methods_computational`, `instrumentation_method`,
+`instrumentation_owner`, `instrumentation_location`, `instrument_provider_ror`,
+`location_coordinates`, the `collection_*` columns and the `related_object_*`
+columns.
+
+Six more are left empty **on purpose**, because they are the reviewer's to set
+and not the applicant's:
+
+| Column | Why the intake leaves it empty |
+|---|---|
+| `alternative_identifier_id` | The master list's own row identity. A pending application is not a row in the master list, and a pre-assigned identity would collide as the list grows |
+| `project_status` | A submitted application is not a project |
+| `visible` | Publication is a decision, not a submission |
+| `visbility` | As above. Spelt as it appears in the master list header |
+| `project_approval` | The approval is the reviewer's, recorded at promotion |
+| `project_approval_by` | As above |
+
+`record_last_updated` and `record_last_updated_by` are also empty. They describe
+edits to the master list, so they are meaningless for a row that has not
+reached it.
+
+**Block 3 - intake-only answers (columns 80 to 93).** Questions the form asks
+that the master list has no column for:
+
+`application_type`, `application_type_other`, `timing_constraints`,
+`equipment_availability_confirmed`, `field_team_experience`,
+`training_required`, `fdsn_network_code`, `estimated_data_volume`,
+`data_submission_confirmed`, `embargo_duration`, `embargo_reason`,
+`restricted_reason`, `cultural_heritage_check` and `funding_status`.
+
+These are review-supporting answers. They are not published and they are not
+copied at promotion, but several of them carry the review decision: the embargo
+answers say how long the applicant expects data to be withheld and why,
+`cultural_heritage_check` and `restricted_reason` bear on whether the work can
+proceed as described, and `equipment_availability_confirmed`,
+`field_team_experience` and `training_required` bear on whether the loan is
+practical. Read them before approving. They sit after block 2 so that block 2
+stays a single unbroken range.
+
+### Changing the columns
+
+The column set is written down in exactly two places in `gas/Code.gs`:
+`applicationsHeaders_()` and `buildApplicationRecord_()`. Rows are written by
+position, so those two must change together.
+
+If the header row of an existing `ANSIR_Applications` tab does not match
+`applicationsHeaders_()`, the endpoint **refuses to write** and reports the
+first differing column. It does not attempt to migrate the tab or guess at a
+mapping, because writing new values into old columns would mis-file every field
+without any error. To recover, rename the existing tab, for example to
+`ANSIR_Applications_archive`; the next submission creates a fresh tab with the
+correct headers, and the renamed tab keeps its rows. Do not add or reorder
+columns in the tab by hand.
 
 ---
 
@@ -287,25 +370,51 @@ input, so a person reads it before it crosses that boundary.
    `review_notes`. Use `Under Review`, then `Approved` or `Declined`.
 3. **If declined:** set `review_status` to `Declined`, note the reason, and
    reply to the applicant. The row stays where it is as the record.
-4. **If approved, promote it.** Open `ANSIR_Projects_MasterList` and add a row:
-   - Copy the values across **by matching header names**. Shared fields use
-     identical headers in both tabs, so this is a column-align copy. The five
-     intake-only review columns and the three `supporting_document_*` columns
-     have no counterpart and are not copied.
-   - Carry `alternative_identifier_ansir_code` across **unchanged**. The
-     applicant already holds that reference in writing.
-   - Assign the next `alternative_identifier_id`: take the highest existing
-     value and add one. This is the master list's own row identity and is not
-     issued at intake, because a pending application is not a project and a
-     pre-assigned identity would collide as the master list grows.
-   - Set the fields the intake leaves alone: `project_status`, `visible`
-     (`FALSE` until you want it public), `visbility` (spelt as it appears in
-     the master list header), `project_approval` and `project_approval_by`.
-   - Fill in what the form does not collect: `methods_analytical`,
-     `methods_computational`, `instrumentation_owner`,
-     `instrumentation_location`, the `collection_*` columns,
-     `raid_identifier` and the `related_object_*` columns.
-   - Update `record_last_updated` and `record_last_updated_by`.
+4. **If approved, promote it.** This is a range copy followed by the columns
+   the reviewer owns.
+
+   **Step 1 - copy the master-aligned range.** In `ANSIR_Applications`, select
+   columns 8 to 79 of the application's row, from `title_primary` to
+   `internal_notes`. That range is the master list's full column set, in the
+   master list's order. Copy it, then paste it into a new row in
+   `ANSIR_Projects_MasterList` starting at the first column. Every value lands
+   under the header it belongs to, including the empty ones. Paste values only,
+   not formatting.
+
+   Nothing outside that range is copied. Block 1 records how the application
+   was handled and block 3 holds answers the master list has no column for;
+   both stay in the intake tab, where they remain the record of what was
+   submitted.
+
+   **Step 2 - set the columns the reviewer owns.** The pasted row arrives with
+   these empty by design. Fill them in:
+
+   - `alternative_identifier_id` - the next value: take the highest existing
+     one and add one.
+   - `project_status`.
+   - `visible` - `FALSE` until the project should be public.
+   - `visbility` - spelt as it appears in the master list header.
+   - `project_approval` and `project_approval_by`.
+   - `record_last_updated` and `record_last_updated_by`.
+
+   Leave `alternative_identifier_ansir_code` exactly as it arrived. The
+   applicant already holds that reference in writing.
+
+   **Step 3 - fill in what the form does not collect.** These arrive empty
+   because intake never asks for them, and can be completed now or as the
+   project progresses: `raid_identifier`, `related_raid_relation`,
+   `contributor_role_id`, `funding_agency_location`, `funding_agency_ror`,
+   `funding_identifier_type`, `methods_analytical`, `methods_computational`,
+   `instrumentation_method`, `instrumentation_owner`, `instrumentation_location`,
+   `instrument_provider_ror`, `location_coordinates`, the `collection_*`
+   columns and the `related_object_*` columns.
+
+   **Step 4 - check the paste landed square.** Confirm that `title_primary` in
+   the new master row holds the project title and that `internal_notes` holds
+   the intake note, then spot-check one column in the middle, such as
+   `location_region`. If any of those is holding a neighbour's value, the range
+   was off by a column: delete the row and paste again rather than correcting
+   it by hand.
 5. **Close the loop on the intake row.** Set `review_status` to `Promoted` and
    record the master list row number in `review_notes`. Keep the intake row: it
    is the record of what was submitted, as submitted.
@@ -328,6 +437,7 @@ input, so a person reads it before it crosses that boundary.
 | Supporting document cannot be found at submission | The file ID does not name a file in the upload folder. The applicant is asked to upload again; no reference is consumed |
 | Form submits but the console shows a CORS error | The request was not posted as `text/plain`. See `gas/README.md` |
 | Sheet cannot be opened | The script property `ANSIR_SHEET_ID` is not set. The endpoint reports the cause and writes nothing |
+| Submissions fail and the log reports a header mismatch | The `ANSIR_Applications` tab was created under a different column layout, or its headers were edited by hand. Nothing was written, deliberately. Rename the tab so a correctly headed one is created. See section 3 |
 | Edits to `Code.gs` have no effect | Saving in the editor is not deploying. Deploy > Manage deployments > edit > New version |
 
 Every log line from the endpoint is prefixed `[ANSIR INTAKE]` and is visible in

@@ -623,6 +623,15 @@ function nextAnsirCode_(codes, year) {
 
 /**
  * Returns the ANSIR_Applications tab, creating it with headers if it is absent.
+ *
+ * If the tab already exists, its header row MUST match applicationsHeaders_()
+ * exactly. Rows are written positionally: allocateAnsirCode_ walks
+ * applicationsHeaders_() and pushes one value per header, so a tab created
+ * under an older, differently ordered header row would take the new values into
+ * the old columns and silently mis-file every field. This function therefore
+ * refuses to write to a mismatched tab rather than corrupting it, and names the
+ * first difference so the operator can see what happened.
+ *
  * @private
  */
 function getApplicationsSheet_(spreadsheet) {
@@ -631,177 +640,326 @@ function getApplicationsSheet_(spreadsheet) {
 
   if (!sheet) {
     sheet = spreadsheet.insertSheet(APPLICATIONS_SHEET_NAME);
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+    writeApplicationsHeaderRow_(sheet, headers);
     logLine_('Created tab ' + APPLICATIONS_SHEET_NAME + ' with ' + headers.length + ' headers.');
     return sheet;
   }
 
   if (sheet.getLastRow() === 0) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+    writeApplicationsHeaderRow_(sheet, headers);
+    return sheet;
+  }
+
+  var mismatch = headerMismatch_(sheet, headers);
+  if (mismatch) {
+    logLine_('Header mismatch in ' + APPLICATIONS_SHEET_NAME + ': ' + mismatch);
+    throw new Error(
+      'The ' + APPLICATIONS_SHEET_NAME + ' tab does not match the expected column layout, so no row was written. ' +
+      mismatch + ' ' +
+      'To fix this, open the ANSIR project sheet and rename the existing ' + APPLICATIONS_SHEET_NAME +
+      ' tab to something else, for example ' + APPLICATIONS_SHEET_NAME + '_archive. ' +
+      'The next submission then creates a fresh ' + APPLICATIONS_SHEET_NAME +
+      ' tab with the correct headers. The renamed tab keeps its rows and is still readable; ' +
+      'nothing is deleted. Do not simply add or reorder columns by hand, because rows are ' +
+      'written by position and a hand-edited header row will mis-file every later submission.'
+    );
   }
 
   return sheet;
 }
 
 /**
+ * Writes and formats the intake header row.
+ * @private
+ */
+function writeApplicationsHeaderRow_(sheet, headers) {
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+}
+
+/**
+ * Compares a sheet's header row against the expected headers.
+ * @private
+ * @return {string} A sentence describing the first difference, or an empty
+ *     string if the header row matches exactly.
+ */
+function headerMismatch_(sheet, headers) {
+  var lastCol = sheet.getLastColumn();
+  var actual = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+
+  var limit = Math.max(actual.length, headers.length);
+  for (var i = 0; i < limit; i++) {
+    var expectedName = i < headers.length ? String(headers[i]) : '';
+    var actualName = i < actual.length ? String(actual[i]).trim() : '';
+    if (expectedName !== actualName) {
+      var position = 'Column ' + (i + 1) + ' should be "' + expectedName + '"';
+      if (!expectedName) {
+        position = 'Column ' + (i + 1) + ' should not exist';
+      }
+      var found = actualName ? 'but the tab has "' + actualName + '".' : 'but the tab has no column there.';
+      return 'The tab has ' + actual.length + ' columns and ' + headers.length +
+        ' are expected. ' + position + ' ' + found;
+    }
+  }
+
+  return '';
+}
+
+/**
  * The intake tab column order.
  *
- * Names deliberately match the master list wherever the same field exists, so
- * promoting an approved application to a project is a header-name match rather
- * than a manual re-typing exercise. The first five columns are intake-only
- * review workflow columns and have no counterpart in the master list.
+ * THE LAYOUT, AND WHY IT IS SHAPED THIS WAY
+ * -----------------------------------------
+ * Three blocks, in this order:
+ *
+ *   1. REVIEW BLOCK. Intake-only workflow columns. A reviewer opening the tab
+ *      sees these first, before any application content.
+ *   2. MASTER-ALIGNED BLOCK. Every column of ANSIR_Projects_MasterList, using
+ *      the master list's exact header spellings and its exact order.
+ *   3. INTAKE-ONLY BLOCK. Questions the form asks that the master list has no
+ *      column for. They sit at the end so they cannot break block 2 apart.
+ *
+ * Block 2 contains EVERY master column, including the many the form does not
+ * collect, which are written empty. An empty column that lines up is what makes
+ * promotion a single contiguous copy: the reviewer selects block 2 and pastes
+ * it into the master list, and every value lands under the header it belongs
+ * to. Omitting an uncollected column would save nothing and would silently
+ * shift every column after it by one, which is the failure mode this layout
+ * exists to prevent. Do not remove an empty column from block 2, and do not
+ * insert anything into it that the master list does not have.
+ *
+ * If the master list gains, loses or renames a column, change block 2 to match
+ * it and change buildApplicationRecord_ in the same edit. Those two functions
+ * are the only places the column set is written down; getApplicationsSheet_
+ * refuses to write to a tab whose header row disagrees with this list.
  * @private
  */
 function applicationsHeaders_() {
   return [
+    // ---- Block 1: review workflow. Intake only, not copied to the master list.
     'submission_timestamp',
-    ANSIR_CODE_HEADER,
     'review_status',
     'reviewed_by',
     'review_notes',
+    'supporting_document_file_id',
+    'supporting_document_url',
+    'supporting_document_name',
 
+    // ---- Block 2: the master list, in master order. Copy this range whole.
     'title_primary',
+    'alternative_identifier_id',
+    'visible',
+    'project_status',
+    ANSIR_CODE_HEADER,
     'title_acronym',
-    'description_primary',
-    'description_objectives',
-    'project_keywords',
-
+    'date_start_date',
+    'date_end_date',
     'contributor_honoury_title',
     'contributor_name',
-    'contributor_email',
     'contributor_id',
+    'contributor_email',
     'contributor_position_id',
     'contributor_leader',
     'contributor_is_contact',
+    'contributor_role_id',
     'organisation_name',
     'organisation_id',
     'organisation_role_id',
-
-    'date_start_date',
-    'date_end_date',
-    'timing_constraints',
-
-    'location_region',
-    'location_country',
-    'location_polygon',
-
+    'raid_identifier',
+    'related_raid_relation',
+    'funding_identifier',
+    'funding_title',
+    'funding_agency_name',
+    'funding_agency_location',
+    'funding_agency_ror',
+    'funding_identifier_type',
+    'description_primary',
+    'description_objectives',
+    'project_keywords',
     'methods_field',
+    'methods_analytical',
+    'methods_computational',
     'methods_description',
     'instrumentation_type',
     'instrumentation_numbers',
-    'equipment_availability_confirmed',
-    'field_team_experience',
-    'training_required',
-
-    'fdsn_network_code',
-    'estimated_data_volume',
-    'data_submission_confirmed',
-    'data_access',
-    'embargo_duration',
-    'embargo_reason',
-    'restricted_reason',
-
-    'cultural_heritage_check',
+    'instrumentation_method',
+    'instrumentation_owner',
+    'instrumentation_location',
+    'instrument_provider_ror',
+    'location_region',
+    'location_country',
+    'location_coordinates',
+    'location_polygon',
+    'collection_quantity',
+    'collection_quantity_unit',
+    'collection_quantity_notes',
+    'collection_site_names',
+    'collection_site_lats',
+    'collection_site_longs',
+    'collection_site_alt',
+    'collection_site_start_time',
+    'collection_site_finish_time',
+    'collection_site_instrument',
+    'collection_site_instrument_serial',
+    'related_object_identifier',
+    'related_object_schema_uri',
+    'related_object_type',
+    'related_object_relation',
+    'related_object_category',
     'indigenous_involvement_flag',
     'description_indigenous_engagement_summary',
     'description_indigenous_data_governance',
     'description_indigenous_acknowledgement',
     'indigenous_data_sensitivity_flag',
+    'data_access',
+    'record_last_updated',
+    'record_last_updated_by',
+    'visbility',
+    'project_approval',
+    'project_approval_by',
+    'internal_notes',
 
+    // ---- Block 3: intake-only answers with no master list column.
+    // These support the review decision. They are not published and they are
+    // not copied at promotion. They sit after block 2 so that block 2 stays a
+    // single unbroken range.
     'application_type',
     'application_type_other',
-    'funding_status',
-    'funding_title',
-    'funding_agency_name',
-    'funding_identifier',
-
-    'supporting_document_file_id',
-    'supporting_document_url',
-    'supporting_document_name',
-    'internal_notes'
+    'timing_constraints',
+    'equipment_availability_confirmed',
+    'field_team_experience',
+    'training_required',
+    'fdsn_network_code',
+    'estimated_data_volume',
+    'data_submission_confirmed',
+    'embargo_duration',
+    'embargo_reason',
+    'restricted_reason',
+    'cultural_heritage_check',
+    'funding_status'
   ];
 }
 
 /**
  * Builds the intake row from the submitted form data.
- * Ported from mapApplicationToProject, reduced to intake fields only. Nothing
- * here decides project status or visibility, because nothing here creates a
- * project: promotion is a deliberate human step, documented in docs/INTAKE.md.
+ *
+ * The returned object is keyed by header name and MUST carry one key for every
+ * name in applicationsHeaders_(), including the master list columns the form
+ * does not collect. Those are set to an empty string here rather than left out,
+ * so the row that allocateAnsirCode_ assembles has a value in every position
+ * and the master-aligned block stays aligned. See applicationsHeaders_() for
+ * why the empty columns exist at all.
+ *
+ * Nothing here decides project status, visibility or approval. The intake does
+ * not create projects, so it has no opinion on those fields; a reviewer sets
+ * them at promotion, and the separation is deliberate. record_last_updated and
+ * record_last_updated_by describe edits to the master list, not to an
+ * application, so they are left empty for the same reason.
  * @private
  */
 function buildApplicationRecord_(formData, ansirCode, fileInfo) {
   var people = buildContributorColumns_(formData);
 
   return {
+    // ---- Block 1: review workflow.
     'submission_timestamp': new Date().toISOString(),
-    'alternative_identifier_ansir_code': ansirCode,
     'review_status': 'New',
     'reviewed_by': '',
     'review_notes': '',
+    'supporting_document_file_id': fileInfo ? fileInfo.id : '',
+    'supporting_document_url': fileInfo ? fileInfo.url : '',
+    'supporting_document_name': fileInfo ? fileInfo.name : '',
 
+    // ---- Block 2: the master list, in master order.
     'title_primary': safeText_(formData.title_primary),
+    'alternative_identifier_id': '',
+    'visible': '',
+    'project_status': '',
+    'alternative_identifier_ansir_code': ansirCode,
     'title_acronym': safeText_(formData.title_acronym),
-    'description_primary': safeText_(formData.description_primary),
-    'description_objectives': safeText_(formData.description_objectives),
-    'project_keywords': safeText_(formData.project_keywords),
-
+    'date_start_date': safeText_(formData.date_start_date),
+    'date_end_date': safeText_(formData.date_end_date),
     'contributor_honoury_title': people.titles,
     'contributor_name': people.names,
-    'contributor_email': people.emails,
     'contributor_id': people.orcids,
+    'contributor_email': people.emails,
     'contributor_position_id': people.positions,
     'contributor_leader': people.leaders,
     'contributor_is_contact': people.contacts,
+    'contributor_role_id': '',
     'organisation_name': people.organisations,
     'organisation_id': people.organisationRors,
     'organisation_role_id': people.organisationRoles,
-
-    'date_start_date': safeText_(formData.date_start_date),
-    'date_end_date': safeText_(formData.date_end_date),
-    'timing_constraints': safeText_(formData.timing_constraints),
-
-    'location_region': safeText_(formData.location_region),
-    'location_country': safeText_(formData.location_country) || 'Australia',
-    'location_polygon': formatPolygon_(formData.location_polygon),
-
+    'raid_identifier': '',
+    'related_raid_relation': '',
+    'funding_identifier': safeText_(formData.funding_identifier),
+    'funding_title': safeText_(formData.funding_title),
+    'funding_agency_name': safeText_(formData.funding_agency_name),
+    'funding_agency_location': '',
+    'funding_agency_ror': '',
+    'funding_identifier_type': '',
+    'description_primary': safeText_(formData.description_primary),
+    'description_objectives': safeText_(formData.description_objectives),
+    'project_keywords': safeText_(formData.project_keywords),
     'methods_field': safeText_(formData.methods_field),
+    'methods_analytical': '',
+    'methods_computational': '',
     'methods_description': safeText_(formData.methods_description),
     'instrumentation_type': equipmentNames_(formData.instrumentation_request).join('; '),
     'instrumentation_numbers': equipmentLines_(formData.instrumentation_request).join('; '),
-    'equipment_availability_confirmed': safeText_(formData.equipment_availability_confirmed) || 'No',
-    'field_team_experience': safeText_(formData.field_team_experience),
-    'training_required': safeText_(formData.training_required),
-
-    'fdsn_network_code': safeText_(formData.fdsn_network_code),
-    'estimated_data_volume': safeText_(formData.estimated_data_volume),
-    'data_submission_confirmed': safeText_(formData.data_submission_confirmed),
-    'data_access': safeText_(formData.data_access),
-    'embargo_duration': safeText_(formData.embargo_duration),
-    'embargo_reason': safeText_(formData.embargo_reason),
-    'restricted_reason': safeText_(formData.restricted_reason),
-
-    'cultural_heritage_check': safeText_(formData.cultural_heritage_check),
+    'instrumentation_method': '',
+    'instrumentation_owner': '',
+    'instrumentation_location': '',
+    'instrument_provider_ror': '',
+    'location_region': safeText_(formData.location_region),
+    'location_country': safeText_(formData.location_country) || 'Australia',
+    'location_coordinates': '',
+    'location_polygon': formatPolygon_(formData.location_polygon),
+    'collection_quantity': '',
+    'collection_quantity_unit': '',
+    'collection_quantity_notes': '',
+    'collection_site_names': '',
+    'collection_site_lats': '',
+    'collection_site_longs': '',
+    'collection_site_alt': '',
+    'collection_site_start_time': '',
+    'collection_site_finish_time': '',
+    'collection_site_instrument': '',
+    'collection_site_instrument_serial': '',
+    'related_object_identifier': '',
+    'related_object_schema_uri': '',
+    'related_object_type': '',
+    'related_object_relation': '',
+    'related_object_category': '',
     'indigenous_involvement_flag': safeText_(formData.indigenous_involvement_flag),
     'description_indigenous_engagement_summary': safeText_(formData.description_indigenous_engagement_summary),
     'description_indigenous_data_governance': safeText_(formData.description_indigenous_data_governance),
     'description_indigenous_acknowledgement': safeText_(formData.description_indigenous_acknowledgement),
     'indigenous_data_sensitivity_flag': safeText_(formData.indigenous_data_sensitivity_flag),
+    'data_access': safeText_(formData.data_access),
+    'record_last_updated': '',
+    'record_last_updated_by': '',
+    'visbility': '',
+    'project_approval': '',
+    'project_approval_by': '',
+    'internal_notes': buildInternalNotes_(fileInfo),
 
+    // ---- Block 3: intake-only answers with no master list column.
     'application_type': safeText_(formData.application_type),
     'application_type_other': safeText_(formData.application_type_other),
-    'funding_status': safeText_(formData.funding_status),
-    'funding_title': safeText_(formData.funding_title),
-    'funding_agency_name': safeText_(formData.funding_agency_name),
-    'funding_identifier': safeText_(formData.funding_identifier),
-
-    'supporting_document_file_id': fileInfo ? fileInfo.id : '',
-    'supporting_document_url': fileInfo ? fileInfo.url : '',
-    'supporting_document_name': fileInfo ? fileInfo.name : '',
-    'internal_notes': buildInternalNotes_(fileInfo)
+    'timing_constraints': safeText_(formData.timing_constraints),
+    'equipment_availability_confirmed': safeText_(formData.equipment_availability_confirmed) || 'No',
+    'field_team_experience': safeText_(formData.field_team_experience),
+    'training_required': safeText_(formData.training_required),
+    'fdsn_network_code': safeText_(formData.fdsn_network_code),
+    'estimated_data_volume': safeText_(formData.estimated_data_volume),
+    'data_submission_confirmed': safeText_(formData.data_submission_confirmed),
+    'embargo_duration': safeText_(formData.embargo_duration),
+    'embargo_reason': safeText_(formData.embargo_reason),
+    'restricted_reason': safeText_(formData.restricted_reason),
+    'cultural_heritage_check': safeText_(formData.cultural_heritage_check),
+    'funding_status': safeText_(formData.funding_status)
   };
 }
 
