@@ -1,10 +1,4 @@
 <!DOCTYPE html>
-<!--
-    ANSIR Research Projects - GitHub Pages Version (git_projects_v020)
-
-    This version fetches project data from a static data.json file
-    hosted alongside this HTML on GitHub Pages.
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -16,10 +10,10 @@
     <!--  Resource Preloading -->
     <!-- ============================================ -->
 
-    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
+    <link rel="preload" href="./lib/leaflet/leaflet.css" as="style">
     <meta name="google-site-verification" content="yUJ1i6owu4OVxWDIjLrszS8Kdy9-qQHGLuBzCZHgmbE" />
-    <!-- Leaflet Map CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Map CSS (self-hosted, no CDN) -->
+    <link rel="stylesheet" href="./lib/leaflet/leaflet.css" />
     
     <!-- Open Graph Meta Tags for Deep Linking -->
     <meta property="og:title" content="ANSIR Research Projects" id="og-title">
@@ -41,16 +35,22 @@
         :root {
             /* Brand Colors */
             --primary-bg: #282572;          /* AuScope brand purple */
-            --primary-hover: #1f1d5a;       /* Darker purple for hover states */
             --white: #ffffff;
-            
+
             /* UI Colors */
             --light-gray: #e9ecef;          /* Background for sections */
             --medium-gray: #868e96;         /* Secondary text */
             --border-color: #dee2e6;        /* Borders and dividers */
             --text-color: #495057;          /* Primary text */
             --background-light: #f2f2f1;    /* Page background - matches Squarespace */
-            
+
+            /* Feedback Colors */
+            --error-bg: #fef2f2;
+            --error-border: #fecaca;
+            --error-color: #dc2626;
+            --highlight-bg: #fffbeb;        /* Pre-filled search highlight */
+            --highlight-border: #fbbf24;
+
             /* Project Status Colors */
             --status-planning-bg: #fff3cd;           /* Yellow background */
             --status-planning-color: #856404;        /* Yellow text */
@@ -61,22 +61,27 @@
             --status-complete-bg: #d4edda;           /* Green background */
             --status-complete-color: #155724;        /* Green text */
             --status-complete-marker: #28a745;       /* Green map marker */
-            
+
             /* Typography */
             --font-family: Arial, sans-serif;
-            
+
             /* Spacing System */
             --spacing-xs: 4px;
             --spacing-sm: 8px;
             --spacing-md: 12px;
             --spacing-lg: 16px;
             --spacing-xl: 20px;
-            
+
             /* Border Radius */
             --border-radius-sm: 3px;
             --border-radius-md: 4px;
             --border-radius-lg: 6px;
             --border-radius-xl: 8px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 2px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         /* ============================================ */
@@ -93,15 +98,12 @@
             background: var(--background-light);
             color: var(--text-color);
             line-height: 1.5;
-            /* Font rendering  */
+            /* Font rendering */
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeSpeed;
-            font-display: swap;
             /* Smooth scrolling behavior */
             scroll-behavior: smooth;
-            /* GPU acceleration for performance */
-            transform: translate3d(0, 0, 0);
         }
 
         /* ============================================ */
@@ -150,9 +152,9 @@
 
         /* Error State */
         .error-container {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: var(--error-color);
             padding: var(--spacing-xl);
             border-radius: var(--border-radius-xl);
             margin: var(--spacing-lg) 0;
@@ -170,7 +172,7 @@
             color: var(--white);
             padding: var(--spacing-md) var(--spacing-lg);
             border-radius: var(--border-radius-md);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-lg);
             transform: translateY(100px);
             opacity: 0;
             transition: all 0.3s ease;
@@ -181,42 +183,6 @@
         .permalink-toast.show {
             transform: translateY(0);
             opacity: 1;
-        }
-
-        /* ============================================ */
-        /* STATS DASHBOARD: Key Metrics Display        */
-        /* ============================================ */
-        .stats-section {
-            margin-bottom: var(--spacing-md);
-        }
-
-        .stats-grid {
-            display: flex;
-            gap: var(--spacing-sm);
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: var(--spacing-sm) var(--spacing-lg);
-            background: var(--white);
-            border-radius: var(--border-radius-lg);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .stat-number {
-            font-family: var(--font-family);
-            font-weight: 700;
-            font-size: 22px;
-            color: var(--primary-bg);
-            margin-bottom: 1px;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: var(--text-color);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         /* ============================================ */
@@ -254,7 +220,7 @@
             font-size: 13px;
             background: var(--white);
             transition: border-color 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            box-shadow: var(--shadow-sm);
         }
 
         /* Search input gets a bit more room, dropdowns auto-size */
@@ -267,36 +233,78 @@
         }
 
         .filter-input:focus, .filter-select:focus {
-            outline: none;
             border-color: var(--primary-bg);
+        }
+
+        .filter-input:focus-visible, .filter-select:focus-visible {
+            outline: 2px solid var(--primary-bg);
+            outline-offset: 1px;
         }
 
         /* Highlight pre-filled search */
         .filter-input.pre-filled {
-            background: #fffbeb;
-            border-color: #fbbf24;
+            background: var(--highlight-bg);
+            border-color: var(--highlight-border);
         }
 
         /* ============================================ */
-        /* MAP SECTION: Project Map        */
+        /* HEADER & FOOTER: Matches Outreach maps      */
+        /* ============================================ */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--primary-bg);
+            color: var(--white);
+            padding: 4px 16px;
+            min-height: 36px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .header-logo img {
+            height: 36px;
+        }
+
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            background: var(--primary-bg);
+            color: var(--white);
+            padding: 6px 16px;
+            min-height: 36px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid var(--white);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* ============================================ */
+        /* MAP SECTION: Project Map                     */
         /* ============================================ */
         .map-section {
             background: var(--white);
             border-radius: var(--border-radius-xl);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
             margin-bottom: var(--spacing-md);
             overflow: hidden;
-        }
-
-        .map-title {
-            background: var(--primary-bg);
-            color: var(--white);
-            padding: var(--spacing-sm) var(--spacing-lg);
-            font-family: var(--font-family);
-            font-weight: 700;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         #map {
@@ -304,60 +312,66 @@
             width: 100%;
         }
 
-        /* Custom Home Button for Map */
-        .leaflet-control-home {
-            background: var(--white);
+        /* Hide default Leaflet zoom control */
+        .leaflet-control-zoom { display: none !important; }
+
+        /* Collapsible toolbar (matches Outreach maps) */
+        .toolbar-wrap,
+        .toolbar-wrap .leaflet-bar {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .tools-toggle {
+            display: block;
             width: 30px;
             height: 30px;
+            line-height: 30px;
+            text-align: center;
+            background: rgba(255,255,255,0.3);
             border-radius: 4px;
             border: 2px solid rgba(0,0,0,0.2);
             cursor: pointer;
+            font-size: 18px;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .tools-toggle:hover { background: rgba(255,255,255,0.95); }
+
+        .toolbar-buttons { display: none; margin-top: 4px; }
+        .toolbar-buttons.open { display: block; }
+
+        .btn-group { margin-top: 4px; }
+        .btn-group:first-child { margin-top: 0; }
+        .btn-group a {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-            color: var(--primary-bg);
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-        }
-
-        .leaflet-control-home:hover {
-            background: var(--light-gray);
-        }
-
-        /* Map Legend */
-        .map-legend {
-            display: flex;
-            justify-content: center;
-            gap: var(--spacing-xl);
-            padding: var(--spacing-sm);
-            background: var(--light-gray);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-xs);
-            font-size: 12px;
-            font-weight: 500;
+            width: 30px;
+            height: 30px;
+            background: var(--white);
+            border: 2px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+            text-decoration: none;
             color: var(--text-color);
         }
+        .btn-group a:first-child { border-radius: 4px 4px 0 0; }
+        .btn-group a + a { border-top: none; }
+        .btn-group a:last-child { border-radius: 0 0 4px 4px; }
+        .btn-group a:only-child { border-radius: 4px; }
+        .btn-group a:hover { background: var(--light-gray); }
 
-        .legend-dot {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 3px solid var(--white);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
+        /* Home button: resets the map to show every project marker */
+        .leaflet-control-home { color: var(--primary-bg); }
 
-        /* Map Popup Transparency: more transparent to see sites beneath */
+        /* Map Popup: semi-transparent background, text stays fully opaque */
         .leaflet-popup-content-wrapper {
-            opacity: 0.75 !important;
+            background: rgba(255, 255, 255, 0.88) !important;
         }
         .leaflet-popup-tip {
-            opacity: 0.75 !important;
+            background: rgba(255, 255, 255, 0.88) !important;
         }
 
         /* ============================================ */
@@ -374,13 +388,10 @@
             background: var(--white);
             border-radius: var(--border-radius-xl);
             overflow: hidden;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
             position: relative;
-            /* Performance optimization */
-            will-change: transform;
-            transform: translateZ(0);
         }
 
         /* Hidden state for filtered projects - seamless transition */
@@ -390,14 +401,14 @@
 
         .project-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-lg);
         }
 
         /* Auto-expanded class for URL-triggered cards */
         .project-card.auto-expanded {
             border: 2px solid var(--primary-bg);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-lg);
         }
 
         /* Permalink button for cards */
@@ -425,7 +436,7 @@
 
         .permalink-btn:hover {
             background: var(--white);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
         }
 
         /* Project Header */
@@ -445,7 +456,7 @@
 
         .project-title {
             font-size: 18px;
-            font-weight: 400;
+            font-weight: 400;  /* Reduced boldness */
             font-family: var(--font-family);
             margin-bottom: var(--spacing-xs);
             line-height: 1.3;
@@ -457,65 +468,27 @@
             opacity: 0.9;
         }
 
-        .header-co-leads {
-            font-size: 13px;
-            opacity: 0.85;
-            margin-top: 2px;
+        /* Shared badge base */
+        .badge {
+            display: inline-block;
+            padding: 4px var(--spacing-sm);
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
         }
 
-        .header-co-leads .orcid-link {
-            opacity: 0.85;
-        }
-
-        /* Status Badges */
         .project-status-badge {
-            display: inline-block;
-            padding: 4px var(--spacing-sm);
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-left: var(--spacing-sm);
-            flex-shrink: 0;
         }
 
-        .status-planning {
-            background: var(--status-planning-bg);
-            color: var(--status-planning-color);
-        }
-
-        .status-in-progress {
-            background: var(--status-in-progress-bg);
-            color: var(--status-in-progress-color);
-        }
-
-        .status-complete {
-            background: var(--status-complete-bg);
-            color: var(--status-complete-color);
-        }
-
-        /* Data Access & FDSN Badges */
-        .data-access-badge, .fdsn-badge {
-            display: inline-block;
-            padding: 4px var(--spacing-sm);
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            flex-shrink: 0;
-        }
-
-        .access-open {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .fdsn-badge {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
+        .status-planning { background: var(--status-planning-bg); color: var(--status-planning-color); }
+        .status-in-progress { background: var(--status-in-progress-bg); color: var(--status-in-progress-color); }
+        .status-complete { background: var(--status-complete-bg); color: var(--status-complete-color); }
+        .access-open { background: var(--status-complete-bg); color: var(--status-complete-color); }
+        .fdsn-badge { background: #d1ecf1; color: #0c5460; }
 
         /* Project Body */
         .project-body {
@@ -639,13 +612,6 @@
             font-size: 14px;
         }
 
-        .funding-content {
-            color: var(--text-color);
-            margin-bottom: var(--spacing-md);
-            line-height: 1.5;
-            font-size: 14px;
-        }
-
         /* Instruments Grid */
         .instruments-grid {
             display: grid;
@@ -670,11 +636,10 @@
 
         /* Citations (publications, datasets, FDSN networks) */
         .publications-list, .data-links-list {
-            list-style: none !important;
-            list-style-type: none !important;
+            list-style: none !important;  /* Override Squarespace global styles */
             margin-top: var(--spacing-xs);
             padding-left: 0 !important;
-            margin-left: 0 !important;
+            margin-left: 0;
         }
 
         .citation-item {
@@ -744,13 +709,14 @@
             #map {
                 height: 375px;
             }
-            
-            /* Vertical legend on mobile */
-            .map-legend {
-                flex-direction: column;
-                gap: var(--spacing-xs);
-            }
 
+            .header-title { font-size: 14px; }
+            .footer { flex-wrap: wrap; gap: 12px; font-size: 11px; }
+
+            /* Allow badges to wrap below title on narrow screens */
+            .project-header {
+                flex-wrap: wrap;
+            }
         }
 
         /* ============================================ */
@@ -758,6 +724,59 @@
         /* ============================================ */
         .hidden {
             display: none !important;
+        }
+
+        /* Link preview bar (browser-style bottom-left URL preview) */
+        .link-preview-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            max-width: 80%;
+            padding: 3px 10px;
+            background: rgba(245,245,245,0.95);
+            border-top: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-top-right-radius: var(--border-radius-sm);
+            font-family: var(--font-family);
+            font-size: 11px;
+            color: var(--medium-gray);
+            z-index: 10000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Map popup content styling */
+        .project-popup {
+            max-width: 280px;
+            font-family: var(--font-family);
+            line-height: 1.4;
+        }
+
+        .project-popup h4 {
+            margin: 0 0 8px 0;
+            color: var(--primary-bg);
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .project-popup p {
+            margin: 4px 0;
+            font-size: 13px;
+        }
+
+        .project-popup hr {
+            margin: 8px 0;
+            border: none;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .project-popup .popup-details-link {
+            color: var(--primary-bg);
+            font-size: 12px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -824,23 +843,17 @@
                 </div>
             </div>
 
-            <!-- Map Section: Project Locations -->
+            <!-- Map Section: Header + Map + Footer (matches Outreach maps) -->
             <div class="map-section">
-                <div class="map-title">Project Locations</div>
+                <div class="header">
+                    <span class="header-title" id="header-title">ANSIR Research Projects</span>
+                    <span class="header-logo"><img src="./assets/images/auscope-logo.png" alt="AuScope"></span>
+                </div>
                 <div id="map"></div>
-                <div class="map-legend">
-                    <div class="legend-item">
-                        <span class="legend-dot" style="background: var(--status-planning-marker);"></span>
-                        <span>Planning</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot" style="background: var(--status-in-progress-marker);"></span>
-                        <span>In Progress</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot" style="background: var(--status-complete-marker);"></span>
-                        <span>Finished</span>
-                    </div>
+                <div class="footer">
+                    <span class="legend-item"><span class="legend-dot" style="background: var(--status-planning-marker);"></span> Planning</span>
+                    <span class="legend-item"><span class="legend-dot" style="background: var(--status-in-progress-marker);"></span> In Progress</span>
+                    <span class="legend-item"><span class="legend-dot" style="background: var(--status-complete-marker);"></span> Finished</span>
                 </div>
             </div>
 
@@ -865,8 +878,8 @@
     <!-- ============================================ -->
     <!-- EXTERNAL SCRIPTS                            -->
     <!-- ============================================ -->
-    <!-- Leaflet.js for Interactive Maps -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet.js for Interactive Maps (self-hosted, no CDN) -->
+    <script src="./lib/leaflet/leaflet.js"></script>
     
     <script>
         /* ============================================ */
@@ -1092,7 +1105,7 @@
             const contributors = (rawProject.contributors || []).map(c => ({
                 title: c.title || '',
                 name: c.name || '',
-                id: cleanOrcid(c.orcid),
+                orcidId: cleanOrcid(c.orcid),
                 position: c.position || '',
                 organisation: c.organisation || '',
                 organisationRole: c.organisationRole || '',
@@ -1157,7 +1170,7 @@
                 lead: primaryContact ? `${primaryContact.title} ${primaryContact.name}`.trim() +
                      (primaryContact.organisation ? ', ' + primaryContact.organisation : '') : '',
                 leadInstitution: primaryContact ? primaryContact.organisation : '',
-                orcid: primaryContact ? primaryContact.id : null,
+                orcid: primaryContact ? primaryContact.orcidId : null,
                 description: String(rawProject.description || ''),
                 status: mapProjectStatus(rawProject.status),
                 methods: methods,
@@ -1318,7 +1331,7 @@
                                 "@type": "Organization",
                                 "name": contributor.organisation
                             },
-                            ...(contributor.orcid ? { "identifier": contributor.orcid } : {})
+                            ...(contributor.orcidId ? { "identifier": contributor.orcidId } : {})
                         })) : [{
                             "@type": "Person", 
                             "name": project.lead
@@ -1360,23 +1373,20 @@
                     }];
                 }
 
-                // Add related publications/datasets if available
-                if (project.relatedObjects && project.relatedObjects.length > 0) {
-                    jsonLd.citation = project.relatedObjects
-                        .filter(obj => obj.type === 'Publication')
-                        .map(pub => ({
-                            "@type": "ScholarlyArticle",
-                            "identifier": pub.identifier,
-                            "url": pub.url
-                        }));
-                    
-                    jsonLd.distribution = project.relatedObjects
-                        .filter(obj => obj.type === 'Dataset')
-                        .map(dataset => ({
-                            "@type": "DataDownload",
-                            "contentUrl": dataset.url,
-                            "identifier": dataset.identifier
-                        }));
+                // Cite the transformed publication and dataset arrays
+                if (project.publications && project.publications.length > 0) {
+                    jsonLd.citation = project.publications.map(pub => ({
+                        "@type": "ScholarlyArticle",
+                        "identifier": pub.identifier,
+                        "url": pub.url
+                    }));
+                }
+                if (project.datasets && project.datasets.length > 0) {
+                    jsonLd.distribution = project.datasets.map(dataset => ({
+                        "@type": "DataDownload",
+                        "contentUrl": dataset.url,
+                        "identifier": dataset.identifier
+                    }));
                 }
 
                 jsonLdElement.textContent = JSON.stringify(jsonLd, null, 2);
@@ -1426,15 +1436,26 @@
 
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(permalink).then(onCopied).catch(function() {
-                    tryExecCopy(permalink, onCopied);
+                    tryExecCopy(permalink, onCopied, onFailed);
                 });
             } else {
-                tryExecCopy(permalink, onCopied);
+                tryExecCopy(permalink, onCopied, onFailed);
             }
         }
 
+        // Show a failure message if the copy could not be completed
+        function onFailed() {
+            var toast = document.getElementById('permalink-toast');
+            toast.textContent = 'Could not copy link - try right-click to copy';
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+                toast.textContent = 'Project link copied to clipboard!';
+            }, 3000);
+        }
+
         // Fallback copy via execCommand
-        function tryExecCopy(text, onSuccess) {
+        function tryExecCopy(text, onSuccess, onFailure) {
             if (window.getSelection) window.getSelection().removeAllRanges();
             var ta = document.createElement('textarea');
             ta.value = text;
@@ -1447,10 +1468,10 @@
             var ok = false;
             try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
             document.body.removeChild(ta);
-            if (ok) onSuccess();
+            if (ok) { onSuccess(); } else if (onFailure) { onFailure(); }
         }
 
-        // v017: Show link preview on hover (browser-style bottom-left bar)
+        // Show link preview on hover (browser-style bottom-left bar)
         function showLinkPreview(projectId) {
             var project = allProjects.find(function(p) { return p.id === projectId; });
             if (!project) return;
@@ -1459,11 +1480,7 @@
             if (!bar) {
                 bar = document.createElement('div');
                 bar.id = 'link-preview-bar';
-                bar.style.cssText = 'position:fixed;bottom:0;left:0;max-width:80%;padding:3px 10px;'
-                    + 'background:rgba(245,245,245,0.95);border-top:1px solid #ddd;border-right:1px solid #ddd;'
-                    + 'border-top-right-radius:3px;font-family:Arial,sans-serif;font-size:11px;'
-                    + 'color:#666;z-index:10000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
-                    + 'pointer-events:none;';
+                bar.className = 'link-preview-bar';
                 document.body.appendChild(bar);
             }
             bar.textContent = url;
@@ -1479,6 +1496,9 @@
         /* IFRAME ↔ PARENT COMMUNICATION              */
         /* ============================================ */
 
+        // Compute the parent origin once, so postMessage can be targeted rather than wildcarded
+        var PARENT_ORIGIN = SQUARESPACE_PARENT_URL ? new URL(SQUARESPACE_PARENT_URL).origin : '*';
+
         // Notify parent Squarespace page when a project is selected/deselected
         // Parent updates its URL bar so visitors can copy/share the correct link
         function notifyParentProjectChange(projectRef) {
@@ -1487,14 +1507,16 @@
                 window.parent.postMessage({
                     type: 'ansir-project-selected',
                     projectId: projectRef || null
-                }, '*');
+                }, PARENT_ORIGIN);
             } catch (e) {
                 // Silently fail if cross-origin restrictions prevent messaging
             }
         }
 
         // Listen for messages from parent (e.g., parent passing ?id= on page load)
+        // Validate the sender origin to prevent cross-origin manipulation
         window.addEventListener('message', function(event) {
+            if (PARENT_ORIGIN !== '*' && event.origin !== PARENT_ORIGIN) return;
             if (event.data && event.data.type === 'ansir-load-project' && event.data.projectId) {
                 // Parent is telling us to load a specific project
                 urlProjectId = event.data.projectId;
@@ -1511,20 +1533,22 @@
         function sendHeightToParent() {
             if (!IS_EMBEDDED) return;
             try {
-                // Use the larger of body and documentElement to capture full content
-                const height = Math.max(
+                // Measure the body, not documentElement: inside an iframe the
+                // documentElement is at least as tall as the iframe itself, so
+                // including it means the reported height can grow but never
+                // shrink (e.g. after collapsing an expanded project card).
+                let height = Math.max(
                     document.body.scrollHeight,
-                    document.body.offsetHeight,
-                    document.documentElement.scrollHeight,
-                    document.documentElement.offsetHeight
+                    document.body.offsetHeight
                 );
+                if (!height) height = document.documentElement.scrollHeight;
                 // Only send if height actually changed (avoid message spam)
                 if (height !== lastSentHeight && height > 0) {
                     lastSentHeight = height;
                     window.parent.postMessage({
                         type: 'ansir-resize',
                         height: height
-                    }, '*');
+                    }, PARENT_ORIGIN);
                 }
             } catch (e) {
                 // Silently fail if cross-origin restrictions prevent messaging
@@ -1587,8 +1611,8 @@
         /* ========================== */
         /*     WEBSITE TRACKING       */
         /* ========================== */
+        // No IP geolocation and no user agent collection
         let sessionId = null;
-        let userLocation = { country: 'unknown', city: 'unknown' };
 
         // Generate unique session ID
         function generateSessionId() {
@@ -1607,23 +1631,7 @@
             return sessionId;
         }
 
-        // Detect user location via IP
-        async function getUserLocation() {
-            try {
-                const response = await fetch('https://ipapi.co/json/');
-                if (response.ok) {
-                    const data = await response.json();
-                    userLocation = {
-                        country: data.country_name || 'unknown',
-                        city: data.city || 'unknown'
-                    };
-                }
-            } catch (error) {
-                console.log('Location detection failed:', error);
-            }
-        }
-
-        // Track user events
+        // Track user events (event type, tag, referrer, and session only)
         function trackEvent(eventType, extraTag = '', suppressErrors = true) {
             if (!TRACKING_URL || TRACKING_URL.includes('YOUR_TRACKING_SCRIPT_ID_HERE')) {
                 if (!suppressErrors) console.log('Tracking not configured');
@@ -1634,28 +1642,22 @@
                 const params = new URLSearchParams({
                     event: eventType,
                     ref: document.referrer || 'direct',
-                    ua: navigator.userAgent,
-                    country: userLocation.country,
-                    city: userLocation.city,
                     tag: extraTag,
                     session: getOrCreateSession()
                 });
 
-                fetch(`${TRACKING_URL}?${params}`, { 
+                fetch(TRACKING_URL + '?' + params, {
                     mode: 'no-cors',
                     method: 'GET'
-                }).catch(error => {
-                    if (!suppressErrors) console.log('Tracking request failed:', error);
-                });
+                }).catch(function() {});
             } catch (error) {
                 if (!suppressErrors) console.log('Tracking error:', error);
             }
         }
 
         // Initialize tracking system
-        async function initializeTracking() {
-            await getUserLocation();
-            const eventType = urlProjectId ? 'project-landing' : 'projects-listing';
+        function initializeTracking() {
+            var eventType = urlProjectId ? 'project-landing' : 'projects-listing';
             trackEvent(eventType, urlProjectId || 'all-projects');
         }
 
@@ -1679,18 +1681,17 @@
                 
                 // Only scroll if requested (for deep linking, not for map popup clicks)
                 if (shouldScroll) {
-                    // Scroll to show both the map title and the project card
-                    const mapSection = document.querySelector('.map-title');
+                    // Scroll to show the map and the project card
+                    var mapSection = document.querySelector('.map-section');
                     if (mapSection) {
-                        mapSection.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start' 
+                        mapSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
                         });
                     } else {
-                        // Fallback to project card
-                        projectCard.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'center' 
+                        projectCard.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
                         });
                     }
                 }
@@ -1824,10 +1825,9 @@
                 }
             }
 
-            // v016: Open popup WITHOUT auto-pan (map is already at correct zoom/bounds)
+            // Look the marker up by _projectId rather than by matching popup HTML
             var targetMarker = markers.find(function(marker) {
-                var popup = marker.getPopup();
-                return popup && popup.getContent() && popup.getContent().includes(project.name);
+                return marker._projectId === project.id;
             });
             if (targetMarker) {
                 targetMarker._sitesAlreadyShown = true;
@@ -1890,13 +1890,6 @@
                     cleanupURL();
                 }
                 
-                // v020: Sort allProjects by date-newest so DOM order matches default sort
-                allProjects.sort(function(a, b) {
-                    var dateA = a.rawStartDate ? new Date(a.rawStartDate).getTime() : 0;
-                    var dateB = b.rawStartDate ? new Date(b.rawStartDate).getTime() : 0;
-                    return dateB - dateA;
-                });
-
                 // Set initial filtered projects
                 filteredProjects = [...allProjects];
 
@@ -1911,9 +1904,6 @@
 
                     // v020: Always apply filters on load (handles sort + deep link)
                     applyFiltersSeamlessly();
-
-                    // Update stats based on filtered projects
-                    updateStats();
                     
                     // Show content first, then initialize map
                     document.getElementById('loading').classList.add('hidden');
@@ -1961,16 +1951,17 @@
             map = L.map('map', {
                 zoom: 12,
                 maxZoom: 18,
-                minZoom: 2
+                minZoom: 2,
+                zoomControl: false  // Hidden - replaced by the custom toolbar below
             });
-            
+
             // Add satellite imagery base layer
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: '© Esri, Maxar, GeoEye, Earthstar Geographics',
                 maxZoom: 18,
                 opacity: 0.8
             }).addTo(map);
-            
+
             // Add country borders overlay
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
                 attribution: '© Esri',
@@ -1980,34 +1971,62 @@
 
             // v012: Rescale site markers when zoom changes
             map.on('zoomend', onMapZoomUpdateSiteMarkers);
-            
-            // Add custom home button control
-            const HomeControl = L.Control.extend({
-                onAdd: function(map) {
-                    const div = L.DomUtil.create('div', 'leaflet-control-home');
-                    div.innerHTML = '🏠';
-                    div.onclick = function() {
-                        // Reset to show all project markers
+
+            // Collapsible map toolbar: zoom controls plus a home button
+            var ToolbarControl = L.Control.extend({
+                onAdd: function() {
+                    var wrap = L.DomUtil.create('div', 'toolbar-wrap');
+                    L.DomEvent.disableClickPropagation(wrap);
+                    L.DomEvent.disableScrollPropagation(wrap);
+
+                    // Three-dots toggle
+                    var toggle = L.DomUtil.create('a', 'tools-toggle', wrap);
+                    toggle.href = '#';
+                    toggle.title = 'Map tools';
+                    toggle.innerHTML = '&#x22EE;';
+
+                    // Button groups container
+                    var buttons = L.DomUtil.create('div', 'toolbar-buttons', wrap);
+
+                    // Zoom group
+                    var zoomGroup = L.DomUtil.create('div', 'btn-group', buttons);
+                    var zoomIn = L.DomUtil.create('a', '', zoomGroup);
+                    zoomIn.href = '#'; zoomIn.title = 'Zoom in';
+                    zoomIn.innerHTML = '+'; zoomIn.style.fontSize = '18px'; zoomIn.style.lineHeight = '1';
+                    zoomIn.onclick = function(e) { e.preventDefault(); map.zoomIn(); };
+                    var zoomOut = L.DomUtil.create('a', '', zoomGroup);
+                    zoomOut.href = '#'; zoomOut.title = 'Zoom out';
+                    zoomOut.innerHTML = '&minus;'; zoomOut.style.fontSize = '18px'; zoomOut.style.lineHeight = '1';
+                    zoomOut.onclick = function(e) { e.preventDefault(); map.zoomOut(); };
+
+                    // Home button: re-centres the map on every project marker
+                    var homeGroup = L.DomUtil.create('div', 'btn-group', buttons);
+                    var home = L.DomUtil.create('a', 'leaflet-control-home', homeGroup);
+                    home.href = '#'; home.title = 'Zoom to all projects';
+                    home.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+                    home.onclick = function(e) {
+                        e.preventDefault();
                         if (markers.length > 0) {
-                            const group = L.featureGroup(markers);
-                            const bounds = group.getBounds();
-                            map.fitBounds(bounds.pad(0));
-                            setTimeout(() => {
-                                const currentZoom = map.getZoom();
-                                map.setZoom(Math.max(currentZoom - 0.1, 2));
-                            }, 100);
+                            var group = L.featureGroup(markers);
+                            map.fitBounds(group.getBounds().pad(0.05));
                         } else {
-                            map.setView([-35.0000, 135.0000], 5); // Australia fallback
+                            map.setView([-35, 135], 5);  // Australia fallback
                         }
                     };
-                    return div;
+
+                    // Toggle handler
+                    toggle.onclick = function(e) {
+                        e.preventDefault();
+                        buttons.classList.toggle('open');
+                    };
+
+                    return wrap;
                 }
             });
-            
-            new HomeControl({ position: 'topleft' }).addTo(map);
-            
+            new ToolbarControl({ position: 'topleft' }).addTo(map);
+
             // Force map size recalculation after container is visible
-            setTimeout(() => {
+            setTimeout(function() {
                 map.invalidateSize();
             }, 2000);
         }
@@ -2052,19 +2071,16 @@
             if (markers.length > 0) {
                 const group = L.featureGroup(markers);
                 const bounds = group.getBounds();
-                map.fitBounds(bounds.pad(0.0));
-                setTimeout(() => {
-                    const currentZoom = map.getZoom();
-                    map.setZoom(Math.max(currentZoom - 0.1, 2));
-                }, 100);
+                map.fitBounds(bounds.pad(0.05));
             } else {
                 // Reset to world view if no markers
                 map.setView([10, 150], 3);
             }
         }
 
-        // v011: Remove all collection site markers from the map
+        // v011: Remove all collection site markers from the map (guards against a null map)
         function clearSiteMarkers() {
+            if (!map) return;
             currentSiteMarkers.forEach(function(m) { map.removeLayer(m); });
             currentSiteMarkers = [];
             if (currentSiteMarkersData) currentSiteMarkersData = null;
@@ -2164,21 +2180,20 @@
                 interactive: true,
                 zIndexOffset: zIndex  // v019: Status-based layering
             }).addTo(map);
+            marker._projectId = project.id;  // For reliable lookup in showProjectOnMap
 
-            // v002: Popup content with XSS-escaped values
+            // v002: Popup content with XSS-escaped values, styled via CSS classes
             const projectSearchId = project.ansirRef || project.id;
-            const popupContent = `
-                <div style="max-width: 280px; font-family: Arial, sans-serif; line-height: 1.4;">
-                    <h4 style="margin: 0 0 8px 0; color: #282572; font-size: 15px; font-weight: bold;">${escapeHtml(project.name)}</h4>
-                    <p style="margin: 4px 0; font-size: 13px;"><strong>PI:</strong> ${escapeHtml(project.lead)}</p>
-                    <p style="margin: 4px 0; font-size: 13px;"><strong>Location:</strong> ${escapeHtml(project.location)}</p>
-                    <p style="margin: 4px 0; font-size: 13px;"><strong>Methods:</strong> ${project.methods ? project.methods.map(escapeHtml).join(', ') : 'Not specified'}</p>
-                    <p style="margin: 4px 0; font-size: 13px;"><strong>Status:</strong> <span style="color: ${color}; font-weight: bold;">${escapeHtml(statusDisplayName(project.status).toUpperCase())}</span></p>
-                    <p style="margin: 4px 0; font-size: 13px;"><strong>Duration:</strong> ${escapeHtml(project.startDate)} to ${escapeHtml(project.endDate)}</p>
-                    <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">
-                    <span onclick="searchForProject('${escapeHtml(String(projectSearchId))}')" style="color: #282572; font-size: 12px; cursor: pointer;">View project details →</span>
-                </div>
-            `;
+            const popupContent = '<div class="project-popup">'
+                + '<h4>' + escapeHtml(project.name) + '</h4>'
+                + '<p><strong>PI:</strong> ' + escapeHtml(project.lead) + '</p>'
+                + '<p><strong>Location:</strong> ' + escapeHtml(project.location) + '</p>'
+                + '<p><strong>Methods:</strong> ' + (project.methods ? project.methods.map(escapeHtml).join(', ') : 'Not specified') + '</p>'
+                + '<p><strong>Status:</strong> <span style="color:' + color + ';font-weight:bold;">' + escapeHtml(statusDisplayName(project.status).toUpperCase()) + '</span></p>'
+                + '<p><strong>Duration:</strong> ' + escapeHtml(project.startDate) + ' to ' + escapeHtml(project.endDate) + '</p>'
+                + '<hr>'
+                + '<span class="popup-details-link" onclick="searchForProject(\'' + escapeHtml(String(projectSearchId)) + '\')">View project details &rarr;</span>'
+                + '</div>';
 
             marker.bindPopup(popupContent, {
                 maxWidth: 300,
@@ -2267,7 +2282,16 @@
                     (project.lead && project.lead.toLowerCase().includes(nameFilter)) ||
                     (project.leadInstitution && project.leadInstitution.toLowerCase().includes(nameFilter)) ||
                     (project.keywords && project.keywords.toLowerCase().includes(nameFilter)) ||
-                    (project.location && project.location.toLowerCase().includes(nameFilter));
+                    (project.location && project.location.toLowerCase().includes(nameFilter)) ||
+                    (project.description && project.description.toLowerCase().includes(nameFilter)) ||
+                    (project.coInvestigators && project.coInvestigators.some(function(ci) {
+                        return ci.name.toLowerCase().includes(nameFilter) ||
+                            (ci.organisation && ci.organisation.toLowerCase().includes(nameFilter));
+                    })) ||
+                    (project.coLeads && project.coLeads.some(function(cl) {
+                        return cl.name.toLowerCase().includes(nameFilter) ||
+                            (cl.organisation && cl.organisation.toLowerCase().includes(nameFilter));
+                    }));
 
                 const matchesStatus = !statusFilter || project.status === statusFilter;
                 const matchesMethod = !methodFilter ||
@@ -2302,8 +2326,7 @@
                 noResults.classList.add('hidden');
             }
 
-            // Update stats and map
-            updateStats();
+            // Update map to show filtered projects
             updateMapMarkers();
             
             // Re-apply auto-expansion if target project is still visible
@@ -2347,15 +2370,15 @@
                         <h3 class="project-title">
                             ${eName}
                             <button type="button" class="permalink-btn" onclick="copyPermalink(${project.id}, event)" onmouseenter="showLinkPreview(${project.id})" onmouseleave="hideLinkPreview()" title="Copy project link">
-                                🔗
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                             </button>
                         </h3>
                         ${eAcronym ? `<p class="project-subtitle">${eAcronym}</p>` : ''}
                     </div>
                     <div style="display: flex; gap: 4px; flex-shrink: 0; align-items: center;">
-                        ${project.status !== 'complete' ? `<span class="project-status-badge status-${project.status}">${escapeHtml(statusDisplayName(project.status))}</span>` : ''}
-                        ${project.dataAccess && project.dataAccess.toLowerCase().includes('open') ? `<span class="data-access-badge access-open">Open Data</span>` : ''}
-                        ${project.networks && project.networks.length > 0 ? `<span class="fdsn-badge">FDSN</span>` : ''}
+                        ${project.status !== 'complete' ? `<span class="badge project-status-badge status-${project.status}">${escapeHtml(statusDisplayName(project.status))}</span>` : ''}
+                        ${project.dataAccess && project.dataAccess.toLowerCase().includes('open') ? `<span class="badge access-open">Open Data</span>` : ''}
+                        ${project.networks && project.networks.length > 0 ? `<span class="badge fdsn-badge">FDSN</span>` : ''}
                     </div>
                 </div>
                 <div class="project-body">
@@ -2368,8 +2391,8 @@
                         </div>
                         ${project.coLeads && project.coLeads.length > 0 ? project.coLeads.map(cl => `
                             <div>
-                                ${cl.id ?
-                                    `<a href="https://orcid.org/${escapeHtml(cl.id)}" target="_blank" rel="noopener" class="contributor-name-link">${cl.title ? escapeHtml(cl.title) + ' ' : ''}${escapeHtml(cl.name)}${cl.organisation ? ', ' + escapeHtml(cl.organisation) : ''}</a> <a href="https://orcid.org/${escapeHtml(cl.id)}" target="_blank" rel="noopener" class="orcid-link">${orcidIcon}</a>` :
+                                ${cl.orcidId ?
+                                    `<a href="https://orcid.org/${escapeHtml(cl.orcidId)}" target="_blank" rel="noopener" class="contributor-name-link">${cl.title ? escapeHtml(cl.title) + ' ' : ''}${escapeHtml(cl.name)}${cl.organisation ? ', ' + escapeHtml(cl.organisation) : ''}</a> <a href="https://orcid.org/${escapeHtml(cl.orcidId)}" target="_blank" rel="noopener" class="orcid-link">${orcidIcon}</a>` :
                                     `${cl.title ? escapeHtml(cl.title) + ' ' : ''}${escapeHtml(cl.name)}${cl.organisation ? ', ' + escapeHtml(cl.organisation) : ''}`}
                             </div>
                         `).join('') : ''}
@@ -2391,8 +2414,8 @@
                             <div class="section-content">
                                 ${project.coInvestigators.map(contributor => `
                                     <div style="margin-bottom: 3px;">
-                                        ${contributor.id ?
-                                            `<a href="https://orcid.org/${escapeHtml(contributor.id)}" target="_blank" rel="noopener" class="contributor-name-link">${contributor.title ? escapeHtml(contributor.title) + ' ' : ''}${escapeHtml(contributor.name)}${contributor.organisation ? ', ' + escapeHtml(contributor.organisation) : ''}</a> <a href="https://orcid.org/${escapeHtml(contributor.id)}" target="_blank" rel="noopener" class="orcid-link">${orcidIcon}</a>` :
+                                        ${contributor.orcidId ?
+                                            `<a href="https://orcid.org/${escapeHtml(contributor.orcidId)}" target="_blank" rel="noopener" class="contributor-name-link">${contributor.title ? escapeHtml(contributor.title) + ' ' : ''}${escapeHtml(contributor.name)}${contributor.organisation ? ', ' + escapeHtml(contributor.organisation) : ''}</a> <a href="https://orcid.org/${escapeHtml(contributor.orcidId)}" target="_blank" rel="noopener" class="orcid-link">${orcidIcon}</a>` :
                                             `${contributor.title ? escapeHtml(contributor.title) + ' ' : ''}${escapeHtml(contributor.name)}${contributor.organisation ? ', ' + escapeHtml(contributor.organisation) : ''}`}
                                     </div>
                                 `).join('')}
@@ -2403,7 +2426,7 @@
                     ${project.fundingRecords && project.fundingRecords.length > 0 ? `
                         <div class="expanded-section">
                             <h4 class="section-title">Funding</h4>
-                            <div class="funding-content">
+                            <div class="section-content">
                                 ${project.fundingRecords.map(f => `
                                     <div style="margin-bottom: 3px;">
                                         ${f.agency ? `<strong>${escapeHtml(f.agency)}</strong>` : ''}${f.agency && f.title ? ': ' : ''}${f.title ? escapeHtml(f.title) : ''}${f.id ? ` (${escapeHtml(f.id)})` : ''}
@@ -2501,14 +2524,6 @@
 
             return card;
         }
-
-        /* ============================================ */
-        /* STATISTICS FUNCTIONS                        */
-        /* ============================================ */
-        
-        // Update dashboard statistics
-        // v003: Stats section removed — function kept as no-op to avoid errors
-        function updateStats() { }
 
         /* ============================================ */
         /* FILTER AND SORT FUNCTIONS                   */
@@ -2609,10 +2624,8 @@
                         card.style.order = index;
                     }
                 });
-                
-                // Update stats and map
-                updateStats();
-                updateMapMarkers(); // Map shows only filtered projects
+
+                // Map markers do not change on sort, so no rebuild is needed
             }
         }
     </script>
