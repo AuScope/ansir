@@ -103,6 +103,36 @@ jobs:
             echo "See docs/SCHEDULE_DATA.md for the layout the parser expects."
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # The instrument register comes from the public DataCite API (prefix
+      # 10.82388), not from a sheet, so it needs no credentials and no repository
+      # variable. It counts one DOI per physical instrument and groups by model.
+      # continue-on-error for the same reason as the schedule step: a DataCite
+      # outage or a registry shape change must never block the projects publish.
+      # On failure data/instrument-register.json keeps its last good content and
+      # the failure is surfaced in the run summary below.
+      #
+      # This step also prints the known upstream defect - instrument records
+      # whose IsPartOf relations point at themselves - to its log on every run.
+      # See docs/PIDINST.md.
+      - name: Fetch instrument register
+        id: instruments
+        continue-on-error: true
+        run: node scripts/fetch-instruments.js
+
+      - name: Report instrument register fetch failure
+        if: steps.instruments.outcome == 'failure'
+        run: |
+          {
+            echo "### Instrument register sync failed"
+            echo ""
+            echo "scripts/fetch-instruments.js could not build the register from"
+            echo "the DataCite API - either DataCite was unreachable or the"
+            echo "records under prefix 10.82388 no longer have the expected"
+            echo "shape. The schedule page is still serving the last good"
+            echo "data/instrument-register.json."
+            echo "See docs/PIDINST.md for the contract the script expects."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # Resolves every ORCID against the public register and refreshes
       # data/contributor-verification.json, which the application form uses as
       # an allow-list before it will offer an ORCID for autofill.
@@ -139,7 +169,7 @@ jobs:
         run: |
           # --porcelain rather than "git diff", because contributor-verification.json
           # is untracked on the very first run and git diff would not see it.
-          if [ -z "$(git status --porcelain data/data.json ro-crate-metadata.json data/contributor-verification.json data/schedule.json)" ]; then
+          if [ -z "$(git status --porcelain data/data.json ro-crate-metadata.json data/contributor-verification.json data/schedule.json data/instrument-register.json)" ]; then
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "No changes: the sheet matches what is already published."
           else
@@ -152,7 +182,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/data.json ro-crate-metadata.json data/contributor-verification.json data/schedule.json
+          git add data/data.json ro-crate-metadata.json data/contributor-verification.json data/schedule.json data/instrument-register.json
           git commit -m "Auto-sync: update project data from Google Sheet"
           # Rebase onto anything pushed while this job was running, then push.
           git pull --rebase --autostash origin main
