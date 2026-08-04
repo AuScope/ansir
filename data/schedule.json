@@ -1,0 +1,1867 @@
+{
+  "fetched": "2026-08-03T06:13:16.585Z",
+  "source": "ANSIR Seismic Fleet Status",
+  "sourceUrl": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRyK1XUmYMXIHt-5BWhoZchVtMD3Lxtgqi69WoxEuWgUem7Ob_VzdG8L1OHlBjD7g/pub",
+  "generatedBy": "scripts/fetch-schedule.js",
+  "availabilityTabName": "Availability (July 21, 2026)",
+  "availabilityAsOf": "2026-07-21",
+  "definitions": {
+    "totalAvailable": "Field-ready, not reserved."
+  },
+  "totals": {
+    "categories": 3,
+    "instruments": 20,
+    "experiments": 11,
+    "supportedExperiments": 34,
+    "rapidResponse": 2,
+    "fleetInstruments": 1102
+  },
+  "categories": [
+    {
+      "name": "RECORDERS",
+      "instruments": [
+        {
+          "name": "ANU TerraSAWR",
+          "note": "+50 units in production",
+          "category": "RECORDERS",
+          "totalFleet": 63,
+          "available": 4,
+          "onLoan": 16,
+          "testing": 10,
+          "repair": 25,
+          "allocations": [
+            {
+              "experiment": "SPiRaL NT",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 11,
+              "tentative": false
+            },
+            {
+              "experiment": "GSWA WA Array Phase 3",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 5,
+              "tentative": false
+            },
+            {
+              "experiment": "DeepHeat",
+              "ansirCode": "ANSIR-2026-007",
+              "status": "reserved",
+              "count": 12,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 2,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "ANU TerraSAWR (NZ)",
+          "note": null,
+          "category": "RECORDERS",
+          "totalFleet": 4,
+          "available": 0,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "DeepHeat",
+              "ansirCode": "ANSIR-2026-007",
+              "status": "reserved",
+              "count": 4,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "ANU LPR200",
+          "note": null,
+          "category": "RECORDERS",
+          "totalFleet": 163,
+          "available": 69,
+          "onLoan": 41,
+          "testing": 4,
+          "repair": 47,
+          "allocations": [
+            {
+              "experiment": "SPiRaL NT",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 20,
+              "tentative": false
+            },
+            {
+              "experiment": "GSWA WA Array Phase 3",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 18,
+              "tentative": false
+            },
+            {
+              "experiment": "SAMWISE Southern Alps",
+              "ansirCode": "ANSIR-2025-001",
+              "status": "deployed",
+              "count": 2,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 1,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "ANU LPR200 (NZ)",
+          "note": null,
+          "category": "RECORDERS",
+          "totalFleet": 35,
+          "available": 0,
+          "onLoan": 24,
+          "testing": 0,
+          "repair": 11,
+          "allocations": [
+            {
+              "experiment": "OstQ",
+              "ansirCode": "ANSIR-2025-005",
+              "status": "deployed",
+              "count": 13,
+              "tentative": false
+            },
+            {
+              "experiment": "SAMWISE Southern Alps",
+              "ansirCode": "ANSIR-2025-001",
+              "status": "deployed",
+              "count": 11,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Nanometrics Centaur CTR4 (Indoor/vault only)",
+          "note": null,
+          "category": "RECORDERS",
+          "totalFleet": 4,
+          "available": 2,
+          "onLoan": 2,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "Maunakea",
+              "ansirCode": "ANSIR-2025-003",
+              "status": "deployed",
+              "count": 2,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        }
+      ]
+    },
+    {
+      "name": "SEISMOMETERS",
+      "instruments": [
+        {
+          "name": "Nanometrics Trillium Compact 120s",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 121,
+          "available": 78,
+          "onLoan": 28,
+          "testing": 1,
+          "repair": 12,
+          "allocations": [
+            {
+              "experiment": "UTAS Antarctica",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 6,
+              "tentative": false
+            },
+            {
+              "experiment": "SPiRaL NT",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 2,
+              "tentative": false
+            },
+            {
+              "experiment": "Maunakea",
+              "ansirCode": "ANSIR-2025-003",
+              "status": "deployed",
+              "count": 2,
+              "tentative": false
+            },
+            {
+              "experiment": "GSWA WA Array Phase 3",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 18,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 1,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Nanometrics Trillium Compact 120s (NZ)",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 5,
+          "available": 0,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "DeepHeat",
+              "ansirCode": "ANSIR-2026-007",
+              "status": "reserved",
+              "count": 5,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Nanometrics Trillium Compact Horizon 120s",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 12,
+          "available": 12,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Nanometrics Trillium Compact Posthole 120s",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 35,
+          "available": 14,
+          "onLoan": 16,
+          "testing": 4,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "SPiRaL NT",
+              "ansirCode": null,
+              "status": "deployed",
+              "count": 16,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 1,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Nanometrics Trillium Compact 20s",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 30,
+          "available": 14,
+          "onLoan": 0,
+          "testing": 1,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "DeepHeat",
+              "ansirCode": "ANSIR-2026-007",
+              "status": "reserved",
+              "count": 15,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Lennartz LE-3Dlite 1Hz",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 86,
+          "available": 48,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Lennartz LE-3Dlite 1Hz (NZ)",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 27,
+          "available": 0,
+          "onLoan": 27,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "OstQ",
+              "ansirCode": "ANSIR-2025-005",
+              "status": "deployed",
+              "count": 15,
+              "tentative": false
+            },
+            {
+              "experiment": "SAMWISE Southern Alps",
+              "ansirCode": "ANSIR-2025-001",
+              "status": "deployed",
+              "count": 12,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "SmartSolo node: IGU-16 1C geophone",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 47,
+          "available": 47,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "SmartSolo node: IGU-16HR 3C 5Hz geophone",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 239,
+          "available": 24,
+          "onLoan": 207,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "Otway CO2 Monitoring",
+              "ansirCode": "ANSIR-2025-009",
+              "status": "deployed",
+              "count": 24,
+              "tentative": false
+            },
+            {
+              "experiment": "Paralana",
+              "ansirCode": "ANSIR-2026-004",
+              "status": "deployed",
+              "count": 177,
+              "tentative": false
+            },
+            {
+              "experiment": "Taupō DAS",
+              "ansirCode": "ANSIR-2026-008",
+              "status": "deployed",
+              "count": 6,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 3,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "SmartSolo node: IGU-16HR 3C 5Hz geophone (NZ)",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 111,
+          "available": 0,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "SUBTRANS",
+              "ansirCode": "ANSIR-2026-003",
+              "status": "reserved",
+              "count": 100,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 1,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "SmartSolo node: IGU-BD3C-5 5s short period",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 99,
+          "available": 69,
+          "onLoan": 5,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "Taupō DAS",
+              "ansirCode": "ANSIR-2026-008",
+              "status": "deployed",
+              "count": 5,
+              "tentative": false
+            },
+            {
+              "experiment": "DeepHeat",
+              "ansirCode": "ANSIR-2026-007",
+              "status": "reserved",
+              "count": 30,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 1,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Sercel L-28-3D",
+          "note": null,
+          "category": "SEISMOMETERS",
+          "totalFleet": 18,
+          "available": 18,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        }
+      ]
+    },
+    {
+      "name": "FIBRE-OPTIC",
+      "instruments": [
+        {
+          "name": "Silixa iDAS 2.4",
+          "note": null,
+          "category": "FIBRE-OPTIC",
+          "totalFleet": 1,
+          "available": 1,
+          "onLoan": 0,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [],
+          "unnamedInterest": 1,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Silixa iDAS 2.5",
+          "note": null,
+          "category": "FIBRE-OPTIC",
+          "totalFleet": 1,
+          "available": 0,
+          "onLoan": 1,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "Maunakea",
+              "ansirCode": "ANSIR-2025-003",
+              "status": "deployed",
+              "count": 1,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        },
+        {
+          "name": "Silixa iDAS 2.5 (NZ)",
+          "note": null,
+          "category": "FIBRE-OPTIC",
+          "totalFleet": 1,
+          "available": 0,
+          "onLoan": 1,
+          "testing": 0,
+          "repair": 0,
+          "allocations": [
+            {
+              "experiment": "Taupō DAS",
+              "ansirCode": "ANSIR-2026-008",
+              "status": "deployed",
+              "count": 1,
+              "tentative": false
+            }
+          ],
+          "unnamedInterest": 0,
+          "unnamedInterestUnits": null
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "name": "UTAS Antarctica",
+      "label": "UTAS Antarctica",
+      "ansirCode": null,
+      "status": "deployed",
+      "column": "G",
+      "outDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "dueDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      }
+    },
+    {
+      "name": "Otway CO2 Monitoring",
+      "label": "Otway CO2 Monitoring #2025-009",
+      "ansirCode": "ANSIR-2025-009",
+      "status": "deployed",
+      "column": "H",
+      "outDate": {
+        "raw": "09-2025",
+        "iso": "2025-09",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "07-2026",
+        "iso": "2026-07",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "SPiRaL NT",
+      "label": "SPiRaL NT",
+      "ansirCode": null,
+      "status": "deployed",
+      "column": "I",
+      "outDate": {
+        "raw": "10-2018",
+        "iso": "2018-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "10-2026",
+        "iso": "2026-10",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "Paralana",
+      "label": "Paralana #2026-004",
+      "ansirCode": "ANSIR-2026-004",
+      "status": "deployed",
+      "column": "J",
+      "outDate": {
+        "raw": "06-2026",
+        "iso": "2026-06",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "09-2026",
+        "iso": "2026-09",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "Taupō DAS",
+      "label": "Taupō DAS #2026-008",
+      "ansirCode": "ANSIR-2026-008",
+      "status": "deployed",
+      "column": "K",
+      "outDate": {
+        "raw": "06-2026",
+        "iso": "2026-06",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "12-2026",
+        "iso": "2026-12",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "Maunakea",
+      "label": "Maunakea #2025-003",
+      "ansirCode": "ANSIR-2025-003",
+      "status": "deployed",
+      "column": "L",
+      "outDate": {
+        "raw": "04-2026",
+        "iso": "2026-04",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "03-2027",
+        "iso": "2027-03",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "GSWA WA Array Phase 3",
+      "label": "GSWA WA Array Phase 3",
+      "ansirCode": null,
+      "status": "deployed",
+      "column": "M",
+      "outDate": {
+        "raw": "05-2025",
+        "iso": "2025-05",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "05-2027",
+        "iso": "2027-05",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "OstQ",
+      "label": "OstQ #2025-005",
+      "ansirCode": "ANSIR-2025-005",
+      "status": "deployed",
+      "column": "N",
+      "outDate": {
+        "raw": "10-2025",
+        "iso": "2025-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "10-2027",
+        "iso": "2027-10",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "SAMWISE Southern Alps",
+      "label": "SAMWISE Southern Alps #2025-001",
+      "ansirCode": "ANSIR-2025-001",
+      "status": "deployed",
+      "column": "O",
+      "outDate": {
+        "raw": "11-2025",
+        "iso": "2025-11",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "11-2027",
+        "iso": "2027-11",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "SUBTRANS",
+      "label": "SUBTRANS #2026-003",
+      "ansirCode": "ANSIR-2026-003",
+      "status": "reserved",
+      "column": "T",
+      "outDate": {
+        "raw": "01-2027",
+        "iso": "2027-01",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "04-2027",
+        "iso": "2027-04",
+        "precision": "month",
+        "tentative": false
+      }
+    },
+    {
+      "name": "DeepHeat",
+      "label": "DeepHeat #2026-007",
+      "ansirCode": "ANSIR-2026-007",
+      "status": "reserved",
+      "column": "U",
+      "outDate": {
+        "raw": "10-2026",
+        "iso": "2026-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "dueDate": {
+        "raw": "05-2028",
+        "iso": "2028-05",
+        "precision": "month",
+        "tentative": false
+      }
+    }
+  ],
+  "supportedExperiments": [
+    {
+      "ref": "ANSIR-2026-003",
+      "ansirCode": "ANSIR-2026-003",
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": "Deutsche Forschungsgemeinschaft (DFG); Academia Sinica; New Zealand Ministry of Business Innovation and Employment (MBIE) Endeavour Fund – Nga Ngaru Wakapuke (NNW), MBIE Strategic Science Investment Fund via Earth Sciences New Zealand .",
+      "startDate": {
+        "raw": "02-2027",
+        "iso": "2027-02",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Multi-scale geophysical investigation of subduction to strike-slip transition, New Zealand (SUBTRANS): New Zealand’s plate boundary changes rapidly in the Cook Strait region, shifting from a subduction zone in the North Island to the strike slip faults of the South Island. This transition zone controls how large earthquakes begin, connect, and cascade, but its deep structure is still poorly understood. This project will use a dense array of seismic sensors to create a 3D image of the crust, providing critical information needed to better assess seismic hazard and strengthen the resilience of central New Zealand.",
+      "applicants": "Brook Tozer, Dan Bassett, Stuart Henrys, Brook Keats, Thomas Brakenrig, Nick Macdonald, Lauren Coup (Earth Sciences New Zealand); Gareth Crutchley, Christian Berndt (GEOMAR Kiel); Wu-Cheng (Academia Sinica).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 100,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2026-007",
+      "ansirCode": "ANSIR-2026-007",
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": "New Zealand Ministry of Business Innovation and Employment (MBIE) Endeavour Research Programme.",
+      "startDate": {
+        "raw": "10-2026",
+        "iso": "2026-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "DeepHeat: Unlocking superhot geothermal and national energy security through advanced permeability modelling.",
+      "applicants": "Finnigan Illsley-Kemp (Te Herenga Waka | Victoria University of Wellington); Alison Kirkby, Isabelle Chambefort (Earth Sciences NZ).",
+      "loans": [
+        {
+          "instrument": "ANU TerraSAWR",
+          "count": 16,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 5,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 20s",
+          "count": 15,
+          "tentative": false
+        },
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": 30,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2025-003",
+      "ansirCode": "ANSIR-2025-003",
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": "Australian Research Council; ARC Centre of Excellence in Optical Microcombs for Breakthrough Science (COMBS).",
+      "startDate": {
+        "raw": "08-2026",
+        "iso": "2026-08",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Monitoring Maunakea and Kilauea volcanos using DAS: ARC Centre of Excellence COMBS joint investigation with the W.M. Keck Observatory in Hawaii to run a distributed acoustic sensing experiment on Maunakea, which is located on the Big Island of Hawai’i. We aim to record small, previously undetected earthquakes on the dormant volcano and use these and ambient noise signals to image the volcano structure.",
+      "applicants": "Meghan Miller (The Australian National University); Helen Janiszewski (University of Hawaii at Manoa); Marc Kassis, Curt Dodds (University of Hawaii); Zhongwen Zhan (Caltech).",
+      "loans": [
+        {
+          "instrument": "Nanometrics Centaur CTR-4",
+          "count": 2,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 2,
+          "tentative": false
+        },
+        {
+          "instrument": "Silixa iDAS 2.5",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2026-008",
+      "ansirCode": "ANSIR-2026-008",
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": "Swiss National Science Foundation (SNSF)' Postdoc.Mobility' .",
+      "startDate": {
+        "raw": "06-2026",
+        "iso": "2026-06",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Imaging the magma chamber of the Taupō volcano using distributed acoustic sensing and seismic nodes.",
+      "applicants": "Sara Klaasen, Meghan Miller (The Australian National University); John Townend (Te Herenga Waka | Victoria University of Wellington).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 6,
+          "tentative": false
+        },
+        {
+          "instrument": "Silixa iDAS 2.5",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2026-004",
+      "ansirCode": "ANSIR-2026-004",
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": "ARC Discovery Grant DP250100936 \"Discovering natural hydrogen in continental interiors\".",
+      "startDate": {
+        "raw": "06-2026",
+        "iso": "2026-06",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Investigating the natural hydrogen potential of the Frome Embayment through resistivity and shear-wave velocity structure: Multi-geoscientific research exploring the interplay between fault systems, hydrothermal activity, and potential natural hydrogen production related to the Paralana Fault Zone in South Australia’s Northern Flinders Ranges. The survey area represents an ideal natural laboratory for testing hypotheses on the roles of the essential geological processes in natural hydrogen production within the continental crust. Two geophysical methods - Magnetotellurics and Passive Seismics are used to constrain the sedimentary cover thickness, geometry of the major faults and to evaluate their potential role in natural hydrogen generation, transport and storage in continental settings.",
+      "applicants": "Anna Gubina, Graham Heinson, Juan Camilo, Rumi Daruso, Relly Margiono, Goran Boren (Adelaide University).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 177,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": null,
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "05-2026",
+        "iso": "2026-05",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "(DAS project at Whataroa DFDP2).",
+      "applicants": "Meghan Miller, Sara Klaasen, Tianwe Sun (The Australian National University); John Townend (Te Herenga Waka | Victoria University of Wellington).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 6,
+          "tentative": false
+        },
+        {
+          "instrument": "Silixa iDAS 2.5",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2025-009",
+      "ansirCode": "ANSIR-2025-009",
+      "fdsnLabel": "Z1 2025",
+      "fdsnNetwork": "Z1",
+      "fundingSource": "University of Melbourne; AuScope Subsurface Observatory.",
+      "startDate": {
+        "raw": "09-2025",
+        "iso": "2025-09",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Otway CO2 Monitoring Network: Stage 4 of the CO₂CRC Otway Project involves a water flush followed by a controlled microbubble CO₂ injection into the 1,500 m-deep saline aquifer. These activities are expected to alter reservoir pressures and may induce small seismic events. Deploying seismic instrumentation is therefore essential to detect and locate any microseismicity, providing assurance of safe operations, supporting geomechanical modelling, and informing the design of future monitoring networks.",
+      "applicants": "Dan Sandiford (University of Melbourne); Michael Rieger (CO2CRC); Saeed Salimzadeh (CSIRO).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 24,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2025-005",
+      "ansirCode": "ANSIR-2025-005",
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": "Earth Sciences NZ & Ministry of Business, Innovation and Employment (MBIE) core funding via Kaitiakitanga ki Te Riu-a-Māui SSIF Programme (KTRM SSIF); Environment Canterbury via Otago University.",
+      "startDate": {
+        "raw": "10-2025",
+        "iso": "2025-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Ostler Fault Quakes Array, New Zealand (OstQ): The Ostler fault is one of the most active faults in the region east of the central Alpine fault, and underlies major New Zealand infrastructure. The Ostler quakes network will deploy 12 temporary seismographs to obtain accurate locations for very small magnitude earthquakes that are not observed by the sparse permanent network. This will enhance understanding of the deep Ostler fault and help identify other seismically active structures.",
+      "applicants": "Donna Eberhart-Phillips (Earth Sciences NZ); Mark Stirling (Otago University).",
+      "loans": [
+        {
+          "instrument": "ANU LPR200",
+          "count": 13,
+          "tentative": false
+        },
+        {
+          "instrument": "Lennartz LE-3Dlite (1Hz)",
+          "count": 15,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2025-001",
+      "ansirCode": "ANSIR-2025-001",
+      "fdsnLabel": "ZJ 2025",
+      "fdsnNetwork": "ZJ",
+      "fundingSource": "National Collaborative Research Infrastructure Strategy (NCRIS) via AuScope Earth Imaging & Sounding.",
+      "startDate": {
+        "raw": "10-2025",
+        "iso": "2025-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Southern Alps Monitoring of Weather-Influenced Seismicity and Erosion (SAMWISE): Our project focuses on studying seismic activity in New Zealand’s Southern Alps/Kā Tiritiri o te Moana by collecting and analyzing new seismic data. We will expand the current seismometer network, develop high-quality earthquake datasets, and investigate environmental signals like landslides and avalanches. By using advanced modeling techniques, we aim to understand how surface changes, such as glacial retreat, influence seismicity and crustal deformation.",
+      "applicants": "Konstantinos Michailos, Meghan Miller (The Australian National University); John Townend, Calum J. Chamberlain (Te Herenga Waka | Victoria University of Wellington).",
+      "loans": [
+        {
+          "instrument": "ANU LPR200",
+          "count": 13,
+          "tentative": false
+        },
+        {
+          "instrument": "Lennartz LE-3Dlite (1Hz)",
+          "count": 12,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANSIR-2025-004",
+      "ansirCode": "ANSIR-2025-004",
+      "fdsnLabel": "Y7 2025",
+      "fdsnNetwork": "Y7",
+      "fundingSource": "Te Herenga Waka Victoria University of Wellington.",
+      "startDate": {
+        "raw": "10-2025",
+        "iso": "2025-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "04-2026",
+        "iso": "2026-04",
+        "precision": "month",
+        "tentative": false
+      },
+      "description": "Seismic imaging and local seismicity studies to constrain the volcanic hazard of Ōkataina caldera volcano, Aotearoa New Zealand (MAHANA Makatiti and Haroharo Nodal Array): A temporary network of seismic nodes focussed on Ōkataina caldera volcano in the North Island of Aotearoa New Zealand. We seek to image the volcano in detail and detect local earthquakes to improve our knowledge of the volcano’s structure and processes and the hazard that it poses.",
+      "applicants": "El Mestel, Finnigan Illsley-Kemp, Colin Wilson (Te Herenga Waka | Victoria University of Wellington); Kelvin Tapuke (Joint Centre for Disaster Research; Te Kunenga ki Pūrehuroa | Massey University); Meghan Miller (The Australian National University).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 108,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S03-2023",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "10-2024",
+        "iso": "2024-10",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Eyre Peninsula Nodal Array (EPNA), Phase 2: Accelerating exploration and extraction of renewable natural hydrogen",
+      "applicants": "Caroline Eakin, Chengxin Jiang, Meghan Miller, Louis Moresi (The Australian National University); Graham Heinson (University of Adelaide);\nH2EX CRC-P.",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 102,
+          "tentative": false
+        },
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": 25,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "SX-2023",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "PrObing Small-scale lithospheric Structures Using a Modern geo-transect (POSSUM)",
+      "applicants": "Chengxin Jiang, Meghan Miller (The Australian National University); Steven Hansen (Macquarie University).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": null,
+          "tentative": true
+        },
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": null,
+          "tentative": true
+        }
+      ]
+    },
+    {
+      "ref": "SX-2024",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "07-2024",
+        "iso": "2024-07",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Ambient Noise Tomography of an Electrical Resistivity Anomaly, Mundi Mundi Region, New South Wales",
+      "applicants": "Hamid Bizhanikalatehahmad, Graham Heinson (University of Adelaide); CRC MinEx and Strategic Energy Resources .",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 102,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "SX-2024",
+      "ansirCode": null,
+      "fdsnLabel": "7A 2024",
+      "fdsnNetwork": "7A",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2024-07-02",
+        "iso": "2024-07-02",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2024-08-02",
+        "iso": "2024-08-02",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "Upper-mid crustal seismic structure of the Georgetown Province",
+      "applicants": "Craig O’Neill, Ao Chang, Neil Harbison (Queensland University of Technology); Janelle Simpson, Matthew Greenwood, Roger Cant (Geological Survey of Queensland); Lauren Waszek (James Cook University).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": 20,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": null,
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "06-2024",
+        "iso": "2024-06",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Fiordland Seismological Sensing of Landslides & Earthquakes",
+      "applicants": "Meghan Miller, Voon Hui Lai (The Australia National University); John Townend (Te Herenga Waka | Victoria University of Wellington).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 6,
+          "tentative": false
+        },
+        {
+          "instrument": "Silixa iDAS 2.5",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "SX-2024",
+      "ansirCode": null,
+      "fdsnLabel": "WG",
+      "fdsnNetwork": "WG",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "04-2024",
+        "iso": "2024-04",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "WA Array: Passive seismic imaging of WA.",
+      "applicants": "Ruth Murdie, J.P O’Donnell, Huaiyu Yuan, Reza Ebrahimi (Geological Survey of WA).",
+      "loans": [
+        {
+          "instrument": "ANU TerraSAWR",
+          "count": 2,
+          "tentative": false
+        },
+        {
+          "instrument": "ANU LPR200",
+          "count": 14,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 18,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 20s",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S04-2023",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "03-2024",
+        "iso": "2024-03",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "05-2025",
+        "iso": "2025-05",
+        "precision": "month",
+        "tentative": false
+      },
+      "description": "Utilising Distributed Acoustic Sensing and Dark Fibres for Smart Water Asset Monitoring",
+      "applicants": "Wei Zeng, Martin Lambert, Benjamin Cazzolato (University of Adelaide).",
+      "loans": [
+        {
+          "instrument": "Silixa iDAS 2.4",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S03-2023",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "02-2024",
+        "iso": "2024-02",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Eyre Peninsula Nodal Array (EPNA): Accelerating exploration and extraction of renewable natural hydrogen",
+      "applicants": "Caroline Eakin, Chengxin Jiang, Meghan Miller, Louis Moresi (The Australian National University); Graham Heinson (University of Adelaide);\nH2EX CRC-P.",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 129,
+          "tentative": false
+        },
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": 27,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S01-2023",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "12-2023",
+        "iso": "2023-12",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "AusArray Victoria seismic imaging of Victoria",
+      "applicants": "Geoscience Australia.",
+      "loans": [
+        {
+          "instrument": "ANU LPR200",
+          "count": 59,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 43,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 20s",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S02-2023",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "12-2023",
+        "iso": "2023-12",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Dense nodal seismic arrays (DNSA) to image the Paeroa Fault strands adjacent to the Ōkataina Volcanic Centre, Aotearoa New Zealand",
+      "applicants": "Brook Keats (GNS Science | Te Pū Ao).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 114,
+          "tentative": false
+        },
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": 54,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "SX-2023",
+      "ansirCode": null,
+      "fdsnLabel": "2E 2023",
+      "fdsnNetwork": "2E",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2023-09-03",
+        "iso": "2023-09-03",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2023-11-26",
+        "iso": "2023-11-26",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "Wairakei Earthquake and Tomography Array (WETA)",
+      "applicants": "Chengxin Jiang, Meghan Miller (The Australian National University); Finnigan Illsley-Kemp (Te Herenga Waka | Victoria University of Wellington).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 120,
+          "tentative": false
+        },
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": 55,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": null,
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "06-2023",
+        "iso": "2023-06",
+        "precision": "month",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "07-2023",
+        "iso": "2023-07",
+        "precision": "month",
+        "tentative": false
+      },
+      "description": "GA Beetaloo Basin",
+      "applicants": "Geoscience Australia",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 30,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANU-2023",
+      "ansirCode": null,
+      "fdsnLabel": "X5 2023",
+      "fdsnNetwork": "X5",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2023-04-24",
+        "iso": "2023-04-24",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Auckland Hauraki Node Array (AHNA)",
+      "applicants": "Robert Pickle, Meghan Miller, Kimberley Berends (The Australian National University).",
+      "loans": [
+        {
+          "instrument": "ANU TerraSAWR",
+          "count": 5,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 5,
+          "tentative": false
+        },
+        {
+          "instrument": "SmartSolo IGU-BD3C5 (5s Node)",
+          "count": 55,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "SX-2023",
+      "ansirCode": null,
+      "fdsnLabel": "4B 2023",
+      "fdsnNetwork": "4B",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2023-03-26",
+        "iso": "2023-03-26",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "*",
+        "iso": null,
+        "precision": null,
+        "tentative": true
+      },
+      "description": "Seismic Network Around Kangaroo, Eyre, Yorke (SNAKEY)",
+      "applicants": "Caroline Eakin, Robert Pickle (The Australian National University).",
+      "loans": [
+        {
+          "instrument": "ANU TerraSAWR",
+          "count": 16,
+          "tentative": false
+        },
+        {
+          "instrument": "ANU LPR200",
+          "count": 5,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 12,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact Posthole 120s",
+          "count": 8,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANU-2023",
+      "ansirCode": null,
+      "fdsnLabel": "2B 2023",
+      "fdsnNetwork": "2B",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2023-02-20",
+        "iso": "2023-02-20",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2023-11-09",
+        "iso": "2023-11-09",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "South Island Seismology at the Speed of Light (SISSLE)",
+      "applicants": "Meghan Miller, Voon Hui Lai (The Australian National University); John Townend (Te Herenga Waka | Victoria University of Wellington).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 5,
+          "tentative": false
+        },
+        {
+          "instrument": "Silixa iDAS 2.5",
+          "count": 1,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S01-2022",
+      "ansirCode": null,
+      "fdsnLabel": "6Y 2022",
+      "fdsnNetwork": "6Y",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2022-10-08",
+        "iso": "2022-10-08",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2023-10-18",
+        "iso": "2023-10-18",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "Southland Otago Seismic Array (SOSA)",
+      "applicants": "Jack Williams, Mark Stirling (University of Otago); Donna Eberhart-Phillips, Sandra Bourguignon (GNS Science | Te Pū Ao).",
+      "loans": [
+        {
+          "instrument": "ANU LPR200",
+          "count": 30,
+          "tentative": false
+        },
+        {
+          "instrument": "Lennartz LE-3Dlite (1Hz)",
+          "count": 21,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S01-2020",
+      "ansirCode": null,
+      "fdsnLabel": "3X 2022",
+      "fdsnNetwork": "3X",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2022-06-14",
+        "iso": "2022-06-14",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2022-07-27",
+        "iso": "2022-07-27",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "Curnamona Deep Earth Imaging Project passive seismic experiment.",
+      "applicants": "Ben Kay, Graham Heinson, Goran Boren (University of Adelaide).",
+      "loans": [
+        {
+          "instrument": "ANU LPR200",
+          "count": 70,
+          "tentative": false
+        },
+        {
+          "instrument": "Lennartz LE-3Dlite (1Hz)",
+          "count": 70,
+          "tentative": false
+        },
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 136,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S01-2021",
+      "ansirCode": null,
+      "fdsnLabel": "2X 2022",
+      "fdsnNetwork": "2X",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2022",
+        "iso": "2022",
+        "precision": "year",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2022",
+        "iso": "2022",
+        "precision": "year",
+        "tentative": false
+      },
+      "description": "Vulcan MT and Passive Seismic Array: Large-N array ambient noise tomography to image the Punt Hill iron oxide copper-gold prospect in South Australia.",
+      "applicants": "Geological Survey of South Australia, University of Adelaide, Fortescue Metals Group (FMG) Resources Pty Ltd.",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 100,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANU-2021",
+      "ansirCode": null,
+      "fdsnLabel": "1G 2020",
+      "fdsnNetwork": "1G",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2020-12-11",
+        "iso": "2020-12-11",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2021-01-15",
+        "iso": "2021-01-15",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "Lake George Seismic Nodal Array",
+      "applicants": "Chengxin Jiang, Meghan Miller (The Australian National University).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 102,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S02-2021",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": null,
+      "endDate": null,
+      "description": "Joint active and passive seismic trials with multi-component nodes in the Canning Basin.",
+      "applicants": "Chengxin Jiang (The Australian National University), Kurt Chambers (Buru Energy).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 100,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S02-2019",
+      "ansirCode": null,
+      "fdsnLabel": "6K 2020",
+      "fdsnNetwork": "6K",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2020-10-14",
+        "iso": "2020-10-14",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2022-06-11",
+        "iso": "2022-06-11",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "AusArray SA: 3D lithospheric architecture of the eastern-central Gawler Craton and metallogenic Olympic Cu-Au Province.",
+      "applicants": "John Paul O'Donnell, Stephan Thiel, Kate Robertson, Alexei Gorbatov, & Bruce Goleby (Geological Survey of South Australia).",
+      "loans": [
+        {
+          "instrument": "ANU LPR200",
+          "count": 35,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 25,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 20s",
+          "count": 12,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "ANU-2021",
+      "ansirCode": null,
+      "fdsnLabel": "9B 2020",
+      "fdsnNetwork": "9B",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2020-08-31",
+        "iso": "2020-08-31",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2020-10-12",
+        "iso": "2020-10-12",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "Mt. Stromlo Node Array",
+      "applicants": "Chengxin Jiang, Robert Pickle, Meghan Miller, Michelle Salmon (The Australian National University).",
+      "loans": [
+        {
+          "instrument": "SmartSolo IGU-16HR (5Hz Node)",
+          "count": 72,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "S01-2019",
+      "ansirCode": null,
+      "fdsnLabel": "2P 2020",
+      "fdsnNetwork": "2P",
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2020-08-13",
+        "iso": "2020-08-13",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2023-12-15",
+        "iso": "2023-12-15",
+        "precision": "day",
+        "tentative": false
+      },
+      "description": "South West Australia Network (SWAN): Enhanced 3-D seismic structure for Southwest Australia.",
+      "applicants": "Trevor Allen (Geoscience Australia), Ruth Murdie, Klaus Gessner, Huaiyu Yuan (Geological Survey of Western Australia); Meghan Miller, Brian Kennett, Robert Pickle (The Australian National University).",
+      "loans": [
+        {
+          "instrument": "ANU TerraSAWR",
+          "count": 25,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact 120s",
+          "count": 20,
+          "tentative": false
+        },
+        {
+          "instrument": "Nanometrics Trillium Compact Posthole 120s",
+          "count": 4,
+          "tentative": false
+        }
+      ]
+    },
+    {
+      "ref": "OB01-2019",
+      "ansirCode": null,
+      "fdsnLabel": null,
+      "fdsnNetwork": null,
+      "fundingSource": null,
+      "startDate": {
+        "raw": "2020",
+        "iso": "2020",
+        "precision": "year",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2021",
+        "iso": "2021",
+        "precision": "year",
+        "tentative": false
+      },
+      "description": "Probing the Australian Pacific plate boundary: Macquarie Ridge in 3-D",
+      "applicants": "Hrvoje Tkalčić (The Australian National University).",
+      "loans": [
+        {
+          "instrument": "Guralp Liber",
+          "count": 16,
+          "tentative": false
+        }
+      ]
+    }
+  ],
+  "rapidResponse": [
+    {
+      "institute": "University of Melbourne",
+      "fdsnNetwork": "VX",
+      "doi": "10.7914/w4yj-hd40",
+      "startDate": null,
+      "endDate": null,
+      "earthquake": "M5.5 Amata, NT-SA border (04/04/2026 18:26:12 UTC).",
+      "location": {
+        "raw": "-26.01, 130.67",
+        "latitude": -26.01,
+        "longitude": 130.67
+      },
+      "equipment": "6x SmartSolo IGU-16HR (5Hz node)."
+    },
+    {
+      "institute": "The Australian National University",
+      "fdsnNetwork": "YB",
+      "doi": "10.7914/g75f-4a16",
+      "startDate": {
+        "raw": "2026-03-12",
+        "iso": "2026-03-12",
+        "precision": "day",
+        "tentative": false
+      },
+      "endDate": {
+        "raw": "2026-04-10",
+        "iso": "2026-04-10",
+        "precision": "day",
+        "tentative": false
+      },
+      "earthquake": "MLa 4.4 Rugby, NSW (11/03/2026 08:09:33 UTC).",
+      "location": {
+        "raw": "-34.37, 148.89",
+        "latitude": -34.37,
+        "longitude": 148.89
+      },
+      "equipment": "9x SmartSolo IGU-1C (1-Channel node), 12x SmartSolo IGU-16HR (5Hz node)."
+    }
+  ],
+  "notes": [
+    "ANSIR equipment and services are available to researchers from Australian and international universities, publicly funded research organisations, and their industry partners. Visit https://www.auscope.org.au/ansir-terms for application information. To discuss instruments and availability (inc. export feasibility), email ansir@anu.edu.au.",
+    "Please contact us if instruments displayed here do not suit your research needs or are in short supply, as we may have other options available. Your feedback also helps us maintain a relevant infrastructure collection for the research community."
+  ],
+  "warnings": [
+    "ANU LPR200: the deployment list accounts for 40 instruments on loan but the sheet's on-loan figure is 41."
+  ]
+}
