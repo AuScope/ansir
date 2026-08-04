@@ -1,95 +1,147 @@
-# ANSIR Research Projects
+# ANSIR web
 
-Public-facing project database for the **ANSIR - National Research Facility for Earth Sounding**, an [AuScope](https://www.auscope.org.au/) Earth Imaging and Sounding program.
+Public web pages and data pipeline for **ANSIR**, the Australian National
+Seismic Imaging Resource - a national research facility of
+[AuScope](https://www.auscope.org.au/), funded under the National
+Collaborative Research Infrastructure Strategy (NCRIS).
 
-Browse active and completed geophysical research projects using ANSIR equipment across Australia and internationally.
+ANSIR provides seismic, magnetotelluric and related instrumentation to
+researchers at Australian and international universities, publicly funded
+research organisations, and their industry partners.
 
-**Live site:** [auscope.org.au/ansir-projects](https://www.auscope.org.au/ansir-projects)
+## What is here
+
+Four public pages, each served by GitHub Pages and embedded in the AuScope
+website through an iframe:
+
+| Page | Path | What it shows |
+|---|---|---|
+| Research projects | `/` | Every project on the ANSIR register: map, filters, search, deep links |
+| Instrument availability and schedule | `/schedule/` | What is available now, what is committed to which experiment, and when it is due back |
+| Portfolio statistics | `/stats/` | Projects, researchers, institutions, instrument deployments and published outputs |
+| Equipment loan application | `/apply/` | The application form for instrument time |
+
+Live on the AuScope site at
+[/ansir-projects](https://www.auscope.org.au/ansir-projects),
+[/ansir-schedule](https://www.auscope.org.au/ansir-schedule) and
+[/ansir-application-form](https://www.auscope.org.au/ansir-application-form).
 
 ## How it works
 
+Everything public is a static file in this repository. Data is refreshed by
+scheduled GitHub Actions, not by a server.
+
 ```
-Google Sheet (master data)
-    |  GAS export on save
-    v
-data/data.json (pushed via GitHub API)
-    |  GitHub Action triggered
-    v
-data/data.json (enriched with DOI metadata)
-ro-crate-metadata.json (generated for standards compliance)
-    |  GitHub Pages serves
-    v
-index.html + data/data.json -> embedded in Squarespace via iframe
+Google Sheets (maintained by ANSIR staff)        Public APIs
+  |  project register (published CSV view)         |  DataCite, ORCID, CrossRef
+  |  seismic fleet status (published tabs)         |
+  v                                                v
+      GitHub Actions, nightly and on demand
+                      |
+                      v
+        data/*.json committed to this repo
+                      |
+                      v
+              GitHub Pages serves the pages
+                      |
+                      v
+        embedded in the AuScope Squarespace site
 ```
 
-1. Project data is managed in a Google Sheet by the ANSIR team
-2. When a project is saved in the internal dashboard, a Google Apps Script function exports public-facing fields as structured JSON and pushes `data/data.json` to this repo via the GitHub API
-3. A GitHub Action detects the data change and runs two steps:
-   - **DOI enrichment** — resolves publication/dataset metadata (title, authors, journal, year) via CrossRef and DataCite APIs
-   - **RO-Crate generation** — produces a standards-compliant `ro-crate-metadata.json` for machine-readable research metadata
-4. GitHub Pages serves `index.html` which fetches `data/data.json` and renders an interactive project browser with map, filters, and search
-5. The page is embedded in the AuScope Squarespace site via an iframe with deep-linking support
+The pages hold no data of their own: each one fetches the JSON files below and
+renders whatever it finds. When staff update a sheet, the next sync run
+publishes the change with no code edit and no manual step.
+
+### Data files
+
+| File | Built by | Source |
+|---|---|---|
+| `data/data.json` | `scripts/fetch-projects.js` | The project register: a published, filtered view of the master sheet holding only rows and columns approved for publication |
+| `data/schedule.json` | `scripts/fetch-schedule.js` | The ANSIR Seismic Fleet Status sheet: availability, deployments and rapid-response records |
+| `data/instrument-register.json` | `scripts/fetch-instruments.js` | The [AuScope instrument register](https://pidinst.data.auscope.org.au/): one DataCite DOI per physical instrument, under prefix `10.82388` |
+| `data/contributor-verification.json` | `scripts/validate-contributors.js` | The public [ORCID](https://orcid.org/) register: which identifiers are confirmed to belong to which researcher |
+| `ro-crate-metadata.json` | `scripts/generate-ro-crate.js` | Generated from `data/data.json` after DOI enrichment |
+
+Each fetch script validates what it receives and **exits with a named error
+rather than publishing something wrong**. A sheet that has been restructured,
+unpublished, or emptied stops the sync and leaves the last good data in place;
+the failure is reported in the workflow run summary. Every page displays the
+date its data was gathered, so stale data is visible rather than silent.
+
+### Research metadata
+
+`ro-crate-metadata.json` is [RO-Crate 1.1](https://www.researchobject.org/ro-crate/specification/1.1/)
+compliant, using Schema.org JSON-LD to describe the project collection, each
+project, its contributors (linked by ORCID), organisations, funding, instruments,
+publications, FDSN networks, and spatial and temporal coverage. This supports
+discovery by ARDC Research Data Australia, institutional repositories and other
+RO-Crate-aware harvesters.
+
+Publication and dataset metadata is resolved from DOIs through the
+[CrossRef](https://www.crossref.org/) and [DataCite](https://datacite.org/) APIs.
 
 ## Repository structure
 
 ```
-ansir-data/
-├── .github/workflows/
-│   └── resolve-dois.yml          # GitHub Action: enrich DOIs + generate RO-Crate
-├── assets/images/
-│   └── ORCID_iD.png              # ORCID icon for contributor links
-├── data/
-│   └── data.json                 # Project data (auto-published from dashboard)
-├── scripts/
-│   ├── resolve-dois.js           # DOI metadata resolution via CrossRef/DataCite
-│   └── generate-ro-crate.js      # RO-Crate 1.1 metadata generator
-├── index.html                    # Main project browser page
-├── ro-crate-metadata.json        # RO-Crate metadata (auto-generated)
-├── LICENSE                       # CC BY 4.0
-└── README.md
+.
+├── index.html                  Research projects page
+├── schedule/index.html         Instrument availability and schedule
+├── stats/index.html            Portfolio statistics
+├── apply/index.html            Equipment loan application form
+├── data/                       Published JSON, rebuilt by the workflows
+├── scripts/                    The fetch, enrichment and validation scripts
+├── lib/                        Self-hosted Leaflet and Leaflet.draw
+├── assets/                     Images
+├── gas/                        Google Apps Script source for the intake endpoint
+└── .github/workflows/          Scheduled sync and DOI enrichment
 ```
 
-## Data format
+### The one piece that is not static
 
-### data/data.json
+`gas/Code.gs` is the application intake endpoint. Accepting a form submission
+from a member of the public, storing an uploaded PDF and sending email all
+require a server, so this single Apps Script deployment remains. It exposes
+exactly four web-callable functions and writes submissions to a separate
+review tab, never to the published project data. `gas/README.md` is the
+deployment guide.
 
-Optimised for the frontend. Contains structured project records with:
+## Working on it locally
 
-- Project metadata (title, ANSIR code, status, dates, description)
-- Methods and keywords (arrays)
-- Location (region, country, coordinates, polygon)
-- Contributors (name, title, ORCID, organisation, role hierarchy)
-- Funding (agency, title, identifier)
-- ANSIR instrumentation (type, count)
-- Related objects with resolved DOI metadata (publications, datasets, FDSN networks)
-- Data access and indigenous engagement information
+No build step, no package manager, no framework. Serve the directory and open
+a page:
 
-### ro-crate-metadata.json
+```bash
+python3 -m http.server 8000
+```
 
-[RO-Crate 1.1](https://www.researchobject.org/ro-crate/specification/1.1/) compliant metadata for machine consumption. Auto-generated from `data.json` after DOI enrichment. Uses Schema.org JSON-LD to describe:
+Then <http://localhost:8000/>, `/schedule/`, `/stats/` or `/apply/`.
 
-- The ANSIR project collection as a root `Dataset`
-- Each project as a `Dataset` entity with `hasPart` relationship
-- Contributors as `Person` entities (linked via ORCID where available)
-- Organisations, funding grants, instruments as contextual entities
-- Publications as `ScholarlyArticle` entities with DOI identifiers
-- FDSN networks and datasets as linked `Dataset` entities
-- Spatial coverage via `Place` and `GeoCoordinates`
-- Temporal coverage, keywords, and access conditions
+To rebuild a data file locally (Node 20 or newer, no dependencies):
 
-This enables discovery by ARDC Research Data Australia, institutional repositories, and other RO-Crate-aware harvesters.
+```bash
+node scripts/fetch-schedule.js       # fleet schedule, from the published sheet
+node scripts/fetch-instruments.js    # instrument register, from DataCite
+node scripts/validate-contributors.js --warn   # ORCID verification
+```
 
-## Technologies
+`scripts/fetch-projects.js` additionally needs `ANSIR_PROJECTS_CSV_URL` in the
+environment, matching the repository variable of the same name.
 
-- **Frontend:** Vanilla HTML/CSS/JS with [Leaflet.js](https://leafletjs.com/) for interactive maps
-- **Backend:** Google Apps Script (data management + export)
-- **Hosting:** GitHub Pages
-- **DOI resolution:** CrossRef API + DataCite API via GitHub Actions
-- **Research metadata:** [RO-Crate 1.1](https://www.researchobject.org/ro-crate/specification/1.1/) (Schema.org JSON-LD)
-- **Embedding:** Squarespace iframe with postMessage deep-linking
+### Conventions
 
-## License
+- Vanilla HTML, CSS and JavaScript. No frameworks, no build tooling, no CDNs:
+  every dependency is vendored under `lib/`.
+- Pages are embedded in iframes and report their height to the parent page, so
+  each one is written to work standalone and embedded.
+- No credentials or internal identifiers in this repository. The intake
+  endpoint reads its sheet ID from an Apps Script property; the workflows read
+  the published sheet URL from a repository variable.
+- Detailed operator documentation - pipeline setup, spreadsheet layout
+  contracts, intake procedures and data-quality notes - is maintained by
+  AuScope outside this repository. Comments and error messages that reference
+  `docs/*.md` refer to those internal documents.
 
-This project is licensed under [CC BY 4.0](LICENSE) - Creative Commons Attribution 4.0 International.
+## Licence
 
-Data sourced from ANSIR research projects. Publication metadata resolved via [CrossRef](https://www.crossref.org/) and [DataCite](https://datacite.org/) APIs.
+[CC BY 4.0](LICENSE). Data sourced from ANSIR research projects; publication
+metadata resolved via CrossRef and DataCite.
