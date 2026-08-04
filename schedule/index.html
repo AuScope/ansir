@@ -953,6 +953,7 @@
     var CATEGORY_LABELS = {
         'RECORDERS': 'Seismic Recorders',
         'SEISMOMETERS': 'Seismometers',
+        'NODAL SEISMOMETERS': 'Nodal Seismometers',
         'FIBRE-OPTIC': 'Fibre-Optic (DAS)'
     };
 
@@ -1531,10 +1532,41 @@
         return card;
     }
 
+    // Nodal seismometers are a distinct offering, but the Fleet Status sheet
+    // groups them under SEISMOMETERS and ANSIR does not maintain that sheet.
+    // This regroups them at display time: instruments matching the pattern
+    // move into their own category, inserted directly after the one they came
+    // from. If the sheet itself ever gains a NODAL category, the sheet's own
+    // grouping wins and this split stands down - delete it at that point.
+    var NODAL_PATTERN = /^smartsolo\b|\bnode\b/i;
+
+    function splitNodalSeismometers(categories) {
+        for (var c = 0; c < categories.length; c++) {
+            if (/nodal/i.test(text(categories[c].name))) return categories;
+        }
+        var result = [];
+        for (var i = 0; i < categories.length; i++) {
+            var category = categories[i];
+            result.push(category);
+            if (text(category.name) !== 'SEISMOMETERS') continue;
+            var keep = [];
+            var nodal = [];
+            var instruments = category.instruments || [];
+            for (var j = 0; j < instruments.length; j++) {
+                (NODAL_PATTERN.test(text(instruments[j].name)) ? nodal : keep)
+                    .push(instruments[j]);
+            }
+            if (!nodal.length) continue;
+            category.instruments = keep;
+            result.push({ name: 'NODAL SEISMOMETERS', instruments: nodal });
+        }
+        return result;
+    }
+
     function buildCategories(payload) {
         var host = byId('categories');
         clear(host);
-        var categories = payload.categories || [];
+        var categories = splitNodalSeismometers(payload.categories || []);
 
         for (var c = 0; c < categories.length; c++) {
             var category = categories[c];
