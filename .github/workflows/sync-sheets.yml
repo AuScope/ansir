@@ -1,0 +1,171 @@
+name: Sync Projects from Google Sheet
+
+# Pulls the published, filtered CSV view of the ANSIR project master list,
+# normalises it to data/data.json, enriches DOIs, regenerates the RO-Crate,
+# and commits the result. This replaces the Google Apps Script publish step.
+#
+# The CSV URL lives in the repository variable ANSIR_PROJECTS_CSV_URL
+# (Settings > Secrets and variables > Actions > Variables). It is a variable
+# rather than a secret because the published sheet URL is public by design and
+# appearing in logs is harmless. See docs/PIPELINE.md.
+
+on:
+  # 20:00 UTC = 06:00 AEST (UTC+10) the following morning.
+  # During daylight saving this lands at 07:00 AEDT (UTC+11). Either way the
+  # sync completes well before the working day starts in eastern Australia.
+  schedule:
+    - cron: '0 20 * * *'
+
+  # Lets Ben (or anyone with write access) run the sync on demand from the
+  # Actions tab immediately after editing the sheet.
+  workflow_dispatch:
+
+# Serialise every workflow that writes data/data.json. resolve-dois.yml uses
+# the same group, so a scheduled sync and a manual data push can never race
+# each other into a push conflict. cancel-in-progress is false: an enrichment
+# run already underway must be allowed to finish and commit rather than be
+# discarded halfway.
+concurrency:
+  group: data-enrichment
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    # Belt and braces against a self-trigger loop. This workflow only runs on a
+    # schedule or a manual dispatch, so it can never be started by its own
+    # commit, but the guard matches resolve-dois.yml and documents the intent.
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify the CSV URL is configured
+        run: |
+          if [ -z "${{ vars.ANSIR_PROJECTS_CSV_URL }}" ]; then
+            echo "::error::Repository variable ANSIR_PROJECTS_CSV_URL is not set."
+            echo "Set it under Settings > Secrets and variables > Actions > Variables."
+            echo "See docs/PIPELINE.md for how to obtain the published CSV URL."
+            exit 1
+          fi
+
+      - name: Fetch projects from the published sheet
+        env:
+          ANSIR_PROJECTS_CSV_URL: ${{ vars.ANSIR_PROJECTS_CSV_URL }}
+        run: node scripts/fetch-projects.js
+
+      # Enrichment runs inline rather than relying on resolve-dois.yml being
+      # triggered by this workflow's push. GitHub deliberately does not start a
+      # new workflow run from a push made with the default GITHUB_TOKEN, so a
+      # push here would NOT chain into resolve-dois.yml. Running the same two
+      # scripts in this job gives the identical result in a single commit, and
+      # makes an infinite loop structurally impossible: this workflow has no
+      # push trigger, and its commit starts nothing else.
+      #
+      # resolve-dois.yml remains in place for the other case it covers: a human
+      # editing and pushing data/data.json by hand.
+      - name: Resolve DOI metadata
+        run: node scripts/resolve-dois.js
+
+      - name: Generate RO-Crate metadata
+        run: node scripts/generate-ro-crate.js
+
+      # The fleet schedule comes from a different, already-public sheet whose
+      # URL is hardcoded in the script (see docs/SCHEDULE_DATA.md). It validates
+      # the sheet's layout and exits non-zero if the structure has changed.
+      # continue-on-error so a hand-edited fleet sheet can never block the
+      # projects publish: on failure, data/schedule.json simply keeps its last
+      # good content and the failure is surfaced in the run summary below.
+      - name: Fetch fleet schedule
+        id: schedule
+        continue-on-error: true
+        run: node scripts/fetch-schedule.js
+
+      - name: Report schedule fetch failure
+        if: steps.schedule.outcome == 'failure'
+        run: |
+          {
+            echo "### Fleet schedule sync failed"
+            echo ""
+            echo "scripts/fetch-schedule.js could not parse the Fleet Status"
+            echo "sheet - its layout has probably changed. The schedule page is"
+            echo "still serving the last good data/schedule.json."
+            echo "See docs/SCHEDULE_DATA.md for the layout the parser expects."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Resolves every ORCID against the public register and refreshes
+      # data/contributor-verification.json, which the application form uses as
+      # an allow-list before it will offer an ORCID for autofill.
+      #
+      # --warn so a misattribution does not abort the sync: the corrected data
+      # still needs to be published, and the verification file is what actually
+      # protects the form. The step summary below surfaces the finding instead,
+      # and docs/DATA_QUALITY.md explains how to correct the sheet.
+      - name: Verify contributor ORCIDs
+        id: orcid
+        run: |
+          set +e
+          node scripts/validate-contributors.js --warn | tee /tmp/orcid.log
+          echo "---"
+          if grep -q "^MISATTRIBUTED" /tmp/orcid.log; then
+            echo "misattributed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "### ORCID misattribution detected"
+              echo ""
+              echo "One or more ORCIDs are attached to the wrong researcher."
+              echo "The application form will not offer these for autofill, but"
+              echo "they should be corrected in the master sheet."
+              echo ""
+              echo '```'
+              sed -n '/^MISATTRIBUTED/,/^$/p' /tmp/orcid.log
+              echo '```'
+              echo ""
+              echo "See docs/DATA_QUALITY.md."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check for changes
+        id: changes
+        run: |
+          # --porcelain rather than "git diff", because contributor-verification.json
+          # is untracked on the very first run and git diff would not see it.
+          if [ -z "$(git status --porcelain data/data.json ro-crate-metadata.json data/contributor-verification.json data/schedule.json)" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes: the sheet matches what is already published."
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            git --no-pager diff --stat data/data.json ro-crate-metadata.json
+          fi
+
+      - name: Commit and push updated data
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/data.json ro-crate-metadata.json data/contributor-verification.json data/schedule.json
+          git commit -m "Auto-sync: update project data from Google Sheet"
+          # Rebase onto anything pushed while this job was running, then push.
+          git pull --rebase --autostash origin main
+          git push origin HEAD:main
+
+      - name: Summary
+        run: |
+          echo "### Sheet sync" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
+            echo "Committed updated project data to main." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No change. data/data.json already matches the sheet." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Data-quality warnings, if any, are listed in the 'Fetch projects from the published sheet' step log." >> $GITHUB_STEP_SUMMARY
