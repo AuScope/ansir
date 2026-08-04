@@ -690,64 +690,6 @@
         }
         table.data-table td.date { white-space: nowrap; }
 
-        /* ============================================ */
-        /* EXPERIMENT CARDS                             */
-        /* ============================================ */
-        .exp-grid {
-            display: grid;
-            gap: var(--spacing-md);
-            grid-template-columns: 1fr;
-        }
-        @media (min-width: 780px) { .exp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-        .exp-card {
-            background: var(--chart-surface);
-            border: 1px solid var(--border-color);
-            border-left: 3px solid var(--series-deployed);
-            border-radius: var(--border-radius-lg);
-            padding: var(--spacing-md) var(--spacing-lg);
-        }
-        .exp-card.is-reserved { border-left-color: var(--series-reserved); }
-        .exp-card.is-complete { border-left-color: var(--series-available); }
-
-        .exp-card h3 {
-            font-size: 0.95rem;
-            color: var(--primary-bg);
-            font-weight: bold;
-        }
-        .exp-head {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: var(--spacing-sm);
-            margin-top: 5px;
-        }
-        .exp-code {
-            font-size: 0.74rem;
-            color: var(--medium-gray);
-            font-variant-numeric: tabular-nums;
-        }
-        .exp-dates {
-            margin-top: var(--spacing-sm);
-            font-size: 0.8rem;
-            color: var(--text-color);
-        }
-        .exp-dates b { font-weight: bold; }
-        .exp-commit {
-            margin-top: var(--spacing-sm);
-            font-size: 0.8rem;
-            color: var(--text-color);
-        }
-        .exp-commit strong { color: var(--chart-ink-strong); }
-        .exp-loans {
-            list-style: none;
-            margin-top: 6px;
-            font-size: 0.76rem;
-            color: var(--medium-gray);
-        }
-        .exp-loans li { padding: 2px 0; }
-        .exp-loans b { color: var(--text-color); font-variant-numeric: tabular-nums; }
-
         details.exp-about { margin-top: var(--spacing-md); }
         details.exp-about > summary {
             cursor: pointer;
@@ -940,22 +882,6 @@
             <div id="categories"></div>
         </section>
 
-        <!-- Magnetotellurics, project by project. Derived from ../data/data.json,
-             the research project register, not from the Fleet Status sheet. This
-             section states commitments only: the per-model availability figures
-             live in the Magnetotellurics accordion above, which pairs these same
-             commitments with fleet totals from the instrument register. Hidden
-             unless data.json loads and yields at least one current or upcoming
-             MT project. -->
-        <section class="section" id="mt-section" aria-labelledby="h-mt" hidden>
-            <h2 id="h-mt">Magnetotellurics</h2>
-            <p class="section-note">
-                Magnetotelluric instrument commitments from the ANSIR project register: what is
-                committed to which project, not what is free.
-            </p>
-            <div class="exp-grid" id="mt-projects"></div>
-        </section>
-
         <section class="section" aria-labelledby="h-timeline">
             <h2 id="h-timeline">Deployment timeline</h2>
             <p class="section-note" id="timeline-note"></p>
@@ -974,12 +900,6 @@
                     <div class="table-scroll" id="timeline-table"></div>
                 </details>
             </div>
-        </section>
-
-        <section class="section" aria-labelledby="h-experiments">
-            <h2 id="h-experiments">Experiments holding instruments</h2>
-            <p class="section-note" id="experiments-note"></p>
-            <div class="exp-grid" id="experiments"></div>
         </section>
 
         <section class="section" aria-labelledby="h-rapid">
@@ -1417,15 +1337,6 @@
         return map;
     }
 
-    function supportedByCode(payload) {
-        var map = {};
-        var list = payload.supportedExperiments || [];
-        for (var i = 0; i < list.length; i++) {
-            var code = text(list[i].ansirCode);
-            if (code && !map[code]) map[code] = list[i];
-        }
-        return map;
-    }
 
     /* ============================================ */
     /* RENDER: HEADLINE                             */
@@ -1790,81 +1701,6 @@
         return total;
     }
 
-    function buildMtSection(mtProjects) {
-        var section = byId('mt-section');
-        var host = byId('mt-projects');
-        clear(host);
-
-        // Nothing to show, or the register did not load: the section is omitted
-        // rather than left standing with an apology in it.
-        if (!mtProjects.length) {
-            section.hidden = true;
-            return;
-        }
-
-        for (var i = 0; i < mtProjects.length; i++) {
-            var project = mtProjects[i];
-            var statusKey = mtStatusKey(project.status);
-
-            var cardClass = 'exp-card';
-            if (statusKey === 'reserved') cardClass += ' is-reserved';
-            if (statusKey === 'complete') cardClass += ' is-complete';
-
-            var card = el('article', cardClass);
-            card.appendChild(el('h3', null, mtProjectName(project)));
-
-            var head = el('div', 'exp-head');
-            head.appendChild(mtStatusPill(statusKey));
-            head.appendChild(el('span', 'exp-code',
-                text(project.ansirCode) || 'No ANSIR reference recorded'));
-            card.appendChild(head);
-
-            var dates = el('p', 'exp-dates');
-            dates.appendChild(document.createTextNode('Out '));
-            dates.appendChild(el('b', null, formatIso(text(project.startDate), 'long') || 'Not recorded'));
-            dates.appendChild(document.createTextNode('. Due '));
-            dates.appendChild(el('b', null, formatIso(text(project.endDate), 'long') || 'Not recorded'));
-            dates.appendChild(document.createTextNode('.'));
-            card.appendChild(dates);
-
-            var location = project.location || {};
-            var region = text(location.region);
-            var country = text(location.country);
-            var place = region && country ? (region + ', ' + country) : (region || country);
-            card.appendChild(el('p', 'exp-commit', place || 'Location not recorded'));
-
-            var instruments = project.instruments || [];
-            if (instruments.length) {
-                var loans = el('ul', 'exp-loans');
-                for (var n = 0; n < instruments.length; n++) {
-                    var loan = instruments[n];
-                    var li = el('li');
-                    li.appendChild(el('b', null, isNum(loan.count) ? formatNumber(loan.count) : 'TBC'));
-                    li.appendChild(document.createTextNode(' x ' + text(loan.name)));
-                    loans.appendChild(li);
-                }
-                card.appendChild(loans);
-            } else {
-                card.appendChild(el('p', 'empty-note',
-                    'No instrument loans recorded against this project.'));
-            }
-
-            host.appendChild(card);
-        }
-
-        section.hidden = false;
-    }
-
-    /* ============================================ */
-    /* MAGNETOTELLURIC AVAILABILITY                 */
-    /* A fourth accordion under "Availability by     */
-    /* instrument type", built from two files the    */
-    /* Fleet Status sheet knows nothing about: the   */
-    /* instrument register supplies the fleet, the   */
-    /* project register supplies the commitments.    */
-    /* Nothing here reaches the headline tiles,      */
-    /* which stay seismic-sheet column sums.         */
-    /* ============================================ */
 
     // Normalise an instrument or model string for matching. Case and repeated
     // whitespace go, and the separator between a letter run and a digit run
@@ -2123,8 +1959,7 @@
         registerLink.appendChild(document.createTextNode('AuScope instrument register'));
         sourceNote.appendChild(registerLink);
         sourceNote.appendChild(document.createTextNode(
-            '; commitments from the ANSIR project register. ' +
-            'Testing and repair are not tracked for MT and are shown as zero.'));
+            '; commitments from the ANSIR project register.'));
         details.appendChild(sourceNote);
 
         var body = el('div', 'cat-body');
@@ -2657,114 +2492,6 @@
 
     var experimentIndex = {};
 
-    function buildExperiments(payload, commitments) {
-        var host = byId('experiments');
-        clear(host);
-
-        var experiments = payload.experiments || [];
-        var supported = supportedByCode(payload);
-        var described = 0;
-
-        for (var i = 0; i < experiments.length; i++) {
-            var exp = experiments[i];
-            if (isPastDue(exp.dueDate)) continue;
-            var name = text(exp.name);
-            var isReserved = exp.status === 'reserved';
-            var commitment = commitments[name] || { total: 0, rows: [], anyTentative: false };
-
-            var card = el('article', 'exp-card' + (isReserved ? ' is-reserved' : ''));
-            card.appendChild(el('h3', null, name));
-
-            var head = el('div', 'exp-head');
-            head.appendChild(statusPill(exp.status, false));
-            head.appendChild(el('span', 'exp-code', text(exp.ansirCode) || 'No ANSIR reference recorded'));
-            card.appendChild(head);
-
-            var dates = el('p', 'exp-dates');
-            dates.appendChild(document.createTextNode('Out '));
-            dates.appendChild(el('b', null, formatDateObj(exp.outDate, 'long')));
-            dates.appendChild(document.createTextNode('. Due '));
-            dates.appendChild(el('b', null, formatDateObj(exp.dueDate, 'long')));
-            dates.appendChild(document.createTextNode('.'));
-            card.appendChild(dates);
-
-            var commit = el('p', 'exp-commit');
-            if (commitment.rows.length) {
-                commit.appendChild(el('strong', null, formatNumber(commitment.total)));
-                commit.appendChild(document.createTextNode(
-                    ' ' + plural(commitment.total, 'instrument') + ' across ' +
-                    formatNumber(commitment.rows.length) + ' ' +
-                    plural(commitment.rows.length, 'instrument type') + '.'));
-            } else {
-                commit.appendChild(document.createTextNode('No instrument allocations recorded against this experiment.'));
-            }
-            card.appendChild(commit);
-
-            if (commitment.rows.length) {
-                var loans = el('ul', 'exp-loans');
-                for (var r = 0; r < commitment.rows.length; r++) {
-                    var loanRow = commitment.rows[r];
-                    var li = el('li');
-                    li.appendChild(el('b', null, isNum(loanRow.count) ? formatNumber(loanRow.count) : 'TBC'));
-                    li.appendChild(document.createTextNode(' x ' + text(loanRow.instrument)));
-                    if (loanRow.tentative) li.appendChild(document.createTextNode(' (expression of interest)'));
-                    loans.appendChild(li);
-                }
-                card.appendChild(loans);
-            }
-
-            var record = supported[text(exp.ansirCode)];
-            if (record) {
-                described++;
-                var about = el('details', 'exp-about');
-                about.appendChild(el('summary', null, 'About this project'));
-                var body = el('div', 'about-body');
-
-                if (text(record.description)) {
-                    body.appendChild(el('p', null, text(record.description)));
-                }
-                if (text(record.applicants)) {
-                    var applicantsP = el('p');
-                    applicantsP.appendChild(el('span', 'about-label', 'Applicants: '));
-                    applicantsP.appendChild(document.createTextNode(text(record.applicants)));
-                    body.appendChild(applicantsP);
-                }
-                if (text(record.fundingSource)) {
-                    var fundingP = el('p');
-                    fundingP.appendChild(el('span', 'about-label', 'Funding: '));
-                    fundingP.appendChild(document.createTextNode(text(record.fundingSource)));
-                    body.appendChild(fundingP);
-                }
-                if (text(record.fdsnNetwork)) {
-                    var fdsnP = el('p');
-                    fdsnP.appendChild(el('span', 'about-label', 'FDSN network: '));
-                    fdsnP.appendChild(document.createTextNode(text(record.fdsnLabel) || text(record.fdsnNetwork)));
-                    body.appendChild(fdsnP);
-                }
-
-                about.appendChild(body);
-                about.addEventListener('toggle', sendHeightToParent);
-                card.appendChild(about);
-            }
-
-            host.appendChild(card);
-        }
-
-        var supportedCount = (payload.supportedExperiments || []).length;
-        var note = 'Instruments currently allocated to a named experiment, in the order the source sheet ' +
-            'lists them. Reserved experiments have been approved but have not yet shipped.';
-        if (described > 0) {
-            note += ' ' + formatNumber(described) + ' of these ' +
-                plural(experiments.length, 'experiment') + ' ' +
-                (described === 1 ? 'has' : 'have') +
-                ' a matching entry in the approved-application register, shown under "About this project".';
-        }
-        if (supportedCount > 0) {
-            note += ' The register holds ' + formatNumber(supportedCount) +
-                ' approved applications in total, including completed work.';
-        }
-        byId('experiments-note').textContent = note;
-    }
 
     /* ============================================ */
     /* RENDER: RAPID RESPONSE                       */
@@ -2875,7 +2602,6 @@
         buildHeadline(payload, summary);
         buildCategories(payload);
         buildMtCategory(registerPayload, mtProjects);
-        buildMtSection(mtProjects);
 
         prepareTimeline(payload, commitments, mtProjects);
         buildTimelineLegend();
@@ -2883,7 +2609,6 @@
         buildTimelineCaption();
         buildTimelineTable();
 
-        buildExperiments(payload, commitments);
         buildRapidResponse(payload);
 
         byId('loading-state').hidden = true;
